@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
-import { incidents } from '@/db/schema';
-import { desc, eq, and, or, like } from 'drizzle-orm';
+import { ovrReports } from '@/db/schema';
+import { desc, eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,65 +12,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status');
-    const severity = searchParams.get('severity');
-    const search = searchParams.get('search');
+    const userId = parseInt(session.user.id);
 
-    let query = db.query.incidents.findMany({
-      with: {
-        reporter: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        location: true,
-        assignee: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: [desc(incidents.createdAt)],
-    });
+    // Fetch incidents for the current user
+    const incidents = await db
+      .select({
+        id: ovrReports.id,
+        referenceNumber: ovrReports.referenceNumber,
+        occurrenceDate: ovrReports.occurrenceDate,
+        occurrenceCategory: ovrReports.occurrenceCategory,
+        occurrenceSubcategory: ovrReports.occurrenceSubcategory,
+        status: ovrReports.status,
+        createdAt: ovrReports.createdAt,
+      })
+      .from(ovrReports)
+      .where(eq(ovrReports.reporterId, userId))
+      .orderBy(desc(ovrReports.createdAt));
 
-    // For employees, only show their own incidents
-    if (session.user.role === 'employee') {
-      const allIncidents = await query;
-      const filteredIncidents = allIncidents.filter(
-        (incident) => incident.reporterId.toString() === session.user.id
-      );
-      return NextResponse.json(filteredIncidents);
-    }
-
-    // For admins and managers, show all incidents
-    const allIncidents = await query;
-    let filteredIncidents = allIncidents;
-
-    if (status) {
-      filteredIncidents = filteredIncidents.filter((i) => i.status === status);
-    }
-
-    if (severity) {
-      filteredIncidents = filteredIncidents.filter((i) => i.severity === severity);
-    }
-
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredIncidents = filteredIncidents.filter(
-        (i) =>
-          i.description?.toLowerCase().includes(searchLower) ||
-          i.victimName?.toLowerCase().includes(searchLower) ||
-          i.perpetratorName?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return NextResponse.json(filteredIncidents);
+    return NextResponse.json(incidents);
   } catch (error) {
     console.error('Error fetching incidents:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -85,33 +44,37 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const userId = parseInt(session.user.id);
 
-    const newIncident = await db.insert(incidents).values({
-      reporterId: parseInt(session.user.id),
-      incidentDate: new Date(body.incidentDate),
-      incidentTime: body.incidentTime,
-      locationId: body.locationId,
-      specificLocation: body.specificLocation,
-      incidentType: body.incidentType,
-      severity: body.severity,
-      status: body.status || 'draft',
-      victimName: body.victimName,
-      victimRole: body.victimRole,
-      perpetratorName: body.perpetratorName,
-      perpetratorType: body.perpetratorType,
-      perpetratorDescription: body.perpetratorDescription,
-      description: body.description,
-      immediateAction: body.immediateAction,
-      witnessesPresent: body.witnessesPresent,
-      witnessDetails: body.witnessDetails,
-      policeNotified: body.policeNotified,
-      policeReportNumber: body.policeReportNumber,
-      injuriesOccurred: body.injuriesOccurred,
-      injuryDescription: body.injuryDescription,
-      medicalAttentionRequired: body.medicalAttentionRequired,
-      medicalAttentionDetails: body.medicalAttentionDetails,
-      submittedAt: body.status === 'submitted' ? new Date() : null,
-    }).returning();
+    // Generate reference number
+    const year = new Date().getFullYear();
+    const count = await db
+      .select()
+      .from(ovrReports)
+      .then((rows) => rows.length + 1);
+    const referenceNumber = `OVR-${year}-${String(count).padStart(3, '0')}`;
+
+    const newIncident = await db
+      .insert(ovrReports)
+      .values({
+        referenceNumber,
+        reporterId: userId,
+        occurrenceDate: body.occurrenceDate,
+        occurrenceTime: body.occurrenceTime,
+        locationId: body.locationId,
+        specificLocation: body.specificLocation,
+        personInvolved: body.personInvolved,
+        isSentinelEvent: body.isSentinelEvent || false,
+        sentinelEventDetails: body.sentinelEventDetails,
+        occurrenceCategory: body.occurrenceCategory,
+        occurrenceSubcategory: body.occurrenceSubcategory,
+        description: body.description,
+        reporterDepartment: session.user.department,
+        reporterPosition: session.user.position,
+        status: body.status || 'draft',
+        submittedAt: body.status === 'submitted' ? new Date() : null,
+      })
+      .returning();
 
     return NextResponse.json(newIncident[0], { status: 201 });
   } catch (error) {

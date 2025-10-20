@@ -1,169 +1,193 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
+'use client';
 
-export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    redirect('/login');
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Card,
+  CardContent,
+  Stack,
+  Chip,
+  alpha,
+  LinearProgress,
+} from '@mui/material';
+import {
+  Description,
+  PendingActions,
+  CheckCircle,
+  Warning,
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import { AppLayout } from '@/components/AppLayout';
+import { fadeIn } from '@/lib/theme';
+
+interface DashboardStats {
+  total: number;
+  drafts: number;
+  submitted: number;
+  resolved: number;
+}
+
+export default function DashboardPage() {
+  const { data: session } = useSession();
+  const [stats, setStats] = useState<DashboardStats>({
+    total: 0,
+    drafts: 0,
+    submitted: 0,
+    resolved: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statCards = [
+    {
+      title: 'Total Reports',
+      value: stats.total,
+      icon: <Description />,
+      color: '#00E599',
+    },
+    {
+      title: 'Drafts',
+      value: stats.drafts,
+      icon: <PendingActions />,
+      color: '#F59E0B',
+    },
+    {
+      title: 'Submitted',
+      value: stats.submitted,
+      icon: <Warning />,
+      color: '#3B82F6',
+    },
+    {
+      title: 'Resolved',
+      value: stats.resolved,
+      icon: <CheckCircle />,
+      color: '#10B981',
+    },
+  ];
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <LinearProgress />
+      </AppLayout>
+    );
   }
 
-  // Fetch stats
-  const statsRes = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stats`, {
-    cache: 'no-store',
-    headers: {
-      'Cookie': '', // In production, pass actual cookies
-    },
-  }).catch(() => ({ ok: false }));
-
-  const stats = statsRes && 'ok' in statsRes && statsRes.ok ? await statsRes.json() : null;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">OVR System</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
-                {session.user.name} ({session.user.role})
-              </span>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <AppLayout>
+      <Box>
+        <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h4" gutterBottom fontWeight={700}>
+                Welcome back, {session?.user?.name?.split(' ')[0]}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Here's an overview of your OVR reports
+              </Typography>
+            </Box>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-          <p className="mt-2 text-gray-600">Welcome back! Here's an overview of incident reports.</p>
-        </div>
+            <Grid container spacing={3}>
+              {statCards.map((stat, index) => (
+                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.title}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card
+                      sx={{
+                        height: '100%',
+                        borderLeft: `4px solid ${stat.color}`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: (theme) =>
+                            `0 8px 24px ${alpha(stat.color, 0.2)}`,
+                        },
+                      }}
+                    >
+                      <CardContent>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                        >
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              gutterBottom
+                            >
+                              {stat.title}
+                            </Typography>
+                            <Typography variant="h3" fontWeight={700}>
+                              {stat.value}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor: alpha(stat.color, 0.1),
+                              color: stat.color,
+                            }}
+                          >
+                            {stat.icon}
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Incidents</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.totalIncidents || 0}
-                </p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Recent (30 days)</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.recentIncidents || 0}
-                </p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">With Injuries</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.incidentsWithInjuries || 0}
-                </p>
-              </div>
-              <div className="bg-red-100 p-3 rounded-full">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Police Notified</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.policeNotifiedIncidents || 0}
-                </p>
-              </div>
-              <div className="bg-yellow-100 p-3 rounded-full">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link
-            href="/incidents/new"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-600 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Report New Incident</h3>
-                <p className="text-sm text-gray-600 mt-1">Create a new incident report</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/incidents"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-green-600 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">View All Incidents</h3>
-                <p className="text-sm text-gray-600 mt-1">Browse and manage reports</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/reports"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-600 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Analytics & Reports</h3>
-                <p className="text-sm text-gray-600 mt-1">View detailed statistics</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </main>
-    </div>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom fontWeight={600}>
+                Quick Actions
+              </Typography>
+              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                <Chip
+                  label="New Report"
+                  clickable
+                  color="primary"
+                  onClick={() => (window.location.href = '/incidents/new')}
+                  sx={{ px: 2, py: 3, fontSize: '0.9rem' }}
+                />
+                <Chip
+                  label="View All Reports"
+                  clickable
+                  variant="outlined"
+                  onClick={() => (window.location.href = '/incidents')}
+                  sx={{ px: 2, py: 3, fontSize: '0.9rem' }}
+                />
+              </Stack>
+            </Paper>
+          </Stack>
+        </motion.div>
+      </Box>
+    </AppLayout>
   );
 }

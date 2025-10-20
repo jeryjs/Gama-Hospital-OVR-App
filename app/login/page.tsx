@@ -1,102 +1,151 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import {
+  Box,
+  Button,
+  Container,
+  Paper,
+  Typography,
+  Stack,
+  alpha,
+} from '@mui/material';
+import { Google as GoogleIcon } from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import { fadeIn, scaleIn } from '@/lib/theme';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError('Invalid email or password');
-      } else {
-        router.push('/dashboard');
-        router.refresh();
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    signIn('google', { callbackUrl: '/dashboard' });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 m-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            OVR Incident Reporting
-          </h1>
-          <p className="text-gray-600">Sign in to your account</p>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: (theme) =>
+          `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(
+            '#00E599',
+            0.03
+          )} 100%)`,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-50%',
+          right: '-50%',
+          width: '100%',
+          height: '100%',
+          background: `radial-gradient(circle, ${alpha('#00E599', 0.08)} 0%, transparent 70%)`,
+          animation: 'pulse 8s ease-in-out infinite',
+        },
+        '@keyframes pulse': {
+          '0%, 100%': { opacity: 0.3 },
+          '50%': { opacity: 0.6 },
+        },
+      }}
+    >
+      <Container maxWidth="sm">
+        <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 4, sm: 6 },
+              textAlign: 'center',
+              position: 'relative',
+              zIndex: 1,
+              backdropFilter: 'blur(20px)',
+              background: (theme) => alpha(theme.palette.background.paper, 0.8),
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+            }}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+            <motion.div>
+              <Stack spacing={4}>
+                {/* Logo/Brand */}
+                <Box>
+                  <Typography
+                    variant="h3"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 700,
+                      background: (theme) =>
+                        `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    OVR System
+                  </Typography>
+                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                    Gama Hospital
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Occurrence Variance Reporting System
+                  </Typography>
+                </Box>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo credentials:</p>
-          <p className="mt-1">Admin: admin@company.com / admin123</p>
-        </div>
-      </div>
-    </div>
+                {/* Sign In Section */}
+                <Box>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Sign in with your Gama Hospital account
+                  </Typography>
+
+                  <Button
+                    fullWidth
+                    size="large"
+                    variant="contained"
+                    startIcon={<GoogleIcon />}
+                    onClick={handleGoogleSignIn}
+                    sx={{
+                      py: 1.5,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      background: (theme) =>
+                        `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      '&:hover': {
+                        background: (theme) =>
+                          `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+                        transform: 'translateY(-2px)',
+                      },
+                    }}
+                  >
+                    Continue with Google
+                  </Button>
+                </Box>
+
+                {/* Footer Note */}
+                <Typography variant="caption" color="text.secondary" sx={{ pt: 2 }}>
+                  Access restricted to @gamahospital.com accounts only
+                </Typography>
+              </Stack>
+            </motion.div>
+          </Paper>
+        </motion.div>
+
+        {/* Decorative elements */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '10%',
+            left: '10%',
+            width: 100,
+            height: 100,
+            borderRadius: '50%',
+            background: (theme) => alpha(theme.palette.primary.main, 0.1),
+            filter: 'blur(40px)',
+            animation: 'float 6s ease-in-out infinite',
+            '@keyframes float': {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-20px)' },
+            },
+          }}
+        />
+      </Container>
+    </Box>
   );
 }

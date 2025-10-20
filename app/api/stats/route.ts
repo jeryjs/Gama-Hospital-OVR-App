@@ -2,83 +2,66 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
-import { incidents } from '@/db/schema';
-import { sql, eq, gte } from 'drizzle-orm';
+import { ovrReports } from '@/db/schema';
+import { eq, and, count } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role === 'employee') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get date range from query params (default to last 30 days)
-    const searchParams = request.nextUrl.searchParams;
-    const days = parseInt(searchParams.get('days') || '30');
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const userId = parseInt(session.user.id);
 
-    // Total incidents
-    const totalIncidents = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(incidents);
+    // Get stats for the current user
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(ovrReports)
+      .where(eq(ovrReports.reporterId, userId));
 
-    // Incidents by status
-    const incidentsByStatus = await db
-      .select({
-        status: incidents.status,
-        count: sql<number>`count(*)`,
-      })
-      .from(incidents)
-      .groupBy(incidents.status);
+    const [draftsResult] = await db
+      .select({ count: count() })
+      .from(ovrReports)
+      .where(
+        and(
+          eq(ovrReports.reporterId, userId),
+          eq(ovrReports.status, 'draft')
+        )
+      );
 
-    // Incidents by severity
-    const incidentsBySeverity = await db
-      .select({
-        severity: incidents.severity,
-        count: sql<number>`count(*)`,
-      })
-      .from(incidents)
-      .groupBy(incidents.severity);
+    const [submittedResult] = await db
+      .select({ count: count() })
+      .from(ovrReports)
+      .where(
+        and(
+          eq(ovrReports.reporterId, userId),
+          eq(ovrReports.status, 'submitted')
+        )
+      );
 
-    // Incidents by type
-    const incidentsByType = await db
-      .select({
-        type: incidents.incidentType,
-        count: sql<number>`count(*)`,
-      })
-      .from(incidents)
-      .groupBy(incidents.incidentType);
-
-    // Recent incidents (last 30 days)
-    const recentIncidents = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(incidents)
-      .where(gte(incidents.createdAt, startDate));
-
-    // Incidents with injuries
-    const incidentsWithInjuries = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(incidents)
-      .where(eq(incidents.injuriesOccurred, true));
-
-    // Police notified incidents
-    const policeNotifiedIncidents = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(incidents)
-      .where(eq(incidents.policeNotified, true));
+    const [resolvedResult] = await db
+      .select({ count: count() })
+      .from(ovrReports)
+      .where(
+        and(
+          eq(ovrReports.reporterId, userId),
+          eq(ovrReports.status, 'resolved')
+        )
+      );
 
     return NextResponse.json({
-      totalIncidents: totalIncidents[0].count,
-      recentIncidents: recentIncidents[0].count,
-      incidentsWithInjuries: incidentsWithInjuries[0].count,
-      policeNotifiedIncidents: policeNotifiedIncidents[0].count,
-      byStatus: incidentsByStatus,
-      bySeverity: incidentsBySeverity,
-      byType: incidentsByType,
+      total: totalResult?.count || 0,
+      drafts: draftsResult?.count || 0,
+      submitted: submittedResult?.count || 0,
+      resolved: resolvedResult?.count || 0,
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

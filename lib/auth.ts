@@ -1,9 +1,10 @@
 import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { compare } from 'bcrypt';
+import GoogleProvider from 'next-auth/providers/google';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+
+const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -11,47 +12,76 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email),
-        });
-
-        if (!user || !user.isActive) {
-          return null;
-        }
-
-        const isPasswordValid = await compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role,
-        };
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'select_account',
+          hd: ALLOWED_DOMAIN,
+        },
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
+    async signIn({ user, account }) {
+      if (!user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
+        return false;
+      }
+
+      try {
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+        });
+
+        if (existingUser) {
+          if (!existingUser.isActive) {
+            return false;
+          }
+          
+          await db
+            .update(users)
+            .set({
+              googleId: account?.providerAccountId,
+              profilePicture: user.image,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, existingUser.id));
+        } else {
+          const nameParts = user.name?.split(' ') || ['', ''];
+          await db.insert(users).values({
+            email: user.email,
+            googleId: account?.providerAccountId,
+            firstName: nameParts[0] || 'Unknown',
+            lastName: nameParts.slice(1).join(' ') || 'User',
+            role: 'employee',
+            profilePicture: user.image,
+            isActive: true,
+          });
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Sign in error:', error);
+        return false;
+      }
+    },
+    async jwt({ token, user, account }) {
+      if (account && user) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.email, user.email!),
+        });
+
+        if (dbUser) {
+          token.id = dbUser.id.toString();
+          token.role = dbUser.role;
+          token.employeeId = dbUser.employeeId;
+          token.department = dbUser.department;
+          token.position = dbUser.position;
+        }
       }
       return token;
     },
@@ -59,6 +89,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.employeeId = token.employeeId as string | null;
+        session.user.department = token.department as string | null;
+        session.user.position = token.position as string | null;
       }
       return session;
     },

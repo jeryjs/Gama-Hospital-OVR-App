@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
+import { Inter } from 'next/font/google';
 import "./globals.css";
+import { ThemeRegistry } from "@/components/ThemeRegistry";
 import { AuthProvider } from "@/components/AuthProvider";
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: "OVR Incident Reporting System",
-  description: "Occupational Violence Reporting and Incident Management",
+  title: "OVR System - Gama Hospital",
+  description: "Occurrence Variance Reporting System for Healthcare",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -14,8 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+      <body className={inter.variable}>
+        <ThemeRegistry>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeRegistry>
       </body>
     </html>
   );
