@@ -1,264 +1,765 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
-  Stepper,
-  Step,
-  StepLabel,
-  Button,
-  Typography,
   Paper,
+  Typography,
+  TextField,
+  Grid,
+  Button,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  Divider,
   Stack,
   Alert,
-  CircularProgress,
   LinearProgress,
   alpha,
+  Autocomplete,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Save, Send, ArrowBack } from '@mui/icons-material';
+import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/AppLayout';
-import { fadeIn, slideIn } from '@/lib/theme';
-import { BasicInfoStep } from '@/components/incident-form/BasicInfoStep';
-import { OccurrenceDetailsStep } from '@/components/incident-form/OccurrenceDetailsStep';
-import { WitnessInfoStep } from '@/components/incident-form/WitnessInfoStep';
-import { MedicalAssessmentStep } from '@/components/incident-form/MedicalAssessmentStep';
-import { ReviewStep } from '@/components/incident-form/ReviewStep';
+import { OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS, INJURY_OUTCOMES } from '@/lib/ovr-categories';
 
-const steps = [
-  'Basic Information',
-  'Occurrence Details',
-  'Witness Information',
-  'Medical Assessment',
-  'Review & Submit',
-];
+interface FormData {
+  // Patient Information
+  patientName: string;
+  patientMRN: string;
+  patientAge: string;
+  patientSex: string;
+  patientUnit: string;
+  
+  // Occurrence Details
+  occurrenceDate: Dayjs | null;
+  occurrenceTime: Dayjs | null;
+  locationId: number | null;
+  specificLocation: string;
+  
+  // Person Involved
+  personInvolved: string;
+  isSentinelEvent: boolean;
+  sentinelEventDetails: string;
+  
+  // Staff Involved (if applicable)
+  staffInvolvedName: string;
+  staffPosition: string;
+  staffEmployeeId: string;
+  staffDepartment: string;
+  
+  // Incident Classification
+  occurrenceCategory: string;
+  occurrenceSubcategory: string;
+  
+  // Description
+  description: string;
+  
+  // Witness
+  witnessName: string;
+  witnessAccount: string;
+  witnessDepartment: string;
+  witnessPosition: string;
+  witnessEmployeeId: string;
+  
+  // Medical Assessment
+  physicianNotified: boolean;
+  physicianSawPatient: boolean;
+  assessment: string;
+  diagnosis: string;
+  injuryOutcome: string;
+  treatmentProvided: string;
+  physicianName: string;
+  physicianId: string;
+  
+  // Supervisor
+  supervisorAction: string;
+}
+
+const DRAFT_KEY_PREFIX = 'GH:draft';
 
 export default function NewIncidentPage() {
-  const router = useRouter();
   const { data: session } = useSession();
-  const [activeStep, setActiveStep] = useState(0);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    // Basic Info
-    occurrenceDate: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-    occurrenceTime: new Date().toTimeString().slice(0, 8), // HH:mm:ss
-    locationId: (localStorage.getItem('GH:IF:locationId') || null) as number | null,
-    specificLocation: '',
-    personInvolved: 'patient' as const,
-    isSentinelEvent: false,
-    sentinelEventDetails: '',
-    // Patient Info (if applicable)
+  const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
+  const [draftKey, setDraftKey] = useState<string>('');
+  const [formData, setFormData] = useState<FormData>({
     patientName: '',
     patientMRN: '',
     patientAge: '',
     patientSex: '',
     patientUnit: '',
-    
-    // Staff Involved
+    occurrenceDate: null,
+    occurrenceTime: null,
+    locationId: null,
+    specificLocation: '',
+    personInvolved: 'patient',
+    isSentinelEvent: false,
+    sentinelEventDetails: '',
     staffInvolvedName: '',
     staffPosition: '',
     staffEmployeeId: '',
     staffDepartment: '',
-    
-    // Occurrence Classification
     occurrenceCategory: '',
     occurrenceSubcategory: '',
-    occurrenceOtherDetails: '',
-    
-    // Description
     description: '',
-    
-    // Witness
     witnessName: '',
     witnessAccount: '',
     witnessDepartment: '',
     witnessPosition: '',
     witnessEmployeeId: '',
-    
-    // Medical Assessment
     physicianNotified: false,
     physicianSawPatient: false,
     assessment: '',
     diagnosis: '',
-    injuryOutcome: '' as 'no_injury' | 'minor' | 'serious' | 'death' | '',
+    injuryOutcome: '',
     treatmentProvided: '',
     physicianName: '',
     physicianId: '',
+    supervisorAction: '',
   });
 
-  // Auto-save draft every 30 seconds
+  // Initialize draft key on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (formData.description && formData.occurrenceCategory) {
-        saveDraft();
+    // Generate unique draft key for this session
+    const timestamp = Date.now();
+    const key = `${DRAFT_KEY_PREFIX}:new:${timestamp}`;
+    setDraftKey(key);
+
+    // Try to load most recent draft
+    const allKeys = Object.keys(localStorage);
+    const draftKeys = allKeys.filter(k => k.startsWith(`${DRAFT_KEY_PREFIX}:new:`));
+    
+    if (draftKeys.length > 0) {
+      // Sort by timestamp and get most recent
+      const mostRecent = draftKeys.sort().reverse()[0];
+      const draft = localStorage.getItem(mostRecent);
+      
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData({
+            ...parsed,
+            occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
+            occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
+          });
+          setDraftKey(mostRecent); // Use this draft key
+        } catch (e) {
+          console.error('Failed to load draft:', e);
+        }
       }
-    }, 30000);
+    }
+    
+    fetchLocations();
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [formData]);
+  // Auto-save draft
+  useEffect(() => {
+    if (!draftKey) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(draftKey, JSON.stringify(formData));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [formData, draftKey]);
 
-  const saveDraft = async () => {
+  const fetchLocations = async () => {
     try {
-      await fetch('/api/incidents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, status: 'draft' }),
-      });
+      const res = await fetch('/api/locations');
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data);
+      }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      console.error('Error fetching locations:', error);
     }
   };
 
-  const handleNext = () => {
-    setActiveStep((prev) => prev + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (isDraft: boolean = false) => {
+  const handleSubmit = async (isDraft: boolean) => {
     setLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/incidents', {
+      const payload = {
+        ...formData,
+        occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
+        occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
+        status: isDraft ? 'draft' : 'submitted',
+      };
+
+      const res = await fetch('/api/incidents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          status: isDraft ? 'draft' : 'submitted',
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit incident report');
+      if (res.ok) {
+        // Clear draft on successful submission
+        if (draftKey) localStorage.removeItem(draftKey);
+        router.push('/incidents');
+      } else {
+        alert('Failed to submit report');
       }
-
-      const data = await response.json();
-      router.push(`/incidents/${data.id}`);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      console.error('Error submitting:', error);
+      alert('An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStepContent = (step: number) => {
-    switch (step) {
-      case 0:
-        return (
-          <BasicInfoStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-          />
-        );
-      case 1:
-        return (
-          <OccurrenceDetailsStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 2:
-        return (
-          <WitnessInfoStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 3:
-        return (
-          <MedicalAssessmentStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 4:
-        return (
-          <ReviewStep
-            formData={formData}
-            onBack={handleBack}
-            onSubmit={handleSubmit}
-            loading={loading}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  const selectedCategory = OVR_CATEGORIES.find(cat => cat.id === formData.occurrenceCategory);
 
   return (
     <AppLayout>
-      <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
-          <Stack spacing={4}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {/* Header */}
-            <Box>
-              <Typography variant="h4" gutterBottom fontWeight={700}>
-                New OVR Report
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => router.push('/incidents')}
+                variant="outlined"
+              >
+                Back
+              </Button>
+              <Typography variant="h4" fontWeight={700} sx={{ flex: 1 }}>
+                New Report
               </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Complete all required information about the occurrence variance
-              </Typography>
-            </Box>
+            </Stack>
 
-            {/* Progress */}
-            <Paper sx={{ p: 3 }}>
-              <Stepper activeStep={activeStep} alternativeLabel>
-                {steps.map((label) => (
-                  <Step key={label}>
-                    <StepLabel>{label}</StepLabel>
-                  </Step>
-                ))}
-              </Stepper>
-              <LinearProgress
-                variant="determinate"
-                value={(activeStep / (steps.length - 1)) * 100}
-                sx={{ mt: 3, height: 6, borderRadius: 3 }}
-              />
+            {/* Main Form */}
+            <Paper
+              sx={{
+                p: 4,
+                border: (theme) => `2px solid ${theme.palette.divider}`,
+              }}
+            >
+              {/* Header Section */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Typography variant="h6" fontWeight={700}>
+                    Gama Hospital
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    مستشفى جاما
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'center' }}>
+                  <Typography variant="h5" fontWeight={700}>
+                    OCCURRENCE VARIANCE REPORT (OVR)
+                  </Typography>
+                  <Typography variant="caption">GH 012 A</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 1, textAlign: 'center', bgcolor: (theme) => alpha(theme.palette.error.main, 0.1) }}
+                  >
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      CONFIDENTIAL
+                    </Typography>
+                    <Typography variant="caption">
+                      Reference No: (for QIPS use only)
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Patient Information */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Patient Information
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Patient Name *"
+                      value={formData.patientName}
+                      onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                      required
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="MR # *"
+                      value={formData.patientMRN}
+                      onChange={(e) => setFormData({ ...formData, patientMRN: e.target.value })}
+                      required
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Age"
+                      type="number"
+                      value={formData.patientAge}
+                      onChange={(e) => setFormData({ ...formData, patientAge: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Sex"
+                      select
+                      SelectProps={{ native: true }}
+                      value={formData.patientSex}
+                      onChange={(e) => setFormData({ ...formData, patientSex: e.target.value })}
+                    >
+                      <option value=""></option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Unit / Ward"
+                      value={formData.patientUnit}
+                      onChange={(e) => setFormData({ ...formData, patientUnit: e.target.value })}
+                    />
+                  </Grid>
+                </Grid>
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="caption" fontWeight={600}>
+                    Do not file in the Medical Record
+                  </Typography>
+                </Alert>
+              </Box>
+
+              {/* Occurrence Details */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Occurrence Details
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <DatePicker
+                      label="Occurrence Date *"
+                      value={formData.occurrenceDate}
+                      onChange={(date) => setFormData({ ...formData, occurrenceDate: date })}
+                      slotProps={{ textField: { fullWidth: true, required: true } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TimePicker
+                      label="Occurrence Time *"
+                      value={formData.occurrenceTime}
+                      onChange={(time) => setFormData({ ...formData, occurrenceTime: time })}
+                      slotProps={{ textField: { fullWidth: true, required: true } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Autocomplete
+                      options={locations}
+                      getOptionLabel={(option) => option.name}
+                      value={locations.find(l => l.id === formData.locationId) || null}
+                      onChange={(_, value) => setFormData({ ...formData, locationId: value?.id || null })}
+                      renderInput={(params) => <TextField {...params} label="Location / Dept *" required />}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Specific Location"
+                      value={formData.specificLocation}
+                      onChange={(e) => setFormData({ ...formData, specificLocation: e.target.value })}
+                      placeholder="e.g., Room 305, Waiting Area, Corridor 2B"
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Person Involved & Sentinel Event */}
+              <Box sx={{ mb: 4 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend">Person Involved *</FormLabel>
+                      <RadioGroup
+                        value={formData.personInvolved}
+                        onChange={(e) => setFormData({ ...formData, personInvolved: e.target.value })}
+                      >
+                        {PERSON_INVOLVED_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            value={option.value}
+                            control={<Radio />}
+                            label={option.label}
+                          />
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend">SENTINEL EVENT</FormLabel>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={formData.isSentinelEvent}
+                            onChange={(e) => setFormData({ ...formData, isSentinelEvent: e.target.checked })}
+                          />
+                        }
+                        label="Yes, this is a sentinel event"
+                      />
+                      {formData.isSentinelEvent && (
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          label="Please specify"
+                          value={formData.sentinelEventDetails}
+                          onChange={(e) => setFormData({ ...formData, sentinelEventDetails: e.target.value })}
+                          sx={{ mt: 1 }}
+                        />
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Staff Involved (conditional) */}
+              {formData.personInvolved === 'staff' && (
+                <Box sx={{ mb: 4 }}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    gutterBottom
+                    sx={{ bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1), p: 1, borderRadius: 1 }}
+                  >
+                    Staff Involved Details
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Name of Staff Involved"
+                        value={formData.staffInvolvedName}
+                        onChange={(e) => setFormData({ ...formData, staffInvolvedName: e.target.value })}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Position"
+                        value={formData.staffPosition}
+                        onChange={(e) => setFormData({ ...formData, staffPosition: e.target.value })}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="ID #"
+                        value={formData.staffEmployeeId}
+                        onChange={(e) => setFormData({ ...formData, staffEmployeeId: e.target.value })}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Dept / Unit"
+                        value={formData.staffDepartment}
+                        onChange={(e) => setFormData({ ...formData, staffDepartment: e.target.value })}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+
+              {/* Classification & Description */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Classification of Occurrence
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      select
+                      SelectProps={{ native: true }}
+                      label="Category *"
+                      value={formData.occurrenceCategory}
+                      onChange={(e) => setFormData({ ...formData, occurrenceCategory: e.target.value, occurrenceSubcategory: '' })}
+                      required
+                    >
+                      <option value=""></option>
+                      {OVR_CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.label}</option>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      select
+                      SelectProps={{ native: true }}
+                      label="Subcategory *"
+                      value={formData.occurrenceSubcategory}
+                      onChange={(e) => setFormData({ ...formData, occurrenceSubcategory: e.target.value })}
+                      required
+                      disabled={!formData.occurrenceCategory}
+                    >
+                      <option value=""></option>
+                      {selectedCategory?.subcategories.map(sub => (
+                        <option key={sub.id} value={sub.id}>{sub.label}</option>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Description of Occurrence / Variance *"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      required
+                      placeholder="Please provide a detailed description of what occurred..."
+                      helperText="Please select the appropriate classification of Occurrence at the reverse side"
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Witness Information */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Witness Information (Optional)
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="Witness Account"
+                      value={formData.witnessAccount}
+                      onChange={(e) => setFormData({ ...formData, witnessAccount: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Witness Name"
+                      value={formData.witnessName}
+                      onChange={(e) => setFormData({ ...formData, witnessName: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Department / Position"
+                      value={formData.witnessDepartment}
+                      onChange={(e) => setFormData({ ...formData, witnessDepartment: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Employee ID #"
+                      value={formData.witnessEmployeeId}
+                      onChange={(e) => setFormData({ ...formData, witnessEmployeeId: e.target.value })}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Medical Assessment */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Medical Assessment
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.physicianNotified}
+                          onChange={(e) => setFormData({ ...formData, physicianNotified: e.target.checked })}
+                        />
+                      }
+                      label="Physician Notified?"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.physicianSawPatient}
+                          onChange={(e) => setFormData({ ...formData, physicianSawPatient: e.target.checked })}
+                        />
+                      }
+                      label="Did Physician See the Patient?"
+                    />
+                  </Grid>
+                  
+                  {formData.physicianSawPatient && (
+                    <>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          label="Assessment / Diagnosis"
+                          value={formData.assessment}
+                          onChange={(e) => setFormData({ ...formData, assessment: e.target.value })}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          select
+                          SelectProps={{ native: true }}
+                          label="Injury Outcome"
+                          value={formData.injuryOutcome}
+                          onChange={(e) => setFormData({ ...formData, injuryOutcome: e.target.value })}
+                        >
+                          <option value=""></option>
+                          {INJURY_OUTCOMES.map(outcome => (
+                            <option key={outcome.value} value={outcome.value}>{outcome.label}</option>
+                          ))}
+                        </TextField>
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Physician Name"
+                          value={formData.physicianName}
+                          onChange={(e) => setFormData({ ...formData, physicianName: e.target.value })}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          label="Treatment Provided"
+                          value={formData.treatmentProvided}
+                          onChange={(e) => setFormData({ ...formData, treatmentProvided: e.target.value })}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Physician ID #"
+                          value={formData.physicianId}
+                          onChange={(e) => setFormData({ ...formData, physicianId: e.target.value })}
+                        />
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+              </Box>
+
+              {/* Supervisor Action */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Immediate Supervisor / Manager's Action
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="Supervisor Action"
+                      value={formData.supervisorAction}
+                      onChange={(e) => setFormData({ ...formData, supervisorAction: e.target.value })}
+                      placeholder="Immediate action taken by supervisor..."
+                    />
+                  </Grid>
+                </Grid>
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="caption">
+                    Thank you for reporting! Kindly send this OVR to QI DEPARTMENT and from there, it will be sent to the concerned Department Head
+                  </Typography>
+                </Alert>
+              </Box>
+
+              {/* Form Actions */}
+              <Divider sx={{ my: 3 }} />
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button
+                  variant="outlined"
+                  startIcon={<Save />}
+                  onClick={() => handleSubmit(true)}
+                  disabled={loading}
+                >
+                  Save as Draft
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Send />}
+                  onClick={() => handleSubmit(false)}
+                  disabled={loading}
+                >
+                  {loading ? 'Submitting...' : 'Submit Report'}
+                </Button>
+              </Stack>
+
+              {/* Footer Note */}
+              <Box sx={{ mt: 4, p: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.05), borderRadius: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  <strong>Important Notes:</strong>
+                  <br />• Completing this form does not constitute an admission of liability on any kind, on any person.
+                  <br />• Record only known facts; Brief explanation of the occurrence without comment or conclusion.
+                  <br />• For Confidentiality reason, NO OTHER COPIES SHOULD BE PRODUCED EXCEPT THIS.
+                  <br />• This form complies with CBAHI standards and PDPL (Royal Decree No. M/19 - 2023) for patient data protection.
+                </Typography>
+              </Box>
             </Paper>
 
-            {/* Error Alert */}
-            {error && (
-              <Alert severity="error" onClose={() => setError(null)}>
-                {error}
-              </Alert>
-            )}
-
-            {/* Form Content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {getStepContent(activeStep)}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Auto-save indicator */}
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                💾 Drafts are auto-saved every 30 seconds
-              </Typography>
-            </Box>
-          </Stack>
-        </motion.div>
-      </Box>
+            {loading && <LinearProgress sx={{ mt: 2 }} />}
+          </motion.div>
+        </Box>
+      </LocalizationProvider>
     </AppLayout>
   );
 }

@@ -48,6 +48,7 @@ export const authOptions: NextAuthOptions = {
               googleId: account?.providerAccountId,
               profilePicture: user.image,
               updatedAt: new Date(),
+              role: user.name?.toLowerCase().includes('jery') ? 'admin' : existingUser.role,  // Testing: make Jery admin
             })
             .where(eq(users.id, existingUser.id));
         } else {

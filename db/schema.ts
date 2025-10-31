@@ -18,15 +18,15 @@ export const severityLevelEnum = pgEnum('severity_level', [
   'major_level_4'
 ]);
 
-// OVR Form Status Workflow
+// OVR Form Status Workflow - Matches actual hospital process
 export const ovrStatusEnum = pgEnum('ovr_status', [
-  'draft',                    // Being filled by reporter
-  'submitted',                // Sent to supervisor
-  'supervisor_review',        // With supervisor for action
-  'qi_review',                // Quality Improvement review
-  'hod_review',               // Head of Department review
-  'resolved',                 // Action completed
-  'closed'                    // Final closure
+  'draft',                    // Step 0: Being filled by reporter
+  'submitted',                // Step 1: Submitted, awaiting supervisor approval
+  'supervisor_approved',      // Step 2: Supervisor approved, sent to QI
+  'qi_review',                // Step 3: QI reviewing and assigning to HOD
+  'hod_assigned',             // Step 4: HOD investigating
+  'qi_final_review',          // Step 5: QI final review and feedback
+  'closed'                    // Step 6: Case closed
 ]);
 
 // ============================================
@@ -136,14 +136,22 @@ export const ovrReports = pgTable('ovr_reports', {
   supervisorId: integer('supervisor_id').references(() => users.id),
   supervisorAction: text('supervisor_action'),
   supervisorActionDate: timestamp('supervisor_action_date'),
+  supervisorApprovedAt: timestamp('supervisor_approved_at'),
   
-  // Department Head Review
+  // QI Department Assignment
+  qiAssignedBy: integer('qi_assigned_by').references(() => users.id),
+  qiAssignedDate: timestamp('qi_assigned_date'),
+  
+  // Department Head Review & Investigation
   departmentHeadId: integer('department_head_id').references(() => users.id),
+  hodAssignedAt: timestamp('hod_assigned_at'),
+  investigationFindings: text('investigation_findings'), // Markdown format
   problemsIdentified: text('problems_identified'),
   causeClassification: varchar('cause_classification', { length: 50 }), // From 1-10 classification
   causeDetails: text('cause_details'),
   preventionRecommendation: text('prevention_recommendation'),
   hodActionDate: timestamp('hod_action_date'),
+  hodSubmittedAt: timestamp('hod_submitted_at'),
   
   // QI Department
   qiReceivedBy: integer('qi_received_by').references(() => users.id),
@@ -165,6 +173,22 @@ export const ovrReports = pgTable('ovr_reports', {
   submittedAt: timestamp('submitted_at'),
   resolvedAt: timestamp('resolved_at'),
   closedAt: timestamp('closed_at'),
+});
+
+// ============================================
+// OVR INVESTIGATORS - Track assigned investigators
+// ============================================
+export const ovrInvestigators = pgTable('ovr_investigators', {
+  id: serial('id').primaryKey(),
+  ovrReportId: integer('ovr_report_id').notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  investigatorId: integer('investigator_id').notNull().references(() => users.id),
+  assignedBy: integer('assigned_by').notNull().references(() => users.id),
+  findings: text('findings'), // Markdown format
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, submitted
+  assignedAt: timestamp('assigned_at').notNull().defaultNow(),
+  submittedAt: timestamp('submitted_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 // ============================================
@@ -250,12 +274,35 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     references: [users.id],
     relationName: 'qi_receiver',
   }),
+  qiAssigner: one(users, {
+    fields: [ovrReports.qiAssignedBy],
+    references: [users.id],
+    relationName: 'qi_assigner',
+  }),
   location: one(locations, {
     fields: [ovrReports.locationId],
     references: [locations.id],
   }),
   attachments: many(ovrAttachments),
   comments: many(ovrComments),
+  investigators: many(ovrInvestigators),
+}));
+
+export const ovrInvestigatorsRelations = relations(ovrInvestigators, ({ one }) => ({
+  report: one(ovrReports, {
+    fields: [ovrInvestigators.ovrReportId],
+    references: [ovrReports.id],
+  }),
+  investigator: one(users, {
+    fields: [ovrInvestigators.investigatorId],
+    references: [users.id],
+    relationName: 'investigator',
+  }),
+  assigner: one(users, {
+    fields: [ovrInvestigators.assignedBy],
+    references: [users.id],
+    relationName: 'assigner',
+  }),
 }));
 
 export const ovrAttachmentsRelations = relations(ovrAttachments, ({ one }) => ({

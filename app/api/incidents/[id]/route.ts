@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
-import { incidents } from '@/db/schema';
+import { ovrReports } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -16,8 +16,8 @@ export async function GET(
     }
 
     const { id } = await params;
-    const incident = await db.query.incidents.findFirst({
-      where: eq(incidents.id, parseInt(id)),
+    const incident = await db.query.ovrReports.findFirst({
+      where: eq(ovrReports.id, parseInt(id)),
       with: {
         reporter: {
           columns: {
@@ -25,37 +25,38 @@ export async function GET(
             firstName: true,
             lastName: true,
             email: true,
-            department: true,
           },
         },
-        location: true,
-        assignee: {
+        location: {
+          columns: {
+            id: true,
+            name: true,
+            building: true,
+            floor: true,
+          },
+        },
+        supervisor: {
           columns: {
             id: true,
             firstName: true,
             lastName: true,
-            email: true,
           },
         },
-        comments: {
+        departmentHead: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        investigators: {
           with: {
-            user: {
+            investigator: {
               columns: {
                 id: true,
                 firstName: true,
                 lastName: true,
-              },
-            },
-          },
-          orderBy: (comments, { desc }) => [desc(comments.createdAt)],
-        },
-        attachments: {
-          with: {
-            uploader: {
-              columns: {
-                id: true,
-                firstName: true,
-                lastName: true,
+                email: true,
               },
             },
           },
@@ -68,11 +69,15 @@ export async function GET(
     }
 
     // Check permissions
-    if (
-      session.user.role === 'employee' &&
-      incident.reporterId.toString() !== session.user.id
-    ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const userId = parseInt(session.user.id);
+    const isOwner = incident.reporterId === userId;
+    const isSupervisor = incident.supervisorId === userId;
+    const isHOD = incident.departmentHeadId === userId;
+    const isInvestigator = incident.investigators?.some(inv => inv.investigatorId === userId);
+    const isQI = session.user.role === 'quality_manager' || session.user.role === 'admin';
+
+    if (!isOwner && !isSupervisor && !isHOD && !isInvestigator && !isQI) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     return NextResponse.json(incident);
@@ -95,21 +100,20 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    // Check if incident exists
-    const existingIncident = await db.query.incidents.findFirst({
-      where: eq(incidents.id, parseInt(id)),
+    const existingIncident = await db.query.ovrReports.findFirst({
+      where: eq(ovrReports.id, parseInt(id)),
     });
 
     if (!existingIncident) {
       return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
     }
 
-    // Check permissions
+    // Check permissions - only owner can edit draft
     if (
-      session.user.role === 'employee' &&
+      existingIncident.status !== 'draft' ||
       existingIncident.reporterId.toString() !== session.user.id
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Cannot edit this report' }, { status: 403 });
     }
 
     const updateData: any = {
@@ -117,23 +121,14 @@ export async function PATCH(
       updatedAt: new Date(),
     };
 
-    // Set submittedAt if status changes to submitted
     if (body.status === 'submitted' && existingIncident.status === 'draft') {
       updateData.submittedAt = new Date();
     }
 
-    // Set resolutionDate if status changes to resolved or closed
-    if (
-      (body.status === 'resolved' || body.status === 'closed') &&
-      !existingIncident.resolutionDate
-    ) {
-      updateData.resolutionDate = new Date();
-    }
-
     const updatedIncident = await db
-      .update(incidents)
+      .update(ovrReports)
       .set(updateData)
-      .where(eq(incidents.id, parseInt(id)))
+      .where(eq(ovrReports.id, parseInt(id)))
       .returning();
 
     return NextResponse.json(updatedIncident[0]);
@@ -149,14 +144,30 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { id } = await params;
-    await db.delete(incidents).where(eq(incidents.id, parseInt(id)));
+    const incident = await db.query.ovrReports.findFirst({
+      where: eq(ovrReports.id, parseInt(id)),
+    });
 
-    return NextResponse.json({ message: 'Incident deleted successfully' });
+    if (!incident) {
+      return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+    }
+
+    // Only owner (if draft) or admin can delete
+    const isOwner = incident.reporterId.toString() === session.user.id;
+    const isAdmin = session.user.role === 'admin';
+    const isDraft = incident.status === 'draft';
+
+    if (!(isOwner && isDraft) && !isAdmin) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    await db.delete(ovrReports).where(eq(ovrReports.id, parseInt(id)));
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting incident:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

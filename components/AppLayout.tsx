@@ -68,6 +68,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       children: [
         { title: 'My Reports', path: '/incidents' },
         { title: 'New Report', path: '/incidents/new', badge: 'New' },
+        ...(session?.user?.role === 'quality_manager' || session?.user?.role === 'admin'
+          ? [{ title: 'QI Review', path: '/qi/review' }]
+          : []),
       ],
     },
   ];

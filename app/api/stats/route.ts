@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(ovrReports.reporterId, userId),
-          eq(ovrReports.status, 'resolved')
+          eq(ovrReports.status, 'closed')
         )
       );
 
