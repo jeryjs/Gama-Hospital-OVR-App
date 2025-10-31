@@ -19,14 +19,5 @@ declare module 'next-auth' {
 }
 
 declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    name: string;
-    email: string;
-    image?: string;
-    role: string;
-    employeeId?: string | null;
-    department?: string | null;
-    position?: string | null;
-  }
+  interface JWT extends User {} // Extend JWT to include User properties
 }
