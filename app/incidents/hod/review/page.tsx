@@ -41,10 +41,14 @@ interface HODIncident {
   id: number;
   referenceNumber: string;
   reporterName: string;
+  reporterDepartment: string;
   occurrenceDate: string;
   occurrenceCategory: string;
   status: string;
   createdAt: string;
+  severity?: string;
+  investigatorCount?: number;
+  findingsSubmitted?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -74,6 +78,10 @@ export default function HODReviewPage() {
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (session === undefined) {
+      // Session is still loading, do nothing
+      return;
+    }
     if (session?.user?.role !== 'department_head' && session?.user?.role !== 'admin') {
       router.replace('/dashboard');
       return;
@@ -91,20 +99,24 @@ export default function HODReviewPage() {
       if (res.ok) {
         const data = await res.json();
         // Filter for HOD's department or admin sees all
-        const filtered = data.filter((incident: any) =>
-          session?.user?.role === 'admin' ||
-          incident.staffDepartment === session?.user?.department
-        );
+        // const filtered = data.filter((incident: any) =>
+        //   // session?.user?.role === 'admin' ||
+        //   // incident.staffDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
+        // );
 
         setIncidents(
-          filtered.map((incident: any) => ({
+          data.map((incident: any) => ({
             id: incident.id,
             referenceNumber: incident.referenceNumber,
             reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
+            reporterDepartment: incident.staffDepartment || 'N/A',
             occurrenceDate: incident.occurrenceDate,
             occurrenceCategory: incident.occurrenceCategory,
             status: incident.status,
             createdAt: incident.createdAt,
+            severity: incident.severity || 'standard',
+            investigatorCount: incident.investigators?.length || 0,
+            findingsSubmitted: incident.findingsSubmitted || false,
           }))
         );
       }
@@ -123,7 +135,7 @@ export default function HODReviewPage() {
       filtered = filtered.filter(
         (incident) =>
           incident.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          incident.reporterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.reporterDepartment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.occurrenceCategory.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -137,6 +149,8 @@ export default function HODReviewPage() {
     filtered.sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
+
+      if (!aValue || !bValue) return 0;
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortConfig.direction === 'asc'
@@ -196,7 +210,7 @@ export default function HODReviewPage() {
             {/* Filters */}
             <Stack direction="row" spacing={2} alignItems="center">
               <TextField
-                placeholder="Search by reference, reporter, or category..."
+                placeholder="Search by reference, department, or issue type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 size="small"
@@ -278,30 +292,25 @@ export default function HODReviewPage() {
                           Reference # {sortConfig.key === 'referenceNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
                         <TableCell
-                          onClick={() => handleSort('reporterName')}
+                          onClick={() => handleSort('reporterDepartment')}
                           sx={{ cursor: 'pointer', fontWeight: 600 }}
                         >
-                          Reporter {sortConfig.key === 'reporterName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </TableCell>
-                        <TableCell
-                          onClick={() => handleSort('occurrenceDate')}
-                          sx={{ cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          Date {sortConfig.key === 'occurrenceDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                          Department {sortConfig.key === 'reporterDepartment' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
                         <TableCell
                           onClick={() => handleSort('occurrenceCategory')}
                           sx={{ cursor: 'pointer', fontWeight: 600 }}
                         >
-                          Category {sortConfig.key === 'occurrenceCategory' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                          Issue Type {sortConfig.key === 'occurrenceCategory' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
                         <TableCell
-                          onClick={() => handleSort('createdAt')}
+                          onClick={() => handleSort('occurrenceDate')}
                           sx={{ cursor: 'pointer', fontWeight: 600 }}
                         >
-                          Created {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                          Incident Date {sortConfig.key === 'occurrenceDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Findings</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
                       </TableRow>
                     </TableHead>
@@ -328,11 +337,8 @@ export default function HODReviewPage() {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {incident.reporterName}
+                              {incident.reporterDepartment || 'N/A'}
                             </Typography>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
                           </TableCell>
                           <TableCell>
                             <Typography
@@ -344,21 +350,32 @@ export default function HODReviewPage() {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              label={statusLabels[incident.status] || incident.status}
+                              label={incident.severity || 'Standard'}
                               size="small"
                               sx={{
-                                bgcolor: alpha(
-                                  statusColors[incident.status] || '#6B7280',
-                                  0.15
-                                ),
-                                color: statusColors[incident.status] || '#6B7280',
+                                bgcolor: incident.severity === 'high' ? '#FEE2E2' : 
+                                         incident.severity === 'medium' ? '#FEF3C7' : '#DBEAFE',
+                                color: incident.severity === 'high' ? '#991B1B' : 
+                                       incident.severity === 'medium' ? '#92400E' : '#1E40AF',
                                 fontWeight: 600,
-                                borderRadius: 1.5,
+                                borderRadius: 1,
                               }}
                             />
                           </TableCell>
                           <TableCell>
-                            {format(new Date(incident.createdAt), 'MMM dd, yyyy')}
+                            {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={incident.findingsSubmitted ? 'Submitted' : 'Pending'}
+                              size="small"
+                              sx={{
+                                bgcolor: incident.findingsSubmitted ? alpha('#10B981', 0.15) : alpha('#F59E0B', 0.15),
+                                color: incident.findingsSubmitted ? '#10B981' : '#F59E0B',
+                                fontWeight: 600,
+                                borderRadius: 1,
+                              }}
+                            />
                           </TableCell>
                           <TableCell align="right">
                             <IconButton

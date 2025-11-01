@@ -8,12 +8,12 @@ interface Props {
 }
 
 const steps = [
-  { key: 'submitted', label: 'Submitted', description: 'Report submitted by employee' },
-  { key: 'supervisor_approved', label: 'Supervisor Approved', description: 'Approved by supervisor' },
-  { key: 'qi_review', label: 'QI Review', description: 'Quality Improvement review' },
-  { key: 'hod_assigned', label: 'Investigation', description: 'HOD investigating' },
-  { key: 'qi_final_review', label: 'Final Review', description: 'QI final feedback' },
-  { key: 'closed', label: 'Closed', description: 'Case closed' },
+  { key: 'submitted', label: 'Submitted', description: { current: '', final: 'Report submitted by employee' } },
+  { key: 'supervisor_approved', label: 'Approval', description: { current: 'Awaiting supervisor approval', final: 'Approved by supervisor' } },
+  { key: 'qi_review', label: 'QI Review', description: { current: 'Undergoing QI review', final: 'Quality Improvement review' } },
+  { key: 'hod_assigned', label: 'Investigation', description: { current: 'HOD assigned to investigate', final: 'HOD investigating' } },
+  { key: 'qi_final_review', label: 'Final Review', description: { current: 'Awaiting final review', final: 'QI final feedback' } },
+  { key: 'closed', label: 'Closed', description: { current: 'Case closed', final: 'Case closed' } },
 ];
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
@@ -76,7 +76,7 @@ function ColorlibStepIcon(props: {
 }
 
 export function StatusTimeline({ status, submittedAt }: Props) {
-  const activeStep = steps.findIndex(step => step.key === status);
+  const activeStep = steps.findIndex(step => step.key === status) + 1;
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
@@ -89,7 +89,9 @@ export function StatusTimeline({ status, submittedAt }: Props) {
                 <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                   {step.description && (
                     <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                      {step.description}
+                      {index === activeStep
+                        ? step.description.current
+                        : step.description.final}
                     </Box>
                   )}
                 </Box>

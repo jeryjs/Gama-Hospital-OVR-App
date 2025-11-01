@@ -16,7 +16,7 @@ export async function POST(
     }
 
     // Only supervisors/QI/admin can approve
-    if (session.user.role !== 'quality_manager' && session.user.role !== 'admin') {
+    if (session.user.role !== 'supervisor' && session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

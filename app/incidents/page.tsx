@@ -177,7 +177,7 @@ export default function IncidentsPage() {
                   My OVR Reports
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  View and manage your incident reports ({filteredIncidents.length})
+                  View and manage incidents reported by you ({filteredIncidents.length})
                 </Typography>
               </Box>
               <Button
