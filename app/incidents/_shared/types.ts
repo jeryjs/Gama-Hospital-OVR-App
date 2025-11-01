@@ -145,9 +145,11 @@ export interface OVRReport {
 
 export interface Comment {
   id: number;
-  content: string;
-  createdAt: string;
+  ovrReportId: number;
   userId: number;
+  comment: string;
+  isSystemComment: boolean;
+  createdAt: string;
   user: {
     id: number;
     firstName: string;
