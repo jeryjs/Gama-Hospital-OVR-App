@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface QIIncident {
@@ -62,7 +63,7 @@ export default function QIReviewPage() {
 
   useEffect(() => {
     if (session?.user?.role !== 'quality_manager' && session?.user?.role !== 'admin') {
-      router.push('/dashboard');
+      router.replace('/dashboard');
       return;
     }
     fetchIncidents();
@@ -225,8 +226,9 @@ export default function QIReviewPage() {
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
                               <Button
                                 size="small"
+                                component={Link}
+                                href={`/incidents/${incident.id}`}
                                 startIcon={<Visibility />}
-                                onClick={() => router.push(`/incidents/${incident.id}`)}
                               >
                                 View
                               </Button>

@@ -1,11 +1,11 @@
 import { Box, Paper, Stack, Typography, Chip, IconButton } from '@mui/material';
 import { ArrowBack, Print, Download } from '@mui/icons-material';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import type { OVRReport } from '../_shared/types';
 
 interface Props {
   incident: OVRReport;
-  onBack: () => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -28,11 +28,11 @@ const statusLabels: Record<string, string> = {
   closed: 'Closed',
 };
 
-export function IncidentHeader({ incident, onBack }: Props) {
+export function IncidentHeader({ incident }: Props) {
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
       <Stack direction="row" alignItems="center" spacing={2}>
-        <IconButton onClick={onBack}>
+        <IconButton component={Link} href="/incidents">
           <ArrowBack />
         </IconButton>
         

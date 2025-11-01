@@ -34,7 +34,7 @@ export default function IncidentViewPage() {
         const data = await res.json();
         setIncident(data);
       } else if (res.status === 404) {
-        router.push('/incidents');
+        router.replace('/incidents');
       }
     } catch (error) {
       console.error('Error fetching incident:', error);
@@ -66,7 +66,7 @@ export default function IncidentViewPage() {
   return (
     <AppLayout>
       <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
-        <IncidentHeader incident={incident} onBack={() => router.push('/incidents')} />
+        <IncidentHeader incident={incident} />
         
         {/* Show timeline only after submission */}
         {incident.status !== 'draft' && (

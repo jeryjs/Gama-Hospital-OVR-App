@@ -7,7 +7,7 @@ declare module 'next-auth' {
     name: string;
     email: string;
     image?: string;
-    role: string;
+    role: 'admin' | 'quality_manager' | 'department_head' | 'supervisor' | 'employee';
     employeeId?: string | null;
     department?: string | null;
     position?: string | null;

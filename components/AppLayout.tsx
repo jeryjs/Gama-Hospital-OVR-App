@@ -2,6 +2,7 @@
 
 import {
   AccountCircle,
+  Add,
   Dashboard,
   Description,
   ExpandLess,
@@ -26,12 +27,15 @@ import {
   MenuItem,
   Stack,
   Toolbar,
+  Tooltip,
   Typography
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
+import { User } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 
 const DRAWER_WIDTH = 280;
 
@@ -39,50 +43,60 @@ interface NavItem {
   title: string;
   icon: React.ReactNode;
   path?: string;
+  open?: boolean;
   children?: Array<{
     title: string;
     path: string;
-    badge?: string;
+    roles?: User['role'][];
+    badge?: { content: string | React.ReactNode; link?: string; tooltip?: string };
   }>;
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [navItems, setNavItems] = useState<NavItem[]>(() => {
+    const items: NavItem[] = [
+      { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+      {
+        title: 'Incidents', icon: <Description />, open: pathname.startsWith('/incidents') || pathname === '/qi/review',
+        children: [
+          { title: 'My Reports', path: '/incidents', badge: { content: <Add />, link: '/incidents', tooltip: 'Report New incident' } },
+          { title: 'Pending Approval', path: '/incidents?status=submitted', roles: ['supervisor', 'employee'], badge: { content: 3, tooltip: 'Found 3 reports pending approval' } },
+          { title: 'Investigation', path: '/incidents?status=hod_assigned', roles: ['department_head'], badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' } },
+          { title: 'QI Review', path: '/qi/review', roles: ['quality_manager'], badge: { content: 1, tooltip: 'Found 1 QI reviews pending' } },
+        ],
+      },
+    ];
 
-  const navItems: NavItem[] = [
-    {
-      title: 'Dashboard',
-      icon: <Dashboard />,
-      path: '/dashboard',
-    },
-    {
-      title: 'Incidents',
-      icon: <Description />,
-      children: [
-        { title: 'My Reports', path: '/incidents' },
-        { title: 'New Report', path: '/incidents/new', badge: 'New' },
-        ...(session?.user?.role === 'quality_manager' || session?.user?.role === 'admin'
-          ? [{ title: 'QI Review', path: '/qi/review' }]
-          : []),
-      ],
-    },
-  ];
+    // process the items based on the children roles
+    items.forEach((item) => {
+      if (item.children) {
+        item.children = item.children.filter((child) =>
+          session?.user.role == 'admin' ||
+          !child.roles ||
+          child.roles.includes(session?.user?.role || 'employee'));
+      }
+    });
 
-  const handleMenuToggle = (title: string) => {
-    setOpenMenus((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
-  };
+    return items;
+  });
 
-  const handleNavigation = (path: string) => {
-    router.push(path);
-    setMobileOpen(false);
+  const handleMenuItemClick = (item: NavItem) => {
+    if (item.children) {
+      setNavItems((prevItems) =>
+        prevItems.map((navItem) =>
+          navItem.title === item.title ? { ...navItem, open: !navItem.open } : navItem
+        )
+      );
+    } else if (item.path) {
+      setMobileOpen(false);
+    }
   };
 
   const drawerContent = (
@@ -98,8 +112,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           variant="h5"
           sx={{
             fontWeight: 700,
-            background: (theme) =>
-              `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -116,20 +129,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <List sx={{ flex: 1, px: 2, py: 2 }}>
         {navItems.map((item) => {
           const hasChildren = !!item.children;
-          const isOpen = openMenus[item.title];
           const isActive = item.path === pathname;
 
           return (
             <Box key={item.title}>
               <ListItemButton
+                component={item.path ? Link : 'li'}
+                href={item.path}
                 selected={isActive}
-                onClick={() => {
-                  if (hasChildren) {
-                    handleMenuToggle(item.title);
-                  } else if (item.path) {
-                    handleNavigation(item.path);
-                  }
-                }}
+                onClick={() => handleMenuItemClick(item)}
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
@@ -140,19 +148,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText primary={item.title} />
-                {hasChildren && (isOpen ? <ExpandLess /> : <ExpandMore />)}
+                {hasChildren && (item.open ? <ExpandLess /> : <ExpandMore />)}
               </ListItemButton>
 
               {hasChildren && (
-                <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                <Collapse in={item.open} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {item.children?.map((child) => {
-                      const isChildActive = child.path === pathname;
+                      // Determine if child is active with support for search params
+                      const isChildActive = `${pathname}${searchParams.toString() ? `?${searchParams}` : ''}`.replace(/\/?\??$/, '') === child.path;
+                      
                       return (
                         <ListItemButton
                           key={child.path}
+                          component={Link}
+                          href={child.path}
                           selected={isChildActive}
-                          onClick={() => handleNavigation(child.path)}
+                          onClick={() => setMobileOpen(false)}
                           sx={{
                             pl: 7,
                             borderRadius: 2,
@@ -161,12 +173,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                           <ListItemText primary={child.title} />
                           {child.badge && (
-                            <Chip
-                              label={child.badge}
-                              size="small"
-                              color="primary"
-                              sx={{ height: 20, fontSize: '0.7rem' }}
-                            />
+                            <Tooltip title={child.badge.tooltip} arrow placement='right'>
+                              <Chip
+                                label={child.badge.content}
+                                size="small"
+                                color="primary"
+                                sx={{ height: 20, fontSize: '0.7rem' }}
+                              />
+                            </Tooltip>
                           )}
                         </ListItemButton>
                       );

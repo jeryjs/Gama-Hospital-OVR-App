@@ -34,7 +34,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
       });
 
       if (res.ok) {
-        router.push('/incidents');
+        router.replace('/incidents');
       } else {
         alert('Failed to delete report');
       }

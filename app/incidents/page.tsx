@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface Incident {
@@ -110,9 +111,10 @@ export default function IncidentsPage() {
                 </Typography>
               </Box>
               <Button
+                component={Link}
+                href="/incidents/new"
                 variant="contained"
                 startIcon={<Add />}
-                onClick={() => router.push('/incidents/new')}
                 sx={{ px: 3, py: 1.5 }}
               >
                 New Report
@@ -141,9 +143,10 @@ export default function IncidentsPage() {
                             No incidents found. Create your first report!
                           </Typography>
                           <Button
+                            component={Link}
+                            href="/incidents/new"
                             variant="outlined"
                             startIcon={<Add />}
-                            onClick={() => router.push('/incidents/new')}
                             sx={{ mt: 2 }}
                           >
                             New Report
@@ -163,7 +166,8 @@ export default function IncidentsPage() {
                                 alpha(theme.palette.primary.main, 0.05),
                             },
                           }}
-                          onClick={() => router.push(`/incidents/${incident.id}`)}
+                          component={Link}
+                          href={`/incidents/${incident.id}`}
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
@@ -202,10 +206,8 @@ export default function IncidentsPage() {
                           <TableCell align="right">
                             <IconButton
                               size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/incidents/${incident.id}`);
-                              }}
+                              component={Link}
+                              href={`/incidents/${incident.id}`}
                             >
                               <Visibility fontSize="small" />
                             </IconButton>

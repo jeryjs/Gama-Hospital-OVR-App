@@ -29,6 +29,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface FormData {
@@ -225,7 +226,7 @@ export default function NewIncidentPage() {
 
       if (res.ok) {
         localStorage.removeItem(DRAFT_KEY);
-        router.push('/incidents');
+        router.replace('/incidents');
       } else {
         alert('Failed to submit report');
       }
@@ -251,8 +252,9 @@ export default function NewIncidentPage() {
             {/* Header */}
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
               <Button
+                component={Link}
+                href="/incidents"
                 startIcon={<ArrowBack />}
-                onClick={() => router.push('/incidents')}
                 variant="outlined"
               >
                 Back
