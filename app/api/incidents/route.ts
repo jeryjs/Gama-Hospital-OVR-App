@@ -1,110 +1,183 @@
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
-import { authOptions } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { desc, eq, and, or, like, sql, asc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  handleApiError,
+  requireAuth,
+  createPaginatedResponse,
+  parseFields,
+  validateBody,
+} from '@/lib/api/middleware';
+import { createIncidentSchema, incidentListQuerySchema } from '@/lib/api/schemas';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth(request);
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Parse and validate query parameters
+    const query = incidentListQuerySchema.parse({
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit'),
+      sortBy: searchParams.get('sortBy'),
+      sortOrder: searchParams.get('sortOrder'),
+      status: searchParams.get('status'),
+      category: searchParams.get('category'),
+      reporterId: searchParams.get('reporterId'),
+      departmentHeadId: searchParams.get('departmentHeadId'),
+      supervisorId: searchParams.get('supervisorId'),
+      dateFrom: searchParams.get('dateFrom'),
+      dateTo: searchParams.get('dateTo'),
+      search: searchParams.get('search'),
+      fields: searchParams.get('fields'),
+    });
 
     const userId = parseInt(session.user.id);
-    const searchParams = request.nextUrl.searchParams;
-    const statusFilter = searchParams.get('status');
+    const offset = (query.page - 1) * query.limit;
 
-    // Fetch incidents based on role and status filter
-    let incidents;
+    // Build where conditions
+    const conditions = [];
 
-    if (session.user.role === 'quality_manager' || session.user.role === 'admin') {
-      // QI and admin see all incidents
-      incidents = await db
-        .select({
-          id: ovrReports.id,
-          referenceNumber: ovrReports.referenceNumber,
-          occurrenceDate: ovrReports.occurrenceDate,
-          occurrenceCategory: ovrReports.occurrenceCategory,
-          occurrenceSubcategory: ovrReports.occurrenceSubcategory,
-          status: ovrReports.status,
-          createdAt: ovrReports.createdAt,
-        })
-        .from(ovrReports);
-
-      // Filter by status if provided
-      if (statusFilter) {
-        incidents = incidents.filter(i => i.status === statusFilter);
-      }
-
-      // Fetch reporter info for each incident
-      const incidentsWithReporter = await Promise.all(
-        incidents.map(async (incident) => {
-          const fullIncident = await db.query.ovrReports.findFirst({
-            where: eq(ovrReports.id, incident.id),
-            with: {
-              reporter: {
-                columns: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-          });
-          return {
-            ...incident,
-            reporter: fullIncident?.reporter,
-          };
-        })
-      );
-
-      return NextResponse.json(incidentsWithReporter);
-    } else {
-      // Regular employees see only their own incidents
-      incidents = await db
-        .select({
-          id: ovrReports.id,
-          referenceNumber: ovrReports.referenceNumber,
-          occurrenceDate: ovrReports.occurrenceDate,
-          occurrenceCategory: ovrReports.occurrenceCategory,
-          occurrenceSubcategory: ovrReports.occurrenceSubcategory,
-          status: ovrReports.status,
-          createdAt: ovrReports.createdAt,
-        })
-        .from(ovrReports)
-        .where(eq(ovrReports.reporterId, userId));
-
-      if (statusFilter) {
-        incidents = incidents.filter(i => i.status === statusFilter);
-      }
-
-      return NextResponse.json(incidents);
+    // Role-based access control
+    if (session.user.role !== 'quality_manager' && session.user.role !== 'admin') {
+      conditions.push(eq(ovrReports.reporterId, userId));
     }
+
+    // Apply filters
+    if (query.status) {
+      conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+    }
+
+    if (query.category) {
+      conditions.push(eq(ovrReports.occurrenceCategory, query.category));
+    }
+
+    if (query.reporterId) {
+      conditions.push(eq(ovrReports.reporterId, query.reporterId));
+    }
+
+    if (query.departmentHeadId) {
+      conditions.push(eq(ovrReports.departmentHeadId, query.departmentHeadId));
+    }
+
+    if (query.supervisorId) {
+      conditions.push(eq(ovrReports.supervisorId, query.supervisorId));
+    }
+
+    if (query.dateFrom) {
+      conditions.push(sql`${ovrReports.occurrenceDate} >= ${query.dateFrom}`);
+    }
+
+    if (query.dateTo) {
+      conditions.push(sql`${ovrReports.occurrenceDate} <= ${query.dateTo}`);
+    }
+
+    if (query.search) {
+      conditions.push(
+        or(
+          like(ovrReports.referenceNumber, `%${query.search}%`),
+          like(ovrReports.description, `%${query.search}%`),
+          like(ovrReports.patientName, `%${query.search}%`),
+          like(ovrReports.patientMRN, `%${query.search}%`)
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Determine sort column
+    const sortColumn = {
+      createdAt: ovrReports.createdAt,
+      occurrenceDate: ovrReports.occurrenceDate,
+      referenceNumber: ovrReports.referenceNumber,
+      status: ovrReports.status,
+    }[query.sortBy];
+
+    const orderBy = query.sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
+
+    // Get total count
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ovrReports)
+      .where(whereClause);
+    
+    const total = Number(countResult[0].count);
+
+    // Parse field selection
+    const fieldSelection = parseFields(query.fields);
+
+    // Fetch paginated data with relations
+    const incidents = await db.query.ovrReports.findMany({
+      where: whereClause,
+      limit: query.limit,
+      offset,
+      orderBy,
+      columns: fieldSelection,
+      with: {
+        reporter: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        location: {
+          columns: {
+            id: true,
+            name: true,
+            building: true,
+            floor: true,
+          },
+        },
+        supervisor: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        departmentHead: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(
+      createPaginatedResponse(incidents, total, {
+        page: query.page,
+        limit: query.limit,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      })
+    );
   } catch (error) {
-    console.error('Error fetching incidents:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
+    const session = await requireAuth(request);
+    
+    // Validate request body
+    const body = await validateBody(request, createIncidentSchema);
     const userId = parseInt(session.user.id);
 
     // Generate reference number
     const year = new Date().getFullYear();
-    const count = await db
-      .select()
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
       .from(ovrReports)
-      .then((rows) => rows.length + 1);
-    const referenceNumber = `OVR-${year}-${String(count).padStart(3, '0')}`;
+      .where(sql`EXTRACT(YEAR FROM ${ovrReports.createdAt}) = ${year}`);
+    
+    const count = Number(countResult[0].count) + 1;
+    const referenceNumber = `OVR-${year}-${String(count).padStart(4, '0')}`;
 
     const newIncident = await db
       .insert(ovrReports)
@@ -131,6 +204,7 @@ export async function POST(request: NextRequest) {
         sentinelEventDetails: body.sentinelEventDetails,
         
         // Staff Involved
+        staffInvolvedId: body.staffInvolvedId,
         staffInvolvedName: body.staffInvolvedName,
         staffPosition: body.staffPosition,
         staffEmployeeId: body.staffEmployeeId,
@@ -158,22 +232,18 @@ export async function POST(request: NextRequest) {
         physicianName: body.physicianName,
         physicianId: body.physicianId,
         
-        // Supervisor
-        supervisorAction: body.supervisorAction,
-        
         // Reporter Info
-        reporterDepartment: session.user.department,
-        reporterPosition: session.user.position,
+        reporterDepartment: body.reporterDepartment || session.user.department,
+        reporterPosition: body.reporterPosition || session.user.position,
         
         // Status
-        status: body.status || 'draft',
+        status: body.status,
         submittedAt: body.status === 'submitted' ? new Date() : null,
       })
       .returning();
 
     return NextResponse.json(newIncident[0], { status: 201 });
   } catch (error) {
-    console.error('Error creating incident:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

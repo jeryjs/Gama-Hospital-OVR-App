@@ -1,21 +1,24 @@
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
-import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  handleApiError,
+  requireAuth,
+  validateBody,
+  AuthorizationError,
+  NotFoundError,
+} from '@/lib/api/middleware';
+import { updateIncidentSchema } from '@/lib/api/schemas';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const session = await requireAuth(request);
     const { id } = await params;
+    
     const incident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
       with: {
@@ -65,7 +68,7 @@ export async function GET(
     });
 
     if (!incident) {
-      return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+      throw new NotFoundError('Incident');
     }
 
     // Check permissions
@@ -77,13 +80,12 @@ export async function GET(
     const isQI = session.user.role === 'quality_manager' || session.user.role === 'admin';
 
     if (!isOwner && !isSupervisor && !isHOD && !isInvestigator && !isQI) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      throw new AuthorizationError('You do not have permission to view this incident');
     }
 
     return NextResponse.json(incident);
   } catch (error) {
-    console.error('Error fetching incident:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -92,31 +94,30 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const session = await requireAuth(request);
     const { id } = await params;
-    const body = await request.json();
-
+    
     const existingIncident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
     });
 
     if (!existingIncident) {
-      return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+      throw new NotFoundError('Incident');
     }
 
     // Check permissions - only owner can edit draft
-    if (
-      existingIncident.status !== 'draft' ||
-      existingIncident.reporterId.toString() !== session.user.id
-    ) {
-      return NextResponse.json({ error: 'Cannot edit this report' }, { status: 403 });
+    if (existingIncident.status !== 'draft') {
+      throw new AuthorizationError('Cannot edit submitted reports');
     }
 
-    const updateData: Partial<typeof body> = {
+    if (existingIncident.reporterId.toString() !== session.user.id) {
+      throw new AuthorizationError('You can only edit your own reports');
+    }
+
+    // Validate request body
+    const body = await validateBody(request, updateIncidentSchema);
+
+    const updateData: Record<string, any> = {
       ...body,
       updatedAt: new Date(),
     };
@@ -133,8 +134,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedIncident[0]);
   } catch (error) {
-    console.error('Error updating incident:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -143,17 +143,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (session.user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
+    const session = await requireAuth(request);
     const { id } = await params;
+    
     const incident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
     });
 
     if (!incident) {
-      return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+      throw new NotFoundError('Incident');
     }
 
     // Only owner (if draft) or admin can delete
@@ -162,14 +160,13 @@ export async function DELETE(
     const isDraft = incident.status === 'draft';
 
     if (!(isOwner && isDraft) && !isAdmin) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      throw new AuthorizationError('You can only delete draft reports or be an admin');
     }
 
     await db.delete(ovrReports).where(eq(ovrReports.id, parseInt(id)));
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Incident deleted successfully' });
   } catch (error) {
-    console.error('Error deleting incident:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
