@@ -104,8 +104,7 @@ export async function POST(request: NextRequest) {
       .select()
       .from(ovrReports)
       .then((rows) => rows.length + 1);
-    const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    const referenceNumber = `OVR-${year}${month}-${String(count).padStart(3, '0')}`;
+    const referenceNumber = `OVR-${year}-${String(count).padStart(3, '0')}`;
 
     const newIncident = await db
       .insert(ovrReports)
