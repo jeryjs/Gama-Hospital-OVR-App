@@ -1,20 +1,16 @@
 import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
-import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, handleApiError, validateBody, AuthorizationError, NotFoundError } from '@/lib/api/middleware';
+import { updateCommentSchema } from '@/lib/api/schemas';
 
-export async function DELETE(
+export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const session = await requireAuth(req);
     const { commentId } = await params;
     
     const comment = await db.query.ovrComments.findFirst({
@@ -22,19 +18,72 @@ export async function DELETE(
     });
 
     if (!comment) {
-      return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
+      throw new NotFoundError('Comment');
+    }
+
+    // Only comment owner can edit
+    if (comment.userId.toString() !== session.user.id) {
+      throw new AuthorizationError('You can only edit your own comments');
+    }
+
+    // Validate request body
+    const body = await validateBody(req, updateCommentSchema);
+
+    const updatedComment = await db
+      .update(ovrComments)
+      .set({
+        comment: body.comment.trim(),
+        updatedAt: new Date(),
+      })
+      .where(eq(ovrComments.id, parseInt(commentId)))
+      .returning();
+
+    // Fetch the comment with user details
+    const commentWithUser = await db.query.ovrComments.findFirst({
+      where: eq(ovrComments.id, updatedComment[0].id),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePicture: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(commentWithUser);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; commentId: string }> }
+) {
+  try {
+    const session = await requireAuth(req);
+    const { commentId } = await params;
+    
+    const comment = await db.query.ovrComments.findFirst({
+      where: eq(ovrComments.id, parseInt(commentId)),
+    });
+
+    if (!comment) {
+      throw new NotFoundError('Comment');
     }
 
     // Only comment owner or admin can delete
     if (comment.userId.toString() !== session.user.id && session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      throw new AuthorizationError('You can only delete your own comments');
     }
 
     await db.delete(ovrComments).where(eq(ovrComments.id, parseInt(commentId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting comment:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useComments } from '@/lib/hooks';
 import { Comment as CommentIcon, Delete, Send } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
@@ -18,8 +19,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import { useComments } from '@/lib/hooks';
+import { useEffect, useState } from 'react';
 
 interface Props {
   incidentId: number;
@@ -30,9 +30,10 @@ export function CommentsSection({ incidentId }: Props) {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
 
-  // Fetch comments with SWR - automatic caching and revalidation
-  const { comments, isLoading, addComment, deleteComment } = useComments(incidentId);
+  const { comments, isLoading, addComment, updateComment, deleteComment } = useComments(incidentId);
 
   useEffect(() => {
     if (!isLoading) {
@@ -57,7 +58,6 @@ export function CommentsSection({ incidentId }: Props) {
 
   const handleDelete = async (commentId: number) => {
     if (!confirm('Delete this comment?')) return;
-
     try {
       await deleteComment(commentId);
     } catch (error) {
@@ -65,14 +65,35 @@ export function CommentsSection({ incidentId }: Props) {
     }
   };
 
+  const handleStartEdit = (commentId: number, currentText: string) => {
+    setEditingId(commentId);
+    setEditText(currentText);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+  };
+
+  const handleSaveEdit = async (commentId: number) => {
+    if (!editText.trim()) return;
+
+    try {
+      await updateComment(commentId, editText);
+      setEditingId(null);
+      setEditText('');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    }
+  };
+
   return (
     <Paper
-      elevation={3}
+      elevation={1}
       sx={{
-        p: { xs: 2, sm: 3 },
-        mb: 3,
-        borderRadius: 3,
-        boxShadow: (theme) => theme.shadows[2],
+        p: 2,
+        mb: 2,
+        borderRadius: 2,
         background: (theme) => theme.palette.background.paper,
       }}
     >
@@ -81,20 +102,23 @@ export function CommentsSection({ incidentId }: Props) {
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
+          pb: 1.5,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           cursor: 'pointer',
           userSelect: 'none',
         }}
         onClick={() => setExpanded((prev) => !prev)}
       >
-        <CommentIcon color="primary" />
+        <CommentIcon color="primary" sx={{ fontSize: 20 }} />
         <Typography
-          variant="h6"
-          fontWeight={700}
-          sx={{ flex: 1, color: 'text.primary', letterSpacing: 0.2 }}
+          variant="subtitle1"
+          fontWeight={600}
+          sx={{ flex: 1, color: 'text.primary' }}
         >
-          Comments & Discussion
+          Comments
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {comments.length}
         </Typography>
         <Button
           size="small"
@@ -107,34 +131,31 @@ export function CommentsSection({ incidentId }: Props) {
 
       {expanded && (
         isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+            <CircularProgress size={24} />
           </Box>
         ) : (
           <>
-            {/* Comments List */}
-            <Stack spacing={2} sx={{ mt: 3 }}>
+            <Stack spacing={1.5} sx={{ mt: 2, mb: 2 }}>
               {comments.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
-                  No comments yet. Be the first to comment!
+                <Typography variant="caption" color="text.secondary" textAlign="center" py={1}>
+                  No comments yet
                 </Typography>
               ) : (
                 comments.map((comment) => (
-                  <Paper
+                  <Box
                     key={comment.id}
-                    elevation={0}
                     sx={{
-                      p: 2,
-                      bgcolor: (theme) => alpha(theme.palette.primary.light, 0.08),
-                      borderRadius: 2,
+                      p: 1.5,
+                      borderRadius: 1.5,
                       border: (theme) => `1px solid ${theme.palette.divider}`,
-                      transition: 'background 0.2s',
+                      transition: 'bgcolor 0.2s',
                       '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.primary.light, 0.15),
+                        bgcolor: (theme) => alpha(theme.palette.primary.light, 0.05),
                       },
                     }}
                   >
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <Stack direction="row" spacing={1.5} alignItems="flex-start">
                       <Avatar
                         src={comment.user?.profilePicture || undefined}
                         alt={
@@ -143,132 +164,159 @@ export function CommentsSection({ incidentId }: Props) {
                             : ''
                         }
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: 32,
+                          height: 32,
                           bgcolor: (theme) => theme.palette.primary.main,
-                          fontWeight: 700,
-                          fontSize: 18,
+                          fontSize: 12,
+                          flexShrink: 0,
                         }}
                       >
                         {comment.user?.firstName?.[0] || '?'}
                       </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {comment.user
-                              ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
-                              : 'Unknown User'}
-                          </Typography>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                          <Box>
+                            <Typography variant="caption" fontWeight={700} display="block" sx={{ color: 'text.primary' }}>
+                              {comment.user
+                                ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
+                                : 'Unknown'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" display="block">
                               {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
                             </Typography>
+                          </Box>
+                          <Stack direction="row" alignItems="center" gap={0.5}>
+                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', minWidth: 'max-content' }}>
+                              {format(new Date(comment.createdAt), 'HH:mm')}
+                            </Typography>
                             {comment.userId?.toString() === session?.user?.id && (
-                              <Box>
-                                <IconButton
-                                  size="small"
-                                  aria-label="comment actions"
-                                  sx={{ ml: 1 }}
-                                  id={`comment-actions-${comment.id}`}
-                                >
-                                  <MoreVertMenu
-                                    onDelete={() => handleDelete(comment.id)}
-                                    onEdit={() => {
-                                      // Placeholder for edit
-                                    }}
-                                  />
-                                </IconButton>
-                              </Box>
+                              <MoreVertMenu
+                                onDelete={() => handleDelete(comment.id)}
+                                onEdit={() => handleStartEdit(comment.id, comment.comment)}
+                              />
                             )}
                           </Stack>
                         </Stack>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            mt: 1,
-                            whiteSpace: 'pre-wrap',
-                            color: 'text.primary',
-                            fontSize: 15,
-                          }}
-                        >
-                          {comment.comment}
-                        </Typography>
+                        
+                        {editingId === comment.id ? (
+                          <Stack spacing={1} sx={{ mt: 1 }}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              minRows={2}
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              variant="outlined"
+                              size="small"
+                              autoFocus
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  fontSize: 13,
+                                  borderRadius: 1.5,
+                                },
+                              }}
+                            />
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={handleCancelEdit}
+                                sx={{ textTransform: 'none' }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={() => handleSaveEdit(comment.id)}
+                                disabled={!editText.trim()}
+                                sx={{ textTransform: 'none' }}
+                              >
+                                Save
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              mt: 0.75,
+                              whiteSpace: 'pre-wrap',
+                              color: 'text.primary',
+                              fontSize: 13,
+                            }}
+                          >
+                            {comment.comment}
+                          </Typography>
+                        )}
                       </Box>
                     </Stack>
-                  </Paper>
+                  </Box>
                 ))
               )}
             </Stack>
 
-            {/* Add Comment */}
-            <Paper
-              elevation={0}
-              sx={{
-                mt: 4,
-                p: 2,
-                bgcolor: (theme) => alpha(theme.palette.primary.light, 0.04),
-                borderRadius: 2,
-              }}
-            >
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Avatar
-                  src={session?.user?.image || undefined}
-                  alt={session?.user?.name || ''}
+            <Stack direction="row" spacing={1.5} alignItems="flex-start">
+              <Avatar
+                src={session?.user?.image || undefined}
+                alt={session?.user?.name || ''}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: (theme) => theme.palette.primary.main,
+                  fontSize: 12,
+                  flexShrink: 0,
+                }}
+              >
+                {session?.user?.name?.[0]}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  variant="outlined"
+                  size="small"
                   sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: (theme) => theme.palette.primary.main,
-                    fontWeight: 700,
-                    fontSize: 16,
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: 13,
+                      borderRadius: 1.5,
+                      paddingRight: 0,
+                    },
                   }}
-                >
-                  {session?.user?.name?.[0]}
-                </Avatar>
-                <Box sx={{ flex: 1 }}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    maxRows={6}
-                    label="Add a comment"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Share your thoughts..."
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      bgcolor: 'background.paper',
-                      borderRadius: 1,
-                      '& .MuiOutlinedInput-root': {
-                        fontSize: 15,
-                      },
-                    }}
-                  />
-                  <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<Send />}
-                      onClick={handleSubmit}
-                      disabled={submitting || !newComment.trim()}
-                      sx={{
-                        minWidth: 120,
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        boxShadow: 'none',
-                      }}
-                    >
-                      {submitting ? 'Posting...' : 'Post Comment'}
-                    </Button>
-                  </Stack>
-                </Box>
-              </Stack>
-            </Paper>
+                  InputProps={{
+                    endAdornment: (
+                      <Button
+                        variant="contained"
+                        startIcon={<Send sx={{ fontSize: 16 }} />}
+                        onClick={handleSubmit}
+                        disabled={submitting || !newComment.trim()}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          boxShadow: 'none',
+                          borderRadius: 1,
+                          ml: 1,
+                          minWidth: 80,
+                        }}
+                      >
+                        {submitting ? 'Posting...' : 'Post'}
+                      </Button>
+                    ),
+                    sx: { alignItems: 'flex-end' },
+                  }}
+                />
+              </Box>
+            </Stack>
           </>
         )
       )}
     </Paper>
   );
-
 }
 
 // 3-dot menu for comment actions
@@ -305,7 +353,7 @@ function MoreVertMenu({
             setAnchorEl(null);
           }}
         >
-          Edit (coming soon)
+          Edit
         </MenuItem>
         <MenuItem
           onClick={() => {
