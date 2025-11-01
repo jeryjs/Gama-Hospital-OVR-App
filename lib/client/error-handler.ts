@@ -29,9 +29,9 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   
   // Staff Involved
   staffInvolvedName: 'Staff Name',
-  staffPosition: 'Staff Position',
-  staffEmployeeId: 'Staff Employee ID',
-  staffDepartment: 'Staff Department',
+  staffInvolvedPosition: 'Staff Position',
+  staffInvolvedEmployeeId: 'Staff Employee ID',
+  staffInvolvedDepartment: 'Staff Department',
   
   // Witness
   witnessName: 'Witness Name',

@@ -75,7 +75,7 @@ Retrieve a paginated list of incidents with advanced filtering.
 |-----------|------|---------|-------------|
 | `page` | number | 1 | Page number (min: 1) |
 | `limit` | number | 10 | Items per page (min: 1, max: 100) |
-| `sortBy` | string | createdAt | Sort field: `createdAt`, `occurrenceDate`, `referenceNumber`, `status` |
+| `sortBy` | string | createdAt | Sort field: `createdAt`, `occurrenceDate`, `refNo`, `status` |
 | `sortOrder` | string | desc | Sort order: `asc` or `desc` |
 | `status` | string | - | Filter by status |
 | `category` | string | - | Filter by occurrence category |
@@ -111,7 +111,7 @@ GET /api/incidents?search=fall&limit=25
 
 **Field selection (reduce payload):**
 ```http
-GET /api/incidents?fields=id,referenceNumber,status,createdAt
+GET /api/incidents?fields=id,refNo,status,createdAt
 ```
 
 **Combined filters:**
@@ -126,7 +126,7 @@ GET /api/incidents?status=hod_assigned&category=falls_injury&page=2&limit=15&sor
   "data": [
     {
       "id": 1,
-      "referenceNumber": "OVR-2025-0001",
+      "refNo": "OVR-2025-0001",
       "status": "submitted",
       "occurrenceCategory": "medication",
       "occurrenceDate": "2025-11-01",
@@ -227,7 +227,7 @@ Create a new incident report.
 ```json
 {
   "id": 1,
-  "referenceNumber": "OVR-2025-0001",
+  "refNo": "OVR-2025-0001",
   "status": "draft",
   "createdAt": "2025-11-01T10:30:00Z",
   ...
@@ -265,7 +265,7 @@ Retrieve a single incident with full details and relations.
 ```json
 {
   "id": 1,
-  "referenceNumber": "OVR-2025-0001",
+  "refNo": "OVR-2025-0001",
   "status": "hod_assigned",
   "patientName": "Jane Smith",
   "patientMRN": "MRN12345",
@@ -363,7 +363,7 @@ Partial update - only include fields to change:
 ```json
 {
   "id": 1,
-  "referenceNumber": "OVR-2025-0001",
+  "refNo": "OVR-2025-0001",
   "status": "submitted",
   "submittedAt": "2025-11-01T15:00:00Z",
   "updatedAt": "2025-11-01T15:00:00Z",
@@ -523,7 +523,7 @@ GET /api/incidents?page=1&limit=20
 ### 2. Select Needed Fields
 Reduce payload size by selecting only required fields:
 ```
-GET /api/incidents?fields=id,referenceNumber,status
+GET /api/incidents?fields=id,refNo,status
 ```
 
 ### 3. Filter Before Sorting

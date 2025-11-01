@@ -33,7 +33,7 @@ import { useEffect, useState } from 'react';
 
 interface QIIncident {
   id: number;
-  referenceNumber: string;
+  refNo: string;
   occurrenceDate: string;
   occurrenceCategory: string;
   status: string;
@@ -194,7 +194,7 @@ export default function QIReviewPage() {
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {incident.referenceNumber}
+                              {incident.refNo}
                             </Typography>
                           </TableCell>
                           <TableCell>

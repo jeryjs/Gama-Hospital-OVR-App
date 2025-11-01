@@ -76,7 +76,7 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
 // OVR Report list item (minimal)
 export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
   id: true,
-  referenceNumber: true,
+  refNo: true,
   status: true,
   occurrenceDate: true,
   occurrenceCategory: true,
@@ -159,7 +159,7 @@ export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export const incidentListQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).catch(1),
   limit: z.coerce.number().min(1).max(100).default(10).catch(10),
-  sortBy: z.enum(['createdAt', 'occurrenceDate', 'referenceNumber', 'status']).default('createdAt').catch('createdAt'),
+  sortBy: z.enum(['createdAt', 'occurrenceDate', 'refNo', 'status']).default('createdAt').catch('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
   status: z.string().nullish(),
   category: z.string().nullish(),
@@ -182,7 +182,7 @@ export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 export const createIncidentSchema = ovrReportInsertSchema
   .omit({
     id: true,
-    referenceNumber: true,
+    refNo: true,
     reporterId: true,
     createdAt: true,
     updatedAt: true,

@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (query.search) {
       conditions.push(
         or(
-          like(ovrReports.referenceNumber, `%${query.search}%`),
+          like(ovrReports.refNo, `%${query.search}%`),
           like(ovrReports.description, `%${query.search}%`),
           like(ovrReports.patientName, `%${query.search}%`),
           like(ovrReports.patientMRN, `%${query.search}%`)
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const sortColumn = {
       createdAt: ovrReports.createdAt,
       occurrenceDate: ovrReports.occurrenceDate,
-      referenceNumber: ovrReports.referenceNumber,
+      refNo: ovrReports.refNo,
       status: ovrReports.status,
     }[query.sortBy];
 
@@ -177,12 +177,11 @@ export async function POST(request: NextRequest) {
       .where(sql`EXTRACT(YEAR FROM ${ovrReports.createdAt}) = ${year}`);
     
     const count = Number(countResult[0].count) + 1;
-    const referenceNumber = `OVR-${year}-${String(count).padStart(4, '0')}`;
 
     const newIncident = await db
       .insert(ovrReports)
       .values({
-        referenceNumber,
+        refNo: `OVR-${year}-${String(count).padStart(4, '0')}`,
         reporterId: userId,
         
         // Patient Information
@@ -206,9 +205,9 @@ export async function POST(request: NextRequest) {
         // Staff Involved
         staffInvolvedId: body.staffInvolvedId,
         staffInvolvedName: body.staffInvolvedName,
-        staffPosition: body.staffPosition,
-        staffEmployeeId: body.staffEmployeeId,
-        staffDepartment: body.staffDepartment,
+        staffInvolvedPosition: body.staffInvolvedPosition,
+        staffInvolvedEmployeeId: body.staffInvolvedEmployeeId,
+        staffInvolvedDepartment: body.staffInvolvedDepartment,
         
         // Classification
         occurrenceCategory: body.occurrenceCategory,

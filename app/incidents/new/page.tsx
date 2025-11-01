@@ -53,9 +53,9 @@ interface FormData {
   
   // Staff Involved (if applicable)
   staffInvolvedName: string;
-  staffPosition: string;
-  staffEmployeeId: string;
-  staffDepartment: string;
+  staffInvolvedPosition: string;
+  staffInvolvedEmployeeId: string;
+  staffInvolvedDepartment: string;
   
   // Incident Classification
   occurrenceCategory: string;
@@ -107,9 +107,9 @@ export default function NewIncidentPage() {
     isSentinelEvent: false,
     sentinelEventDetails: '',
     staffInvolvedName: '',
-    staffPosition: '',
-    staffEmployeeId: '',
-    staffDepartment: '',
+    staffInvolvedPosition: '',
+    staffInvolvedEmployeeId: '',
+    staffInvolvedDepartment: '',
     occurrenceCategory: '',
     occurrenceSubcategory: '',
     description: '',
@@ -184,9 +184,9 @@ export default function NewIncidentPage() {
       isSentinelEvent: false,
       sentinelEventDetails: '',
       staffInvolvedName: '',
-      staffPosition: '',
-      staffEmployeeId: '',
-      staffDepartment: '',
+      staffInvolvedPosition: '',
+      staffInvolvedEmployeeId: '',
+      staffInvolvedDepartment: '',
       occurrenceCategory: '',
       occurrenceSubcategory: '',
       description: '',
@@ -514,24 +514,24 @@ export default function NewIncidentPage() {
                       <TextField
                         fullWidth
                         label="Position"
-                        value={formData.staffPosition}
-                        onChange={(e) => setFormData({ ...formData, staffPosition: e.target.value })}
+                        value={formData.staffInvolvedPosition}
+                        onChange={(e) => setFormData({ ...formData, staffInvolvedPosition: e.target.value })}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         label="ID #"
-                        value={formData.staffEmployeeId}
-                        onChange={(e) => setFormData({ ...formData, staffEmployeeId: e.target.value })}
+                        value={formData.staffInvolvedEmployeeId}
+                        onChange={(e) => setFormData({ ...formData, staffInvolvedEmployeeId: e.target.value })}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         label="Dept / Unit"
-                        value={formData.staffDepartment}
-                        onChange={(e) => setFormData({ ...formData, staffDepartment: e.target.value })}
+                        value={formData.staffInvolvedDepartment}
+                        onChange={(e) => setFormData({ ...formData, staffInvolvedDepartment: e.target.value })}
                       />
                     </Grid>
                   </Grid>

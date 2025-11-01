@@ -39,7 +39,7 @@ import { useEffect, useState } from 'react';
 
 interface HODIncident {
   id: number;
-  referenceNumber: string;
+  refNo: string;
   reporterName: string;
   reporterDepartment: string;
   occurrenceDate: string;
@@ -101,15 +101,15 @@ export default function HODReviewPage() {
         // Filter for HOD's department or admin sees all
         // const filtered = data.filter((incident: any) =>
         //   // session?.user?.role === 'admin' ||
-        //   // incident.staffDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
+        //   // incident.staffInvolvedDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
         // );
 
         setIncidents(
           data.map((incident: any) => ({
             id: incident.id,
-            referenceNumber: incident.referenceNumber,
+            refNo: incident.refNo,
             reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
-            reporterDepartment: incident.staffDepartment || 'N/A',
+            reporterDepartment: incident.staffInvolvedDepartment || 'N/A',
             occurrenceDate: incident.occurrenceDate,
             occurrenceCategory: incident.occurrenceCategory,
             status: incident.status,
@@ -134,7 +134,7 @@ export default function HODReviewPage() {
     if (searchTerm) {
       filtered = filtered.filter(
         (incident) =>
-          incident.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.refNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.reporterDepartment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.occurrenceCategory.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -286,10 +286,10 @@ export default function HODReviewPage() {
                     <TableHead>
                       <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
                         <TableCell
-                          onClick={() => handleSort('referenceNumber')}
+                          onClick={() => handleSort('refNo')}
                           sx={{ cursor: 'pointer', fontWeight: 600 }}
                         >
-                          Reference # {sortConfig.key === 'referenceNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                          Reference # {sortConfig.key === 'refNo' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
                         <TableCell
                           onClick={() => handleSort('reporterDepartment')}
@@ -332,7 +332,7 @@ export default function HODReviewPage() {
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {incident.referenceNumber}
+                              {incident.refNo}
                             </Typography>
                           </TableCell>
                           <TableCell>

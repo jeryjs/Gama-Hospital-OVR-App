@@ -93,7 +93,7 @@ async function seed() {
     // Create sample OVR reports
     await db.insert(schema.ovrReports).values([
       {
-        referenceNumber: 'OVR-2025-001',
+        refNo: 'OVR-2025-001',
         occurrenceDate: '2025-01-15',
         occurrenceTime: '14:30:00',
         locationId: location1.id,
@@ -110,7 +110,7 @@ async function seed() {
         submittedAt: new Date('2025-01-15T15:00:00'),
       },
       {
-        referenceNumber: 'OVR-2025-002',
+        refNo: 'OVR-2025-002',
         occurrenceDate: '2025-01-18',
         occurrenceTime: '22:15:00',
         locationId: location2.id,

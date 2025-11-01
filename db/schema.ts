@@ -9,9 +9,10 @@ export const roleEnum = pgEnum('role', ['admin', 'quality_manager', 'department_
 
 export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'visitor_watcher', 'others']);
 
-export const injuryOutcomeEnum = pgEnum('injury_outcome', ['no_injury', 'minor', 'serious', 'death']);
+export const injuryOutcomeEnum = pgEnum('injury_outcome', ['', 'no_injury', 'minor', 'serious', 'death']);
 
 export const severityLevelEnum = pgEnum('severity_level', [
+  '',
   'near_miss_level_1',
   'no_apparent_injury_level_2',
   'minor_level_3',
@@ -23,7 +24,7 @@ export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
   'submitted',                // Step 1: Submitted, awaiting supervisor approval
   'supervisor_approved',      // Step 2: Supervisor approved, sent to QI
-  'qi_review',                // Step 3: QI reviewing and assigning to HOD  // This status is never set by us and is skipped as 
+  // 'qi_review',                // Step 3: QI reviewing and assigning to HOD  // This status is never set by us and is skipped as 
   'hod_assigned',             // Step 4: HOD investigating
   'qi_final_review',          // Step 5: QI final review and feedback
   'closed'                    // Step 6: Case closed
@@ -76,7 +77,7 @@ export const locations = pgTable('locations', {
 // ============================================
 export const ovrReports = pgTable('ovr_reports', {
   id: serial('id').primaryKey(),
-  referenceNumber: varchar('reference_number', { length: 50 }).unique(), // Auto-generated
+  refNo: varchar('ref_no', { length: 50 }).unique(), // Auto-generated
   
   // Basic Information
   occurrenceDate: date('occurrence_date').notNull(),
@@ -99,13 +100,14 @@ export const ovrReports = pgTable('ovr_reports', {
   // Staff Involved
   staffInvolvedId: integer('staff_involved_id').references(() => users.id),
   staffInvolvedName: varchar('staff_involved_name', { length: 255 }),
-  staffPosition: varchar('staff_position', { length: 100 }),
-  staffEmployeeId: varchar('staff_employee_id', { length: 50 }),
-  staffDepartment: varchar('staff_department', { length: 100 }),
-  
-  // Incident Classification (from the 18 categories)
+  staffInvolvedPosition: varchar('staff_involved_position', { length: 100 }),
+  staffInvolvedEmployeeId: varchar('staff_involved_employee_id', { length: 50 }),
+  staffInvolvedDepartment: varchar('staff_involved_department', { length: 100 }),
+
+  // Incident Classification (from the 18 categories for now. Will later change to Saudi Patient Safety Taxonomy)
   occurrenceCategory: varchar('occurrence_category', { length: 50 }).notNull(), // e.g., 'medication', 'falls_injury'
   occurrenceSubcategory: varchar('occurrence_subcategory', { length: 100 }).notNull(), // e.g., 'wrong_drug'
+  occurrenceDetail: varchar('occurrence_detail', { length: 100 }),
   
   // Description
   description: text('description').notNull(),
@@ -215,6 +217,7 @@ export const ovrComments = pgTable('ovr_comments', {
   comment: text('comment').notNull(),
   isSystemComment: boolean('is_system_comment').default(false), // For automated status changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 // ============================================

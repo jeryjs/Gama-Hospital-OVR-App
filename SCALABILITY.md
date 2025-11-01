@@ -25,7 +25,7 @@
 ### 2. **Pagination & Filtering**
 - ✅ **Query parameter validation**
 - ✅ **Configurable page size** (1-100 records)
-- ✅ **Multiple sort options** (createdAt, occurrenceDate, referenceNumber, status)
+- ✅ **Multiple sort options** (createdAt, occurrenceDate, refNo, status)
 - ✅ **Advanced filtering** (status, category, date ranges, search)
 - ✅ **Paginated response format** with metadata
 
@@ -55,7 +55,7 @@ GET /api/incidents?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=submit
 
 **Usage:**
 ```
-GET /api/incidents?fields=id,referenceNumber,status,createdAt
+GET /api/incidents?fields=id,refNo,status,createdAt
 ```
 
 ### 4. **Database Performance**

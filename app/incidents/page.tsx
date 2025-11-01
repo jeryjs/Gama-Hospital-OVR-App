@@ -62,7 +62,7 @@ export default function IncidentsPage() {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
-  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'referenceNumber' | 'status'>('createdAt');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'refNo' | 'status'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
@@ -202,10 +202,10 @@ export default function IncidentsPage() {
                   <TableHead>
                     <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
                       <TableCell
-                        onClick={() => handleSort('referenceNumber')}
+                        onClick={() => handleSort('refNo')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                       >
-                        Reference # {sortBy === 'referenceNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        Reference # {sortBy === 'refNo' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </TableCell>
                       <TableCell
                         onClick={() => handleSort('occurrenceDate')}
@@ -279,7 +279,7 @@ export default function IncidentsPage() {
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {incident.referenceNumber}
+                              {incident.refNo}
                             </Typography>
                           </TableCell>
                           <TableCell>

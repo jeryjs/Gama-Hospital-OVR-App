@@ -82,6 +82,7 @@ export const authOptions: NextAuthOptions = {
           token.employeeId = dbUser.employeeId;
           token.department = dbUser.department;
           token.position = dbUser.position;
+          token.image = dbUser.profilePicture;
         }
       }
       return token;
@@ -93,6 +94,7 @@ export const authOptions: NextAuthOptions = {
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;
+        session.user.image = token.image as string | undefined;
       }
       return session;
     },

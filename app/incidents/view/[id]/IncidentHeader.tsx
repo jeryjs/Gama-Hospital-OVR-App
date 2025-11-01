@@ -38,7 +38,7 @@ export function IncidentHeader({ incident }: Props) {
         
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" fontWeight={700}>
-            {incident.referenceNumber}
+            {incident.refNo}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Reported by {incident.reporter?.firstName} {incident.reporter?.lastName} on{' '}
