@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { LoadingFallback } from '@/components/LoadingFallback';
 import { InvestigationSection } from '@/components/incident-form/InvestigationSection';
 import { MedicalAssessmentSection } from '@/components/incident-form/MedicalAssessmentSection';
 import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceDetailsSection';
@@ -10,40 +11,33 @@ import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection'
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { WitnessSection } from '@/components/incident-form/WitnessSection';
 import { useIncident } from '@/lib/hooks';
-import { Box, LinearProgress, Typography } from '@mui/material';
-import { useParams, useRouter } from 'next/navigation';
+import { Box, Typography } from '@mui/material';
+import { useParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
 import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
 
-export default function IncidentViewPage() {
+// Inner component that fetches data
+function IncidentDetails() {
   const params = useParams();
-  const router = useRouter();
 
-  // Fetch incident with SWR - automatic caching and revalidation
-  const { incident, isLoading, error, mutate } = useIncident(params.id as string);
+  // This will suspend while loading
+  const { incident, mutate } = useIncident(params.id as string);
 
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <LinearProgress />
-      </AppLayout>
-    );
-  }
 
-  if (error || !incident) {
+  if (!incident) {
     return (
       <AppLayout>
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="error">
-            {error ? 'Error loading incident' : 'Incident not found'}
+            Incident not found
           </Typography>
         </Box>
       </AppLayout>
     );
   }
-
   return (
     <AppLayout>
       <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
@@ -87,5 +81,25 @@ export default function IncidentViewPage() {
         <ActionButtons incident={incident} onUpdate={mutate} />
       </Box>
     </AppLayout>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function IncidentViewPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        {/* <Box sx={{ maxWidth: 1400, mx: 'auto', py: 4 }}>
+          <Stack spacing={3}>
+            <CardLoadingFallback />
+            <CardLoadingFallback />
+            <CardLoadingFallback />
+          </Stack>
+        </Box> */}
+        <LoadingFallback />
+      </AppLayout>
+    }>
+      <IncidentDetails />
+    </Suspense>
   );
 }

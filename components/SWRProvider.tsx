@@ -19,6 +19,8 @@ export function SWRProvider({ children }: SWRProviderProps) {
         shouldRetryOnError: false, // Don't retry failed requests
         // Keep previous data while revalidating
         keepPreviousData: true,
+        // Enable Suspense mode for declarative loading states
+        suspense: true,
       }}
     >
       {children}

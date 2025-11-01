@@ -31,7 +31,7 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Fetch HODs with SWR
-  const { users: hodUsers, isLoading: loadingUsers } = useUsers({ role: 'admin' });
+  const { users: hodUsers } = useUsers({ role: 'admin' });
 
   const isQI = session?.user?.role === 'quality_manager' || session?.user?.role === 'admin';
   const canAssignHOD = isQI && incident.status === 'supervisor_approved';
@@ -86,7 +86,6 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
           getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
           value={hodUsers.find((h) => h.id === selectedHOD) || null}
           onChange={(_, value) => setSelectedHOD(value?.id || null)}
-          loading={loadingUsers}
           disabled={submitting}
           renderInput={(params) => (
             <TextField

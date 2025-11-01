@@ -33,13 +33,11 @@ export function CommentsSection({ incidentId }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
 
-  const { comments, isLoading, addComment, updateComment, deleteComment } = useComments(incidentId);
+  const { comments, addComment, updateComment, deleteComment } = useComments(incidentId);
 
   useEffect(() => {
-    if (!isLoading) {
-      setExpanded(comments.length > 0);
-    }
-  }, [isLoading, comments.length]);
+    setExpanded(comments.length > 0);
+  }, [comments.length]);
 
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
@@ -130,190 +128,184 @@ export function CommentsSection({ incidentId }: Props) {
       </Box>
 
       {expanded && (
-        isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : (
-          <>
-            <Stack spacing={1.5} sx={{ mt: 2, mb: 2 }}>
-              {comments.length === 0 ? (
-                <Typography variant="caption" color="text.secondary" textAlign="center" py={1}>
-                  No comments yet
-                </Typography>
-              ) : (
-                comments.map((comment) => (
-                  <Box
-                    key={comment.id}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 1.5,
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      transition: 'bgcolor 0.2s',
-                      '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.primary.light, 0.05),
-                      },
-                    }}
-                  >
-                    <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                      <Avatar
-                        src={comment.user?.profilePicture || undefined}
-                        alt={
-                          comment.user
-                            ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
-                            : ''
-                        }
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          bgcolor: (theme) => theme.palette.primary.main,
-                          fontSize: 12,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {comment.user?.firstName?.[0] || '?'}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
-                          <Box>
-                            <Typography variant="caption" fontWeight={700} display="block" sx={{ color: 'text.primary' }}>
-                              {comment.user
-                                ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
-                                : 'Unknown'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
-                            </Typography>
-                          </Box>
-                          <Stack direction="row" alignItems="center" gap={0.5}>
-                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', minWidth: 'max-content' }}>
-                              {format(new Date(comment.createdAt), 'HH:mm')}
-                            </Typography>
-                            {comment.userId?.toString() === session?.user?.id && (
-                              <MoreVertMenu
-                                onDelete={() => handleDelete(comment.id)}
-                                onEdit={() => handleStartEdit(comment.id, comment.comment)}
-                              />
-                            )}
-                          </Stack>
-                        </Stack>
-
-                        {editingId === comment.id ? (
-                          <Stack spacing={1} sx={{ mt: 1 }}>
-                            <TextField
-                              fullWidth
-                              multiline
-                              minRows={2}
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              variant="outlined"
-                              size="small"
-                              autoFocus
-                              sx={{
-                                '& .MuiOutlinedInput-root': {
-                                  fontSize: 13,
-                                  borderRadius: 1.5,
-                                },
-                              }}
-                            />
-                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={handleCancelEdit}
-                                sx={{ textTransform: 'none' }}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                onClick={() => handleSaveEdit(comment.id)}
-                                disabled={!editText.trim()}
-                                sx={{ textTransform: 'none' }}
-                              >
-                                Save
-                              </Button>
-                            </Stack>
-                          </Stack>
-                        ) : (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mt: 0.75,
-                              whiteSpace: 'pre-wrap',
-                              color: 'text.primary',
-                              fontSize: 13,
-                            }}
-                          >
-                            {comment.comment}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Stack>
-                  </Box>
-                ))
-              )}
-            </Stack>
-
-            <Stack direction="row" spacing={1.5} alignItems="flex-start">
-              <Avatar
-                src={session?.user?.image || undefined}
-                alt={session?.user?.name || ''}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: (theme) => theme.palette.primary.main,
-                  fontSize: 12,
-                  flexShrink: 0,
-                }}
-              >
-                {session?.user?.name?.[0]}
-              </Avatar>
-              <Box sx={{ flex: 1 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={2}
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  variant="outlined"
-                  size="small"
+        <>
+          <Stack spacing={1.5} sx={{ mt: 2, mb: 2 }}>
+            {comments.length === 0 ? (
+              <Typography variant="caption" color="text.secondary" textAlign="center" py={1}>
+                No comments yet
+              </Typography>
+            ) : (
+              comments.map((comment) => (
+                <Box
+                  key={comment.id}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontSize: 13,
-                      borderRadius: 1.5,
-                      paddingRight: 0,
+                    p: 1.5,
+                    borderRadius: 1.5,
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                    transition: 'bgcolor 0.2s',
+                    '&:hover': {
+                      bgcolor: (theme) => alpha(theme.palette.primary.light, 0.05),
                     },
                   }}
-                  InputProps={{
-                    endAdornment: (
-                      <Button
-                        variant="contained"
-                        startIcon={<Send sx={{ fontSize: 16 }} />}
-                        onClick={handleSubmit}
-                        disabled={submitting || !newComment.trim()}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          textTransform: 'none',
-                          boxShadow: 'none',
-                          borderRadius: 1,
-                          ml: 1,
-                          minWidth: 80,
-                        }}
-                      >
-                        {submitting ? 'Posting...' : 'Post'}
-                      </Button>
-                    ),
-                    sx: { alignItems: 'flex-end' },
-                  }}
-                />
-              </Box>
-            </Stack>
-          </>
-        )
+                >
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                    <Avatar
+                      src={comment.user?.profilePicture || undefined}
+                      alt={
+                        comment.user
+                          ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
+                          : ''
+                      }
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: (theme) => theme.palette.primary.main,
+                        fontSize: 12,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {comment.user?.firstName?.[0] || '?'}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                        <Box>
+                          <Typography variant="caption" fontWeight={700} display="block" sx={{ color: 'text.primary' }}>
+                            {comment.user
+                              ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
+                              : 'Unknown'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" alignItems="center" gap={0.5}>
+                          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', minWidth: 'max-content' }}>
+                            {format(new Date(comment.createdAt), 'HH:mm')}
+                          </Typography>
+                          {comment.userId?.toString() === session?.user?.id && (
+                            <MoreVertMenu
+                              onDelete={() => handleDelete(comment.id)}
+                              onEdit={() => handleStartEdit(comment.id, comment.comment)}
+                            />
+                          )}
+                        </Stack>
+                      </Stack>
+
+                      {editingId === comment.id ? (
+                        <Stack spacing={1} sx={{ mt: 1 }}>
+                          <TextField
+                            fullWidth
+                            multiline
+                            minRows={2}
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            autoFocus
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                fontSize: 13,
+                                borderRadius: 1.5,
+                              },
+                            }}
+                          />
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={handleCancelEdit}
+                              sx={{ textTransform: 'none' }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => handleSaveEdit(comment.id)}
+                              disabled={!editText.trim()}
+                              sx={{ textTransform: 'none' }}
+                            >
+                              Save
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 0.75,
+                            whiteSpace: 'pre-wrap',
+                            color: 'text.primary',
+                            fontSize: 13,
+                          }}
+                        >
+                          {comment.comment}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
+                </Box>
+              ))
+            )}
+          </Stack>
+
+          <Stack direction="row" spacing={1.5} alignItems="flex-start">
+            <Avatar
+              src={session?.user?.image || undefined}
+              alt={session?.user?.name || ''}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: (theme) => theme.palette.primary.main,
+                fontSize: 12,
+                flexShrink: 0,
+              }}
+            >
+              {session?.user?.name?.[0]}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                variant="outlined"
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: 13,
+                    borderRadius: 1.5,
+                    paddingRight: 0,
+                  },
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <Button
+                      variant="contained"
+                      startIcon={<Send sx={{ fontSize: 16 }} />}
+                      onClick={handleSubmit}
+                      disabled={submitting || !newComment.trim()}
+                      size="small"
+                      sx={{
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        boxShadow: 'none',
+                        borderRadius: 1,
+                        ml: 1,
+                        minWidth: 80,
+                      }}
+                    >
+                      {submitting ? 'Posting...' : 'Post'}
+                    </Button>
+                  ),
+                  sx: { alignItems: 'flex-end' },
+                }}
+              />
+            </Box>
+          </Stack>
+        </>
       )}
     </Paper>
   );

@@ -4,7 +4,6 @@ import useSWR from 'swr';
 
 export interface UseCommentsReturn {
   comments: CommentWithUser[];
-  isLoading: boolean;
   isError: boolean;
   error: any;
   mutate: () => void;
@@ -33,9 +32,10 @@ export function useComments(incidentId: number | string | null | undefined): Use
     return data!;
   };
 
-  const { data, error, mutate, isLoading } = useSWR(url, fetcher, {
+  const { data, error, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 1000,
+    suspense: true,
   });
 
   // Add comment
@@ -92,7 +92,6 @@ export function useComments(incidentId: number | string | null | undefined): Use
 
   return {
     comments: data || [],
-    isLoading,
     isError: !!error,
     error,
     mutate,

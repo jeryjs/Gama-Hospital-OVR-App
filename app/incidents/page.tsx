@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { LoadingFallback } from '@/components/LoadingFallback';
 import { useIncidents } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
 import {
@@ -18,7 +19,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  LinearProgress,
   Pagination,
   Paper,
   Stack,
@@ -29,14 +29,13 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import router from 'next/router';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 
 const statusColors: Record<string, string> = {
   draft: '#6B7280',
@@ -58,8 +57,10 @@ const statusLabels: Record<string, string> = {
   closed: 'Closed',
 };
 
-export default function IncidentsPage() {
+// Inner component that fetches data - will suspend while loading
+function IncidentsTable() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
@@ -67,8 +68,8 @@ export default function IncidentsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
-  // Fetch incidents with SWR - automatic caching and revalidation
-  const { incidents, pagination, isLoading, error } = useIncidents({
+  // This will suspend while loading - Suspense boundary will show fallback
+  const { incidents, pagination } = useIncidents({
     page,
     limit: 10,
     sortBy,
@@ -93,22 +94,6 @@ export default function IncidentsPage() {
     setSortOrder('desc');
     setPage(1);
   };
-
-  if (isLoading && !incidents.length) {
-    return (
-      <AppLayout>
-        <LinearProgress />
-      </AppLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AppLayout>
-        <Typography color="error">Error loading incidents. Please try again.</Typography>
-      </AppLayout>
-    );
-  }
 
   const hasActiveFilters = searchTerm || statusFilter;
 
@@ -346,5 +331,18 @@ export default function IncidentsPage() {
         </motion.div>
       </Box>
     </AppLayout>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function IncidentsPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <LoadingFallback />
+      </AppLayout>
+    }>
+      <IncidentsTable />
+    </Suspense>
   );
 }

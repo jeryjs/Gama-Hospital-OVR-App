@@ -37,7 +37,7 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch users with SWR
-  const { users, isLoading: loadingUsers } = useUsers();
+  const { users } = useUsers();
 
   const isHOD = session?.user?.role === 'admin' || session?.user?.id === incident.departmentHeadId?.toString();
   const isInvestigator = incident.investigators?.some(inv => inv.investigatorId.toString() === session?.user?.id);
@@ -159,7 +159,6 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
             <Autocomplete
               sx={{ flex: 1 }}
               options={users}
-              loading={loadingUsers}
               getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
               onChange={(_, value) => setSelectedInvestigator(value?.id || null)}
               renderInput={(params) => <TextField {...params} label="Select Investigator" />}

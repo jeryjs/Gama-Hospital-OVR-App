@@ -4,7 +4,6 @@ import useSWR from 'swr';
 
 export interface UseLocationsReturn {
   locations: Location[];
-  isLoading: boolean;
   isError: boolean;
   error: any;
   mutate: () => void;
@@ -30,15 +29,15 @@ export function useLocations(): UseLocationsReturn {
     return data!;
   };
 
-  const { data, error, mutate, isLoading } = useSWR(url, fetcher, {
+  const { data, error, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 300000, // 5 minutes - locations rarely change
+    suspense: true,
   });
 
   return {
     locations: data || [],
-    isLoading,
     isError: !!error,
     error,
     mutate,

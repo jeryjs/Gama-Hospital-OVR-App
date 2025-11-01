@@ -8,7 +8,6 @@ export interface UseUsersOptions {
 
 export interface UseUsersReturn {
   users: UserMinimal[];
-  isLoading: boolean;
   isError: boolean;
   error: any;
   mutate: () => void;
@@ -38,15 +37,15 @@ export function useUsers(options: UseUsersOptions = {}): UseUsersReturn {
     return data!;
   };
 
-  const { data, error, mutate, isLoading } = useSWR(url, fetcher, {
+  const { data, error, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000, // 1 minute - users don't change often
+    suspense: true,
   });
 
   return {
     users: data || [],
-    isLoading,
     isError: !!error,
     error,
     mutate,
