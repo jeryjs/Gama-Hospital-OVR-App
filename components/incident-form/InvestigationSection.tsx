@@ -63,7 +63,7 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}/assign-investigator`, {
+      const res = await fetch(`/api/incidents/${incident.id}/assign-investigator`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ investigatorId: selectedInvestigator }),
@@ -90,7 +90,7 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}/submit-findings`, {
+      const res = await fetch(`/api/incidents/${incident.id}/submit-findings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ findings }),
@@ -116,7 +116,7 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}/hod-submit`, {
+      const res = await fetch(`/api/incidents/${incident.id}/hod-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

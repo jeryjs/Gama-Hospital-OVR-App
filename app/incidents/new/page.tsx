@@ -199,7 +199,7 @@ export default function NewIncidentPage() {
       physicianSawPatient: false,
       assessment: '',
       diagnosis: '',
-      injuryOutcome: '',
+      injuryOutcome: 'no_injury',
       treatmentProvided: '',
       physicianName: '',
       physicianId: '',

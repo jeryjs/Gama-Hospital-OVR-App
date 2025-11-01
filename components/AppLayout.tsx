@@ -64,12 +64,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const items: NavItem[] = [
       { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
       {
-        title: 'Incidents', icon: <Description />, open: pathname.startsWith('/incidents') || pathname === '/qi/review' || pathname === '/hod/review',
+        title: 'Incidents', icon: <Description />, open: pathname.startsWith('/incidents'),
         children: [
-          { title: 'My Reports', path: '/incidents', badge: { content: <Add />, link: '/incidents', tooltip: 'Report New incident' } },
+          { title: 'My Reports', path: '/incidents', badge: { content: <Add />, link: '/incidents/new', tooltip: 'Report New incident' } },
           { title: 'Pending Approval', path: '/incidents?status=submitted', roles: ['supervisor', 'employee'], badge: { content: 3, tooltip: 'Found 3 reports pending approval' } },
-          { title: 'Investigation', path: '/hod/review', roles: ['department_head', 'admin'], badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' } },
-          { title: 'QI Review', path: '/qi/review', roles: ['quality_manager', 'admin'], badge: { content: 1, tooltip: 'Found 1 QI reviews pending' } },
+          { title: 'Investigation', path: '/incidents/hod/review', roles: ['department_head', 'admin'], badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' } },
+          { title: 'QI Review', path: '/incidents/qi/review', roles: ['quality_manager', 'admin'], badge: { content: 1, tooltip: 'Found 1 QI reviews pending' } },
         ],
       },
     ];
@@ -175,6 +175,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           {child.badge && (
                             <Tooltip title={child.badge.tooltip} arrow placement='right'>
                               <Chip
+                                component={child.badge?.link ? Link : 'div'}
+                                href={child.badge?.link || undefined}
                                 label={child.badge.content}
                                 size="small"
                                 color="primary"

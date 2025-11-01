@@ -4,14 +4,19 @@ import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
 import {
   Add,
-  Visibility,
+  Close,
   FilterList,
-  Close
+  Visibility
 } from '@mui/icons-material';
 import {
+  alpha,
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   LinearProgress,
   Paper,
@@ -24,15 +29,11 @@ import {
   TableRow,
   TextField,
   Typography,
-  alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/dist/client/components/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -67,11 +68,12 @@ const statusLabels: Record<string, string> = {
 
 export default function IncidentsPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Incident; direction: 'asc' | 'desc' }>({
     key: 'createdAt',
     direction: 'desc',

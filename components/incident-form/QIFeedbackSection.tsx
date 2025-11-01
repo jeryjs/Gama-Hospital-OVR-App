@@ -35,7 +35,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const [severityLevel, setSeverityLevel] = useState(incident.severityLevel || '');
   const [submitting, setSubmitting] = useState(false);
 
-  const isQI = session?.user?.role === 'quality_manager' || session?.user?.role === 'admin';
+  const isQI = session?.user?.role === 'quality_manager';
   const canSubmit = isQI && incident.status === 'qi_final_review';
   const isClosed = incident.status === 'closed';
 
@@ -47,7 +47,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}/qi-close`, {
+      const res = await fetch(`/api/incidents/${incident.id}/qi-close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -28,14 +28,24 @@ export function CommentsSection({ incidentId }: Props) {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  // Start collapsed if empty, expanded if not empty (after fetch)
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     fetchComments();
   }, [incidentId]);
 
+  useEffect(() => {
+    if (!loading) {
+      // If there are comments, expand automatically; otherwise, stay collapsed
+      setExpanded(comments.length > 0 ? true : false);
+    }
+  }, [loading, comments.length]);
+
   const fetchComments = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incidentId}/comments`);
+      const res = await fetch(`/api/incidents/${incidentId}/comments`);
       if (res.ok) {
         const data = await res.json();
         setComments(data);
@@ -52,7 +62,7 @@ export function CommentsSection({ incidentId }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incidentId}/comments`, {
+      const res = await fetch(`/api/incidents/${incidentId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newComment }),
@@ -61,6 +71,7 @@ export function CommentsSection({ incidentId }: Props) {
       if (res.ok) {
         setNewComment('');
         fetchComments();
+        setExpanded(true);
       }
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -73,7 +84,7 @@ export function CommentsSection({ incidentId }: Props) {
     if (!confirm('Delete this comment?')) return;
 
     try {
-      const res = await fetch(`/api/incidents/view/${incidentId}/comments/${commentId}`, {
+      const res = await fetch(`/api/incidents/${incidentId}/comments/${commentId}`, {
         method: 'DELETE',
       });
 
@@ -97,89 +108,93 @@ export function CommentsSection({ incidentId }: Props) {
           gap: 1,
           pb: 2,
           borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
+          cursor: 'pointer',
         }}
+        onClick={() => setExpanded((prev) => !prev)}
       >
         <CommentIcon /> Comments & Discussion
       </Typography>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          {/* Comments List */}
-          <Stack spacing={2} sx={{ mt: 3 }}>
-            {comments.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
-                No comments yet. Be the first to comment!
-              </Typography>
-            ) : (
-              comments.map((comment) => (
-                <Box
-                  key={comment.id}
-                  sx={{
-                    p: 2,
-                    bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-                    borderRadius: 1,
-                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                  }}
-                >
-                  <Stack direction="row" spacing={2}>
-                    <Avatar
-                      src={comment.user.profilePicture || undefined}
-                      alt={`${comment.user.firstName} ${comment.user.lastName}`}
-                    >
-                      {comment.user.firstName[0]}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {comment.user.firstName} {comment.user.lastName}
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="caption" color="text.secondary">
-                            {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
-                          </Typography>
-                          {comment.userId.toString() === session?.user?.id && (
-                            <IconButton size="small" onClick={() => handleDelete(comment.id)}>
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                      </Stack>
-                      <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
-                        {comment.content}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              ))
-            )}
-          </Stack>
-
-          {/* Add Comment */}
-          <Box sx={{ mt: 3 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Add a comment"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Share your thoughts..."
-            />
-            <Button
-              variant="contained"
-              startIcon={<Send />}
-              onClick={handleSubmit}
-              disabled={submitting || !newComment.trim()}
-              sx={{ mt: 2 }}
-            >
-              {submitting ? 'Posting...' : 'Post Comment'}
-            </Button>
+      {expanded && (
+        loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
           </Box>
-        </>
+        ) : (
+          <>
+            {/* Comments List */}
+            <Stack spacing={2} sx={{ mt: 3 }}>
+              {comments.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                  No comments yet. Be the first to comment!
+                </Typography>
+              ) : (
+                comments.map((comment) => (
+                  <Box
+                    key={comment.id}
+                    sx={{
+                      p: 2,
+                      bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                      borderRadius: 1,
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Stack direction="row" spacing={2}>
+                      <Avatar
+                        src={comment.user.profilePicture || undefined}
+                        alt={`${comment.user.firstName} ${comment.user.lastName}`}
+                      >
+                        {comment.user.firstName[0]}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {comment.user.firstName} {comment.user.lastName}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="caption" color="text.secondary">
+                              {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
+                            </Typography>
+                            {comment.userId.toString() === session?.user?.id && (
+                              <IconButton size="small" onClick={() => handleDelete(comment.id)}>
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Stack>
+                        </Stack>
+                        <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
+                          {comment.content}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                ))
+              )}
+            </Stack>
+
+            {/* Add Comment */}
+            <Box sx={{ mt: 3 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Add a comment"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Share your thoughts..."
+              />
+              <Button
+                variant="contained"
+                startIcon={<Send />}
+                onClick={handleSubmit}
+                disabled={submitting || !newComment.trim()}
+                sx={{ mt: 2 }}
+              >
+                {submitting ? 'Posting...' : 'Post Comment'}
+              </Button>
+            </Box>
+          </>
+        )
       )}
     </Paper>
   );

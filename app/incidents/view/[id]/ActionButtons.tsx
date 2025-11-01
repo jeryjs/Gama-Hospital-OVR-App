@@ -29,7 +29,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
     }
 
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}`, {
+      const res = await fetch(`/api/incidents/${incident.id}`, {
         method: 'DELETE',
       });
 

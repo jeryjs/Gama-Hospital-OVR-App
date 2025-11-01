@@ -26,7 +26,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
   const [action, setAction] = useState(incident.supervisorAction || '');
   const [submitting, setSubmitting] = useState(false);
   
-  const isSupervisor = session?.user?.role === 'quality_manager' || session?.user?.role === 'admin';
+  const isSupervisor = session?.user?.role === 'supervisor';
   const canApprove = isSupervisor && incident.status === 'submitted';
   const isApproved = incident.status !== 'draft' && incident.status !== 'submitted';
 
@@ -38,7 +38,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/view/${incident.id}/supervisor-approve`, {
+      const res = await fetch(`/api/incidents/${incident.id}/supervisor-approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),

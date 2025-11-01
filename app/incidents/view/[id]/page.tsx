@@ -84,7 +84,7 @@ export default function IncidentViewPage() {
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
         
         {/* Supervisor Section */}
-        <SupervisorSection incident={incident} onUpdate={handleUpdate} />
+        {incident.status !== 'draft' && <SupervisorSection incident={incident} onUpdate={handleUpdate} />}
         
         {/* Investigation Section (for HOD and investigators) */}
         {(incident.status === 'hod_assigned' || incident.status === 'qi_final_review' || incident.status === 'closed') && (
