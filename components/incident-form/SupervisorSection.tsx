@@ -38,7 +38,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/${incident.id}/supervisor-approve`, {
+      const res = await fetch(`/api/incidents/view/${incident.id}/supervisor-approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),

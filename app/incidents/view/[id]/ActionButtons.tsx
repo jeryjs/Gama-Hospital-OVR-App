@@ -4,7 +4,7 @@ import { Delete, Edit } from '@mui/icons-material';
 import { Box, Button, Stack } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import type { OVRReport } from '../_shared/types';
+import type { OVRReport } from '../../_shared/types';
 
 interface Props {
   incident: OVRReport;
@@ -20,7 +20,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
   const canDelete = (incident.status === 'draft' && isOwner) || session?.user?.role === 'admin';
 
   const handleEdit = () => {
-    router.push(`/incidents/${incident.id}/edit`);
+    router.push(`/incidents/view/${incident.id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -29,7 +29,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
     }
 
     try {
-      const res = await fetch(`/api/incidents/${incident.id}`, {
+      const res = await fetch(`/api/incidents/view/${incident.id}`, {
         method: 'DELETE',
       });
 

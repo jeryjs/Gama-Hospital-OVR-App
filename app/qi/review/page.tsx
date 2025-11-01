@@ -227,7 +227,7 @@ export default function QIReviewPage() {
                               <Button
                                 size="small"
                                 component={Link}
-                                href={`/incidents/${incident.id}`}
+                                href={`/incidents/view/${incident.id}`}
                                 startIcon={<Visibility />}
                               >
                                 View

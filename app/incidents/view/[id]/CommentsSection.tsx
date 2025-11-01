@@ -16,7 +16,7 @@ import {
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import type { Comment } from '../_shared/types';
+import type { Comment } from '../../_shared/types';
 
 interface Props {
   incidentId: number;
@@ -35,7 +35,7 @@ export function CommentsSection({ incidentId }: Props) {
 
   const fetchComments = async () => {
     try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments`);
+      const res = await fetch(`/api/incidents/view/${incidentId}/comments`);
       if (res.ok) {
         const data = await res.json();
         setComments(data);
@@ -52,7 +52,7 @@ export function CommentsSection({ incidentId }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments`, {
+      const res = await fetch(`/api/incidents/view/${incidentId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newComment }),
@@ -73,7 +73,7 @@ export function CommentsSection({ incidentId }: Props) {
     if (!confirm('Delete this comment?')) return;
 
     try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments/${commentId}`, {
+      const res = await fetch(`/api/incidents/view/${incidentId}/comments/${commentId}`, {
         method: 'DELETE',
       });
 

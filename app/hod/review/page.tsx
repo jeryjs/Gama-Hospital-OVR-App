@@ -3,10 +3,10 @@
 import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
 import {
-  Add,
-  Visibility,
+  AssignmentInd,
   FilterList,
-  Close
+  Close,
+  Visibility
 } from '@mui/icons-material';
 import {
   Box,
@@ -33,12 +33,14 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-interface Incident {
+interface HODIncident {
   id: number;
   referenceNumber: string;
+  reporterName: string;
   occurrenceDate: string;
   occurrenceCategory: string;
   status: string;
@@ -46,41 +48,38 @@ interface Incident {
 }
 
 const statusColors: Record<string, string> = {
-  draft: '#6B7280',
-  submitted: '#3B82F6',
-  supervisor_approved: '#10B981',
-  qi_review: '#8B5CF6',
   hod_assigned: '#EC4899',
   qi_final_review: '#10B981',
   closed: '#059669',
 };
 
 const statusLabels: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
-  supervisor_approved: 'Supervisor Approved',
-  qi_review: 'QI Review',
-  hod_assigned: 'Investigation',
+  hod_assigned: 'Investigation Assigned',
   qi_final_review: 'QI Final Review',
   closed: 'Closed',
 };
 
-export default function IncidentsPage() {
+export default function HODReviewPage() {
   const { data: session } = useSession();
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
+  const router = useRouter();
+  const [incidents, setIncidents] = useState<HODIncident[]>([]);
+  const [filteredIncidents, setFilteredIncidents] = useState<HODIncident[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Incident; direction: 'asc' | 'desc' }>({
+  const [sortConfig, setSortConfig] = useState<{ key: keyof HODIncident; direction: 'asc' | 'desc' }>({
     key: 'createdAt',
     direction: 'desc',
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (session?.user?.role !== 'department_head' && session?.user?.role !== 'admin') {
+      router.replace('/dashboard');
+      return;
+    }
     fetchIncidents();
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     applyFiltersAndSort();
@@ -88,10 +87,26 @@ export default function IncidentsPage() {
 
   const fetchIncidents = async () => {
     try {
-      const res = await fetch('/api/incidents');
+      const res = await fetch('/api/incidents?status=hod_assigned');
       if (res.ok) {
         const data = await res.json();
-        setIncidents(data);
+        // Filter for HOD's department or admin sees all
+        const filtered = data.filter((incident: any) =>
+          session?.user?.role === 'admin' ||
+          incident.staffDepartment === session?.user?.department
+        );
+
+        setIncidents(
+          filtered.map((incident: any) => ({
+            id: incident.id,
+            referenceNumber: incident.referenceNumber,
+            reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
+            occurrenceDate: incident.occurrenceDate,
+            occurrenceCategory: incident.occurrenceCategory,
+            status: incident.status,
+            createdAt: incident.createdAt,
+          }))
+        );
       }
     } catch (error) {
       console.error('Error fetching incidents:', error);
@@ -108,6 +123,7 @@ export default function IncidentsPage() {
       filtered = filtered.filter(
         (incident) =>
           incident.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.reporterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           incident.occurrenceCategory.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -136,7 +152,7 @@ export default function IncidentsPage() {
     setFilteredIncidents(filtered);
   };
 
-  const handleSort = (key: keyof Incident) => {
+  const handleSort = (key: keyof HODIncident) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
@@ -165,34 +181,22 @@ export default function IncidentsPage() {
         <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
           <Stack spacing={3}>
             {/* Header */}
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Box>
-                <Typography variant="h4" gutterBottom fontWeight={700}>
-                  My OVR Reports
+            <Stack spacing={1}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <AssignmentInd fontSize="large" color="primary" />
+                <Typography variant="h4" fontWeight={700}>
+                  Investigation Review
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  View and manage your incident reports ({filteredIncidents.length})
-                </Typography>
-              </Box>
-              <Button
-                component={Link}
-                href="/incidents/new"
-                variant="contained"
-                startIcon={<Add />}
-                sx={{ px: 3, py: 1.5 }}
-              >
-                New Report
-              </Button>
+              </Stack>
+              <Typography variant="body1" color="text.secondary">
+                Review and manage investigations assigned to your department ({filteredIncidents.length})
+              </Typography>
             </Stack>
 
             {/* Filters */}
             <Stack direction="row" spacing={2} alignItems="center">
               <TextField
-                placeholder="Search by reference or category..."
+                placeholder="Search by reference, reporter, or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 size="small"
@@ -220,7 +224,7 @@ export default function IncidentsPage() {
 
             {/* Filter Dialog */}
             <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
-              <DialogTitle>Filter Reports</DialogTitle>
+              <DialogTitle>Filter Investigations</DialogTitle>
               <DialogContent sx={{ minWidth: 300, pt: 2 }}>
                 <TextField
                   fullWidth
@@ -244,72 +248,65 @@ export default function IncidentsPage() {
             </Dialog>
 
             {/* Table */}
-            <Paper>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
-                      <TableCell
-                        onClick={() => handleSort('referenceNumber')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Reference # {sortConfig.key === 'referenceNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell
-                        onClick={() => handleSort('occurrenceDate')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Date {sortConfig.key === 'occurrenceDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell
-                        onClick={() => handleSort('occurrenceCategory')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Category {sortConfig.key === 'occurrenceCategory' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                      <TableCell
-                        onClick={() => handleSort('createdAt')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Created {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredIncidents.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                          <Typography variant="body1" color="text.secondary">
-                            {hasActiveFilters
-                              ? 'No incidents match your filters.'
-                              : 'No incidents found. Create your first report!'}
-                          </Typography>
-                          {hasActiveFilters ? (
-                            <Button
-                              variant="outlined"
-                              startIcon={<Close />}
-                              onClick={handleClearFilters}
-                              sx={{ mt: 2 }}
-                            >
-                              Clear Filters
-                            </Button>
-                          ) : (
-                            <Button
-                              component={Link}
-                              href="/incidents/new"
-                              variant="outlined"
-                              startIcon={<Add />}
-                              sx={{ mt: 2 }}
-                            >
-                              New Report
-                            </Button>
-                          )}
+            {filteredIncidents.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  {hasActiveFilters
+                    ? 'No investigations match your filters.'
+                    : 'No investigations assigned to your department.'}
+                </Typography>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Close />}
+                    onClick={handleClearFilters}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </Paper>
+            ) : (
+              <Paper>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
+                        <TableCell
+                          onClick={() => handleSort('referenceNumber')}
+                          sx={{ cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Reference # {sortConfig.key === 'referenceNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                         </TableCell>
+                        <TableCell
+                          onClick={() => handleSort('reporterName')}
+                          sx={{ cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Reporter {sortConfig.key === 'reporterName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </TableCell>
+                        <TableCell
+                          onClick={() => handleSort('occurrenceDate')}
+                          sx={{ cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Date {sortConfig.key === 'occurrenceDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </TableCell>
+                        <TableCell
+                          onClick={() => handleSort('occurrenceCategory')}
+                          sx={{ cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Category {sortConfig.key === 'occurrenceCategory' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                        <TableCell
+                          onClick={() => handleSort('createdAt')}
+                          sx={{ cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Created {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
                       </TableRow>
-                    ) : (
-                      filteredIncidents.map((incident) => (
+                    </TableHead>
+                    <TableBody>
+                      {filteredIncidents.map((incident) => (
                         <TableRow
                           key={incident.id}
                           hover
@@ -327,6 +324,11 @@ export default function IncidentsPage() {
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
                               {incident.referenceNumber}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {incident.reporterName}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -368,12 +370,12 @@ export default function IncidentsPage() {
                             </IconButton>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            )}
           </Stack>
         </motion.div>
       </Box>

@@ -2,7 +2,7 @@ import { Box, Paper, Stack, Typography, Chip, IconButton } from '@mui/material';
 import { ArrowBack, Print, Download } from '@mui/icons-material';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import type { OVRReport } from '../_shared/types';
+import type { OVRReport } from '../../_shared/types';
 
 interface Props {
   incident: OVRReport;
