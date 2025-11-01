@@ -53,7 +53,7 @@ interface NavItem {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session, status: sessionStatus, update: setSession} = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();

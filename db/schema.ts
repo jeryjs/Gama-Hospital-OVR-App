@@ -23,7 +23,7 @@ export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
   'submitted',                // Step 1: Submitted, awaiting supervisor approval
   'supervisor_approved',      // Step 2: Supervisor approved, sent to QI
-  'qi_review',                // Step 3: QI reviewing and assigning to HOD
+  'qi_review',                // Step 3: QI reviewing and assigning to HOD  // This status is never set by us and is skipped as 
   'hod_assigned',             // Step 4: HOD investigating
   'qi_final_review',          // Step 5: QI final review and feedback
   'closed'                    // Step 6: Case closed

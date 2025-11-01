@@ -6,6 +6,7 @@ import { MedicalAssessmentSection } from '@/components/incident-form/MedicalAsse
 import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceDetailsSection';
 import { PatientInfoSection } from '@/components/incident-form/PatientInfoSection';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
+import { QIAssignHODSection } from '@/components/incident-form/QIAssignHODSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { WitnessSection } from '@/components/incident-form/WitnessSection';
 import { Box, LinearProgress } from '@mui/material';
@@ -85,6 +86,9 @@ export default function IncidentViewPage() {
         
         {/* Supervisor Section */}
         {incident.status !== 'draft' && <SupervisorSection incident={incident} onUpdate={handleUpdate} />}
+        
+        {/* QI Assign HOD Section */}
+        {incident.status === 'supervisor_approved' && <QIAssignHODSection incident={incident} onUpdate={handleUpdate} />}
         
         {/* Investigation Section (for HOD and investigators) */}
         {(incident.status === 'hod_assigned' || incident.status === 'qi_final_review' || incident.status === 'closed') && (

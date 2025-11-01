@@ -8,11 +8,11 @@ interface Props {
 }
 
 const steps = [
-  { key: 'submitted', label: 'Submitted', description: { current: '', final: 'Report submitted by employee' } },
+  { key: 'submitted', label: 'Submitted', description: { current: '', final: 'Incident was reported' } },
   { key: 'supervisor_approved', label: 'Approval', description: { current: 'Awaiting supervisor approval', final: 'Approved by supervisor' } },
-  { key: 'qi_review', label: 'QI Review', description: { current: 'Undergoing QI review', final: 'Quality Improvement review' } },
-  { key: 'hod_assigned', label: 'Investigation', description: { current: 'HOD assigned to investigate', final: 'HOD investigating' } },
-  { key: 'qi_final_review', label: 'Final Review', description: { current: 'Awaiting final review', final: 'QI final feedback' } },
+  { key: 'hod_assigned', label: 'QI Review', description: { current: 'Undergoing QI review', final: 'Assigned to Department Head' } },
+  { key: 'qi_final_review', label: 'Investigation', description: { current: 'HOD assigned to investigate', final: 'HOD investigating' } },  // the qi_review status is never used
+  { key: 'qi_review', label: 'Final Review', description: { current: 'Awaiting final review', final: 'QI final feedback' } },
   { key: 'closed', label: 'Closed', description: { current: 'Case closed', final: 'Case closed' } },
 ];
 
@@ -84,11 +84,10 @@ export function StatusTimeline({ status, submittedAt }: Props) {
         {steps.map((step, index) => (
           <Step key={step.key} completed={index < activeStep}>
             <StepLabel
-              StepIconComponent={ColorlibStepIcon}
               optional={
                 <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                   {step.description && (
-                    <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                    <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 400 }}>
                       {index === activeStep
                         ? step.description.current
                         : step.description.final}
@@ -96,6 +95,9 @@ export function StatusTimeline({ status, submittedAt }: Props) {
                   )}
                 </Box>
               }
+              slots={{
+                stepIcon: ColorlibStepIcon,
+              }}
             >
               {step.label}
             </StepLabel>
