@@ -196,10 +196,10 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
                   Severity Level
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  {incident.severityLevel === 'level_1' && 'Near Miss (Level 1)'}
-                  {incident.severityLevel === 'level_2' && 'No Apparent Injury (Level 2)'}
-                  {incident.severityLevel === 'level_3' && 'Minor (Level 3)'}
-                  {incident.severityLevel === 'level_4' && 'Major (Level 4)'}
+                  {incident.severityLevel === 'near_miss_level_1' && 'Near Miss (Level 1)'}
+                  {incident.severityLevel === 'no_apparent_injury_level_2' && 'No Apparent Injury (Level 2)'}
+                  {incident.severityLevel === 'minor_level_3' && 'Minor (Level 3)'}
+                  {incident.severityLevel === 'major_level_4' && 'Major (Level 4)'}
                 </Typography>
               </Box>
             )}

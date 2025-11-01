@@ -13,7 +13,7 @@ import { Box, LinearProgress } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
-import type { OVRReport } from '../../_shared/types';
+import type { OVRReportWithRelations } from '../../_shared/types';
 import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
@@ -21,7 +21,7 @@ import { IncidentHeader } from './IncidentHeader';
 export default function IncidentViewPage() {
   const params = useParams();
   const router = useRouter();
-  const [incident, setIncident] = useState<OVRReport | null>(null);
+  const [incident, setIncident] = useState<OVRReportWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 
 interface Props {
   status: string;
-  submittedAt: string | null;
+  submittedAt: Date | null;
 }
 
 const steps = [

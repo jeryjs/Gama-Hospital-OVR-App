@@ -175,8 +175,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           {child.badge && (
                             <Tooltip title={child.badge.tooltip} arrow placement='right'>
                               <Chip
-                                component={child.badge?.link ? Link : 'div'}
-                                href={child.badge?.link || undefined}
+                                component="button"
+                                onClick={_ => child.badge?.link && router.push(child.badge.link)}
                                 label={child.badge.content}
                                 size="small"
                                 color="primary"

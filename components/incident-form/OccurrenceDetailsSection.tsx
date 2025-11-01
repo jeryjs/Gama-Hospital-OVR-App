@@ -2,10 +2,10 @@ import { Paper, Typography, Grid, Box, Chip, alpha } from '@mui/material';
 import { Place, Warning, Person } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS } from '@/lib/ovr-categories';
-import type { OVRReport } from '../../app/incidents/_shared/types';
+import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
-  incident: OVRReport;
+  incident: OVRReportWithRelations;
 }
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (

@@ -18,10 +18,10 @@ import {
 import { Science, PersonAdd } from '@mui/icons-material';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
-import type { OVRReport } from '../../app/incidents/_shared/types';
+import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
-  incident: OVRReport;
+  incident: OVRReportWithRelations;
   onUpdate: () => void;
 }
 

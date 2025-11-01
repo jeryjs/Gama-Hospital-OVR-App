@@ -44,7 +44,7 @@ export function PatientInfoSection({ incident }: Props) {
           <InfoRow label="Unit / Ward" value={incident.patientUnit} />
         </Grid>
         <Grid size={{ xs: 12, md: 3 }}>
-          <InfoRow label="Age" value={incident.patientAge} />
+          <InfoRow label="Age" value={incident.patientAge?.toString()} />
         </Grid>
         <Grid size={{ xs: 12, md: 3 }}>
           <InfoRow label="Sex" value={incident.patientSex} />
