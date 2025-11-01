@@ -2,6 +2,7 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
+import { useIncidents } from '@/lib/hooks';
 import {
   Add,
   Close,
@@ -17,7 +18,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   LinearProgress,
   Paper,
   Stack,
@@ -29,22 +29,13 @@ import {
   TableRow,
   TextField,
   Typography,
+  Pagination,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { useSession } from 'next-auth/react';
-import { useSearchParams } from 'next/dist/client/components/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-
-interface Incident {
-  id: number;
-  referenceNumber: string;
-  occurrenceDate: string;
-  occurrenceCategory: string;
-  status: string;
-  createdAt: string;
-}
+import { useState } from 'react';
 
 const statusColors: Record<string, string> = {
   draft: '#6B7280',
@@ -67,94 +58,53 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function IncidentsPage() {
-  const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Incident; direction: 'asc' | 'desc' }>({
-    key: 'createdAt',
-    direction: 'desc',
-  });
+  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'referenceNumber' | 'status'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchIncidents();
-  }, []);
+  // Fetch incidents with SWR - automatic caching and revalidation
+  const { incidents, pagination, isLoading, error } = useIncidents({
+    page,
+    limit: 10,
+    sortBy,
+    sortOrder,
+    status: statusFilter || undefined,
+    search: searchTerm || undefined,
+  });
 
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [incidents, searchTerm, statusFilter, sortConfig]);
-
-  const fetchIncidents = async () => {
-    try {
-      const res = await fetch('/api/incidents');
-      if (res.ok) {
-        const data = await res.json();
-        setIncidents(data);
-      }
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-    } finally {
-      setLoading(false);
+  const handleSort = (key: typeof sortBy) => {
+    if (sortBy === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(key);
+      setSortOrder('desc');
     }
-  };
-
-  const applyFiltersAndSort = () => {
-    let filtered = [...incidents];
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (incident) =>
-          incident.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          incident.occurrenceCategory.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter) {
-      filtered = filtered.filter((incident) => incident.status === statusFilter);
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    setFilteredIncidents(filtered);
-  };
-
-  const handleSort = (key: keyof Incident) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
-    }));
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setStatusFilter('');
-    setSortConfig({ key: 'createdAt', direction: 'desc' });
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
   };
 
-  if (loading) {
+  if (isLoading && !incidents.length) {
     return (
       <AppLayout>
         <LinearProgress />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <Typography color="error">Error loading incidents. Please try again.</Typography>
       </AppLayout>
     );
   }
@@ -177,7 +127,7 @@ export default function IncidentsPage() {
                   My OVR Reports
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  View and manage incidents reported by you ({filteredIncidents.length})
+                  View and manage incidents reported by you ({pagination?.total || 0})
                 </Typography>
               </Box>
               <Button
@@ -255,32 +205,34 @@ export default function IncidentsPage() {
                         onClick={() => handleSort('referenceNumber')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                       >
-                        Reference # {sortConfig.key === 'referenceNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        Reference # {sortBy === 'referenceNumber' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </TableCell>
                       <TableCell
                         onClick={() => handleSort('occurrenceDate')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                       >
-                        Date {sortConfig.key === 'occurrenceDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        Date {sortBy === 'occurrenceDate' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        Category
                       </TableCell>
                       <TableCell
-                        onClick={() => handleSort('occurrenceCategory')}
+                        onClick={() => handleSort('status')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                       >
-                        Category {sortConfig.key === 'occurrenceCategory' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                       <TableCell
                         onClick={() => handleSort('createdAt')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                       >
-                        Created {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        Created {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredIncidents.length === 0 ? (
+                    {incidents.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                           <Typography variant="body1" color="text.secondary">
@@ -311,7 +263,7 @@ export default function IncidentsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredIncidents.map((incident) => (
+                      incidents.map((incident) => (
                         <TableRow
                           key={incident.id}
                           hover
@@ -323,8 +275,7 @@ export default function IncidentsPage() {
                                 alpha(theme.palette.primary.main, 0.05),
                             },
                           }}
-                          component={Link}
-                          href={`/incidents/view/${incident.id}`}
+                          onClick={() => window.location.href = `/incidents/view/${incident.id}`}
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
@@ -360,14 +311,15 @@ export default function IncidentsPage() {
                           <TableCell>
                             {format(new Date(incident.createdAt), 'MMM dd, yyyy')}
                           </TableCell>
-                          <TableCell align="right">
-                            <IconButton
+                          <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                            <Button
                               size="small"
                               component={Link}
                               href={`/incidents/view/${incident.id}`}
+                              startIcon={<Visibility fontSize="small" />}
                             >
-                              <Visibility fontSize="small" />
-                            </IconButton>
+                              View
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -376,6 +328,19 @@ export default function IncidentsPage() {
                 </Table>
               </TableContainer>
             </Paper>
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <Box display="flex" justifyContent="center">
+                <Pagination
+                  count={pagination.totalPages}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                  size="large"
+                />
+              </Box>
+            )}
           </Stack>
         </motion.div>
       </Box>

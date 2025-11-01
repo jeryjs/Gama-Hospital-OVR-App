@@ -9,7 +9,8 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Menu, MenuItem,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -17,8 +18,8 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
-import type { Comment } from '../../_shared/types';
+import { useState, useEffect } from 'react';
+import { useComments } from '@/lib/hooks';
 
 interface Props {
   incidentId: number;
@@ -26,55 +27,27 @@ interface Props {
 
 export function CommentsSection({ incidentId }: Props) {
   const { data: session } = useSession();
-  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  // Start collapsed if empty, expanded if not empty (after fetch)
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    fetchComments();
-  }, [incidentId]);
+  // Fetch comments with SWR - automatic caching and revalidation
+  const { comments, isLoading, addComment, deleteComment } = useComments(incidentId);
 
   useEffect(() => {
-    if (!loading) {
-      // If there are comments, expand automatically; otherwise, stay collapsed
-      setExpanded(comments.length > 0 ? true : false);
+    if (!isLoading) {
+      setExpanded(comments.length > 0);
     }
-  }, [loading, comments.length]);
-
-  const fetchComments = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments`);
-      if (res.ok) {
-        const data = await res.json();
-        setComments(data);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isLoading, comments.length]);
 
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment }),
-      });
-
-      if (res.ok) {
-        setNewComment('');
-        fetchComments();
-        setExpanded(true);
-      }
+      await addComment(newComment);
+      setNewComment('');
+      setExpanded(true);
     } catch (error) {
       console.error('Error posting comment:', error);
     } finally {
@@ -86,13 +59,7 @@ export function CommentsSection({ incidentId }: Props) {
     if (!confirm('Delete this comment?')) return;
 
     try {
-      const res = await fetch(`/api/incidents/${incidentId}/comments/${commentId}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        fetchComments();
-      }
+      await deleteComment(commentId);
     } catch (error) {
       console.error('Error deleting comment:', error);
     }
@@ -139,7 +106,7 @@ export function CommentsSection({ incidentId }: Props) {
       </Box>
 
       {expanded && (
-        loading ? (
+        isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>

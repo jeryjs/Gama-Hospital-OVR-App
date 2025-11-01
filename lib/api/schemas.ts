@@ -54,7 +54,9 @@ export const commentSelectSchema = createSelectSchema(ovrComments);
 export const commentInsertSchema = createInsertSchema(ovrComments);
 
 export const commentWithUserSchema = commentSelectSchema.extend({
-  user: userMinimalSchema,
+    user: userMinimalSchema.extend({
+        profilePicture: userSelectSchema.shape.profilePicture,
+    }),
 });
 
 // OVR Report schemas (auto-generated from DB)

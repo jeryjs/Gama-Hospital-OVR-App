@@ -9,11 +9,10 @@ import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection'
 import { QIAssignHODSection } from '@/components/incident-form/QIAssignHODSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { WitnessSection } from '@/components/incident-form/WitnessSection';
-import { Box, LinearProgress } from '@mui/material';
+import { useIncident } from '@/lib/hooks';
+import { Box, LinearProgress, Typography } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
-import type { OVRReportWithRelations } from '../../_shared/types';
 import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
@@ -21,34 +20,11 @@ import { IncidentHeader } from './IncidentHeader';
 export default function IncidentViewPage() {
   const params = useParams();
   const router = useRouter();
-  const [incident, setIncident] = useState<OVRReportWithRelations | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Fetch incident with SWR - automatic caching and revalidation
+  const { incident, isLoading, error, mutate } = useIncident(params.id as string);
 
-  useEffect(() => {
-    fetchIncident();
-  }, [params.id]);
-
-  const fetchIncident = async () => {
-    try {
-      const res = await fetch(`/api/incidents/${params.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setIncident(data);
-      } else if (res.status === 404) {
-        router.replace('/incidents');
-      }
-    } catch (error) {
-      console.error('Error fetching incident:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdate = () => {
-    fetchIncident();
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout>
         <LinearProgress />
@@ -56,10 +32,14 @@ export default function IncidentViewPage() {
     );
   }
 
-  if (!incident) {
+  if (error || !incident) {
     return (
       <AppLayout>
-        <Box>Incident not found</Box>
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Typography variant="h6" color="error">
+            {error ? 'Error loading incident' : 'Incident not found'}
+          </Typography>
+        </Box>
       </AppLayout>
     );
   }
@@ -85,26 +65,26 @@ export default function IncidentViewPage() {
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
         
         {/* Supervisor Section */}
-        {incident.status !== 'draft' && <SupervisorSection incident={incident} onUpdate={handleUpdate} />}
+        {incident.status !== 'draft' && <SupervisorSection incident={incident} onUpdate={mutate} />}
         
         {/* QI Assign HOD Section */}
-        {incident.status === 'supervisor_approved' && <QIAssignHODSection incident={incident} onUpdate={handleUpdate} />}
+        {incident.status === 'supervisor_approved' && <QIAssignHODSection incident={incident} onUpdate={mutate} />}
         
         {/* Investigation Section (for HOD and investigators) */}
         {(incident.status === 'hod_assigned' || incident.status === 'qi_final_review' || incident.status === 'closed') && (
-          <InvestigationSection incident={incident} onUpdate={handleUpdate} />
+          <InvestigationSection incident={incident} onUpdate={mutate} />
         )}
         
         {/* QI Final Feedback */}
         {(incident.status === 'qi_final_review' || incident.status === 'closed') && (
-          <QIFeedbackSection incident={incident} onUpdate={handleUpdate} />
+          <QIFeedbackSection incident={incident} onUpdate={mutate} />
         )}
         
         {/* Comments Section */}
         <CommentsSection incidentId={incident.id} />
         
         {/* Action Buttons */}
-        <ActionButtons incident={incident} onUpdate={handleUpdate} />
+        <ActionButtons incident={incident} onUpdate={mutate} />
       </Box>
     </AppLayout>
   );

@@ -1,20 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { requireAuth, handleApiError, validateBody } from '@/lib/api/middleware';
+import { createCommentSchema } from '@/lib/api/schemas';
+import { authOptions } from '@/lib/auth';
+import { desc, eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    await requireAuth(req);
     const { id } = await params;
     
     const comments = await db.query.ovrComments.findMany({
@@ -34,8 +32,7 @@ export async function GET(
 
     return NextResponse.json(comments);
   } catch (error) {
-    console.error('Error fetching comments:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -44,31 +41,38 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const session = await requireAuth(req);
     const { id } = await params;
-    const body = await req.json();
-    const { content } = body;
-
-    if (!content?.trim()) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
-    }
+    
+    // Validate request body
+    const body = await validateBody(req, createCommentSchema);
 
     const newComment = await db
       .insert(ovrComments)
       .values({
         ovrReportId: parseInt(id),
         userId: parseInt(session.user.id),
-        comment: content.trim(),
+        comment: body.comment.trim(),
       })
       .returning();
 
-    return NextResponse.json(newComment[0], { status: 201 });
+    // Fetch the comment with user details
+    const commentWithUser = await db.query.ovrComments.findFirst({
+      where: eq(ovrComments.id, newComment[0].id),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePicture: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(commentWithUser, { status: 201 });
   } catch (error) {
-    console.error('Error creating comment:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
