@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { Assessment, CheckCircle } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { apiCall } from '@/lib/client/error-handler';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -46,31 +47,26 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/qi-close`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feedback,
-          formComplete,
-          causeIdentified,
-          timeframe,
-          actionComplies,
-          effectiveAction,
-          severityLevel,
-        }),
-      });
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/qi-close`, {
+      method: 'POST',
+      body: JSON.stringify({
+        feedback,
+        formComplete,
+        causeIdentified,
+        timeframe,
+        actionComplies,
+        effectiveAction,
+        severityLevel,
+      }),
+    });
 
-      if (res.ok) {
-        onUpdate();
-      } else {
-        alert('Failed to submit feedback');
-      }
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      alert(error.message || 'Failed to submit feedback');
+      return;
     }
+
+    onUpdate();
   };
 
   return (

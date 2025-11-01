@@ -14,6 +14,8 @@ import {
   Alert,
 } from '@mui/material';
 import { AssignmentInd } from '@mui/icons-material';
+import { useUsers } from '@/lib/hooks';
+import { apiCall } from '@/lib/client/error-handler';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -23,37 +25,16 @@ interface Props {
 
 export function QIAssignHODSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
-  const [hodUsers, setHodUsers] = useState<Array<{ id: number; name: string; department: string }>>([]);
   const [selectedHOD, setSelectedHOD] = useState<number | null>(incident.departmentHeadId || null);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingUsers, setLoadingUsers] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Fetch HODs with SWR
+  const { users: hodUsers, isLoading: loadingUsers } = useUsers({ role: 'admin' });
+
   const isQI = session?.user?.role === 'quality_manager' || session?.user?.role === 'admin';
   const canAssignHOD = isQI && incident.status === 'supervisor_approved';
-
-  const fetchHODs = async () => {
-    setLoadingUsers(true);
-    try {
-      const res = await fetch('/api/users?role=admin');
-      if (res.ok) {
-        const data = await res.json();
-        setHodUsers(
-          data.map((user: any) => ({
-            id: user.id,
-            name: `${user.name} (${user.department || 'N/A'})`,
-            department: user.department,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error fetching HODs:', error);
-      setErrorMessage('Failed to load HOD list');
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
 
   const handleAssignHOD = async () => {
     if (!selectedHOD) {
@@ -62,30 +43,25 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/qi-assign-hod`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ departmentHeadId: selectedHOD }),
-      });
+    setErrorMessage('');
+    
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/qi-assign-hod`, {
+      method: 'POST',
+      body: JSON.stringify({ departmentHeadId: selectedHOD }),
+    });
 
-      if (res.ok) {
-        setSuccessMessage('HOD assigned successfully');
-        setErrorMessage('');
-        setTimeout(() => {
-          setSuccessMessage('');
-          onUpdate();
-        }, 2000);
-      } else {
-        const error = await res.json();
-        setErrorMessage(error.error || 'Failed to assign HOD');
-      }
-    } catch (error) {
-      console.error('Error assigning HOD:', error);
-      setErrorMessage('An error occurred while assigning HOD');
-    } finally {
+    if (error) {
+      setErrorMessage(error.message || 'Failed to assign HOD');
       setSubmitting(false);
+      return;
     }
+
+    setSuccessMessage('HOD assigned successfully');
+    setSubmitting(false);
+    setTimeout(() => {
+      setSuccessMessage('');
+      onUpdate();
+    }, 2000);
   };
 
   if (!canAssignHOD) {
@@ -107,10 +83,9 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
 
         <Autocomplete
           options={hodUsers}
-          getOptionLabel={(option) => option.name}
+          getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
           value={hodUsers.find((h) => h.id === selectedHOD) || null}
           onChange={(_, value) => setSelectedHOD(value?.id || null)}
-          onOpen={fetchHODs}
           loading={loadingUsers}
           disabled={submitting}
           renderInput={(params) => (

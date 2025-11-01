@@ -18,6 +18,8 @@ import {
 import { Science, PersonAdd } from '@mui/icons-material';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
+import { useUsers } from '@/lib/hooks';
+import { apiCall } from '@/lib/client/error-handler';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -27,14 +29,15 @@ interface Props {
 
 export function InvestigationSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
-  const [users, setUsers] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedInvestigator, setSelectedInvestigator] = useState<number | null>(null);
   const [findings, setFindings] = useState('');
   const [problemsIdentified, setProblemsIdentified] = useState(incident.problemsIdentified || '');
   const [causeClassification, setCauseClassification] = useState(incident.causeClassification || '');
   const [preventionRecommendation, setPreventionRecommendation] = useState(incident.preventionRecommendation || '');
   const [submitting, setSubmitting] = useState(false);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users with SWR
+  const { users, isLoading: loadingUsers } = useUsers();
 
   const isHOD = session?.user?.role === 'admin' || session?.user?.id === incident.departmentHeadId?.toString();
   const isInvestigator = incident.investigators?.some(inv => inv.investigatorId.toString() === session?.user?.id);
@@ -43,43 +46,23 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
   const canSubmitFindings = isInvestigator && incident.investigators?.find(inv => inv.investigatorId.toString() === session?.user?.id)?.status === 'pending';
   const canSubmitHODReport = isHOD && incident.status === 'hod_assigned';
 
-  const fetchUsers = async () => {
-    setLoadingUsers(true);
-    try {
-      const res = await fetch('/api/users');
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
   const handleAssignInvestigator = async () => {
     if (!selectedInvestigator) return;
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/assign-investigator`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ investigatorId: selectedInvestigator }),
-      });
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/assign-investigator`, {
+      method: 'POST',
+      body: JSON.stringify({ investigatorId: selectedInvestigator }),
+    });
 
-      if (res.ok) {
-        setSelectedInvestigator(null);
-        onUpdate();
-      } else {
-        alert('Failed to assign investigator');
-      }
-    } catch (error) {
-      console.error('Error assigning investigator:', error);
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      alert(error.message || 'Failed to assign investigator');
+      return;
     }
+
+    setSelectedInvestigator(null);
+    onUpdate();
   };
 
   const handleSubmitFindings = async () => {
@@ -89,23 +72,18 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/submit-findings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ findings }),
-      });
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/submit-findings`, {
+      method: 'POST',
+      body: JSON.stringify({ findings }),
+    });
 
-      if (res.ok) {
-        onUpdate();
-      } else {
-        alert('Failed to submit findings');
-      }
-    } catch (error) {
-      console.error('Error submitting findings:', error);
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      alert(error.message || 'Failed to submit findings');
+      return;
     }
+
+    onUpdate();
   };
 
   const handleSubmitHODReport = async () => {
@@ -115,27 +93,24 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/hod-submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problemsIdentified,
-          causeClassification,
-          preventionRecommendation,
-        }),
-      });
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/hod-submit`, {
+      method: 'POST',
+      body: JSON.stringify({
+        investigationFindings: incident.investigationFindings || '',
+        problemsIdentified,
+        causeClassification,
+        causeDetails: causeClassification,
+        preventionRecommendation,
+      }),
+    });
 
-      if (res.ok) {
-        onUpdate();
-      } else {
-        alert('Failed to submit HOD report');
-      }
-    } catch (error) {
-      console.error('Error submitting HOD report:', error);
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      alert(error.message || 'Failed to submit HOD report');
+      return;
     }
+
+    onUpdate();
   };
 
   return (
@@ -185,9 +160,8 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
               sx={{ flex: 1 }}
               options={users}
               loading={loadingUsers}
-              getOptionLabel={(option) => option.name}
+              getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
               onChange={(_, value) => setSelectedInvestigator(value?.id || null)}
-              onOpen={fetchUsers}
               renderInput={(params) => <TextField {...params} label="Select Investigator" />}
             />
             <Button

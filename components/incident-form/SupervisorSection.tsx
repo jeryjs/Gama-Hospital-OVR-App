@@ -14,10 +14,11 @@ import {
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
-import type { OVRReport } from '../../app/incidents/_shared/types';
+import { apiCall } from '@/lib/client/error-handler';
+import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
-  incident: OVRReport;
+  incident: OVRReportWithRelations;
   onUpdate: () => void;
 }
 
@@ -37,24 +38,18 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incidents/${incident.id}/supervisor-approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      });
+    const { data, error } = await apiCall(`/api/incidents/${incident.id}/supervisor-approve`, {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
 
-      if (res.ok) {
-        onUpdate();
-      } else {
-        alert('Failed to approve');
-      }
-    } catch (error) {
-      console.error('Error approving:', error);
-      alert('An error occurred');
-    } finally {
-      setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      alert(error.message || 'Failed to approve');
+      return;
     }
+
+    onUpdate();
   };
 
   return (
