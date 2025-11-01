@@ -252,18 +252,54 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             onClose={() => setAnchorEl(null)}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  minWidth: 240,
+                  p: 2,
+                  borderRadius: 3,
+                  boxShadow: 6,
+                  background: (theme) =>
+                    `linear-gradient(135deg, ${theme.palette.background.paper} 80%, ${theme.palette.primary.light} 100%)`,
+                },
+              },
+            }}
           >
-            <MenuItem onClick={() => router.push('/profile')}>
-              <ListItemIcon>
-                <AccountCircle fontSize="small" />
-              </ListItemIcon>
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2, px: 1 }}>
+              <Avatar
+                src={session?.user?.image || ''}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: 'primary.main',
+                  fontWeight: 700,
+                  fontSize: 24,
+                }}
+              >
+                {session?.user?.name?.charAt(0)}
+              </Avatar>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle1" fontWeight={700} noWrap>
+                  {session?.user?.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {session?.user?.email}
+                </Typography>
+              </Box>
+            </Stack>
+            <Divider sx={{ mb: 1 }} />
+            <MenuItem
+              onClick={() => router.push('/profile')}
+              sx={{ borderRadius: 2, mb: 0.5, fontWeight: 500, gap: 1, px: 2 }}
+            >
+              <AccountCircle fontSize="small" sx={{ color: 'primary.main' }} />
               Profile
             </MenuItem>
-            <Divider />
-            <MenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
+            <MenuItem
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              sx={{ borderRadius: 2, color: 'error.main', fontWeight: 500, gap: 1, px: 2 }}
+            >
+              <Logout fontSize="small" sx={{ color: 'error.main' }} />
               Sign Out
             </MenuItem>
           </Menu>

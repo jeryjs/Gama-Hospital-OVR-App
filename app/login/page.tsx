@@ -12,31 +12,28 @@ import {
   alpha,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { getSession, signIn } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { signIn, useSession } from 'next-auth/react';
+import { redirect, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
-  const [session, setSession] = useState<any | undefined>(undefined);
+  const {data: session, status } = useSession();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     // Redirect if already authenticated
-    const params = new URLSearchParams(window.location.search);
-    const callbackUrl = params.get('callbackUrl') || '/dashboard';
-    getSession().then((session) => {
-      setSession(session);
-      if (session) {
-        redirect(callbackUrl);
-      }
-    });
-  }, []);
+    const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+    if (session) {
+      redirect(callbackUrl);
+    }
+  }, [session, searchParams]);
 
   const handleGoogleSignIn = () => {
     signIn('google', { callbackUrl: '/dashboard' });
   };
-  
+
   // return spinner if session is being checked
-  if (session === undefined) {
+  if (status === 'loading') {
     return (
       <Box
         sx={{

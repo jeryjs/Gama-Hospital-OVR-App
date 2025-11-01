@@ -1,4 +1,4 @@
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, User } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -89,7 +89,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'supervisor' : token.role) as string;  // Testing: set specific role for me
+        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'admin' : token.role) as User['role'];  // Testing: set specific role for me
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;
