@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
               googleId: account?.providerAccountId,
               profilePicture: user.image,
               updatedAt: new Date(),
-              role: user.name?.toLowerCase().includes('jery') ? 'admin' : existingUser.role,  // Testing: make Jery admin
+              role: existingUser.role,
             })
             .where(eq(users.id, existingUser.id));
         } else {
@@ -89,7 +89,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'supervisor' : token.role) as string;  // Testing: set specific role for me
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;

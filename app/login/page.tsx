@@ -12,12 +12,76 @@ import {
   alpha,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
+import { redirect } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
+  const [session, setSession] = useState<any | undefined>(undefined);
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    const params = new URLSearchParams(window.location.search);
+    const callbackUrl = params.get('callbackUrl') || '/dashboard';
+    getSession().then((session) => {
+      setSession(session);
+      if (session) {
+        redirect(callbackUrl);
+      }
+    });
+  }, []);
+
   const handleGoogleSignIn = () => {
     signIn('google', { callbackUrl: '/dashboard' });
   };
+  
+  // return spinner if session is being checked
+  if (session === undefined) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: (theme) =>
+            `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 4, sm: 6 },
+            textAlign: 'center',
+            backdropFilter: 'blur(20px)',
+            background: (theme) => alpha(theme.palette.background.paper, 0.8),
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+            Checking authentication...
+          </Typography>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              border: (theme) => `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              borderTop: (theme) => `3px solid ${theme.palette.primary.main}`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              '@keyframes spin': {
+                to: { transform: 'rotate(360deg)' },
+              },
+            }}
+          />
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box
