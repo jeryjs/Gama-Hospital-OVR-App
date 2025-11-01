@@ -91,6 +91,7 @@ export default function NewIncidentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     patientName: '',
     patientMRN: '',
@@ -138,6 +139,7 @@ export default function NewIncidentPage() {
           occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
           occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
         });
+        setDraftLoaded(true);
       } catch (e) {
         console.error('Failed to load draft:', e);
       }
@@ -163,6 +165,46 @@ export default function NewIncidentPage() {
     } catch (error) {
       console.error('Error fetching locations:', error);
     }
+  };
+
+  const handleClearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setFormData({
+      patientName: '',
+      patientMRN: '',
+      patientAge: '',
+      patientSex: '',
+      patientUnit: '',
+      occurrenceDate: null,
+      occurrenceTime: null,
+      locationId: null,
+      specificLocation: '',
+      personInvolved: 'patient',
+      isSentinelEvent: false,
+      sentinelEventDetails: '',
+      staffInvolvedName: '',
+      staffPosition: '',
+      staffEmployeeId: '',
+      staffDepartment: '',
+      occurrenceCategory: '',
+      occurrenceSubcategory: '',
+      description: '',
+      witnessName: '',
+      witnessAccount: '',
+      witnessDepartment: '',
+      witnessPosition: '',
+      witnessEmployeeId: '',
+      physicianNotified: false,
+      physicianSawPatient: false,
+      assessment: '',
+      diagnosis: '',
+      injuryOutcome: '',
+      treatmentProvided: '',
+      physicianName: '',
+      physicianId: '',
+      supervisorAction: '',
+    });
+    setDraftLoaded(false);
   };
 
   const handleSubmit = async (isDraft: boolean) => {
@@ -215,9 +257,30 @@ export default function NewIncidentPage() {
               >
                 Back
               </Button>
-              <Typography variant="h4" fontWeight={700} sx={{ flex: 1 }}>
-                New Report
-              </Typography>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h4" fontWeight={700}>
+                  New Report
+                </Typography>
+                {draftLoaded && (
+                  <Typography variant="caption" color="text.secondary">
+                    Loaded from draft
+                  </Typography>
+                )}
+              </Box>
+              {draftLoaded && (
+                <Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleClearDraft}
+                  >
+                    Clear Draft
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, textAlign: 'center' }}>
+                    Start fresh
+                  </Typography>
+                </Box>
+              )}
             </Stack>
 
             {/* Main Form */}

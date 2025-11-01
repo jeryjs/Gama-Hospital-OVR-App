@@ -53,13 +53,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
-  const [hasDraft, setHasDraft] = useState(false);
-
-  // Check for draft on mount
-  useEffect(() => {
-    const draft = localStorage.getItem('gh:draft:new');
-    setHasDraft(!!draft);
-  }, []);
 
   const navItems: NavItem[] = [
     {
@@ -71,7 +64,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       title: 'Incidents',
       icon: <Description />,
       children: [
-        ...(hasDraft ? [{ title: 'Continue Draft', path: '/incidents/new', badge: '●' }] : []),
         { title: 'My Reports', path: '/incidents' },
         { title: 'New Report', path: '/incidents/new', badge: 'New' },
         ...(session?.user?.role === 'quality_manager' || session?.user?.role === 'admin'

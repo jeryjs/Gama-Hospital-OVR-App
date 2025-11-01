@@ -158,10 +158,10 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
               required
             >
               <option value=""></option>
-              <option value="level_1">Near Miss (Level 1)</option>
-              <option value="level_2">No Apparent Injury (Level 2)</option>
-              <option value="level_3">Minor (Level 3)</option>
-              <option value="level_4">Major (Level 4)</option>
+              <option value="near_miss_level_1">Near Miss (Level 1)</option>
+              <option value="no_apparent_injury_level_2">No Apparent Injury (Level 2)</option>
+              <option value="minor_level_3">Minor (Level 3)</option>
+              <option value="major_level_4">Major (Level 4)</option>
             </TextField>
 
             <Button
