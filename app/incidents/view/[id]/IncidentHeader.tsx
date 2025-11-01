@@ -1,8 +1,8 @@
-import { Box, Paper, Stack, Typography, Chip, IconButton } from '@mui/material';
-import { ArrowBack, Print, Download } from '@mui/icons-material';
+import { OVRReportListItem } from '@/lib/types';
+import { ArrowBack, Download, Print } from '@mui/icons-material';
+import { Box, Chip, IconButton, Paper, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { OVRReportListItem } from '@/lib/types';
 
 interface Props {
   incident: OVRReportListItem;
@@ -35,7 +35,7 @@ export function IncidentHeader({ incident }: Props) {
         <IconButton component={Link} href="/incidents" size="small" title="Back to Incidents">
           <ArrowBack />
         </IconButton>
-        
+
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" fontWeight={700}>
             {incident.refNo}
@@ -45,7 +45,7 @@ export function IncidentHeader({ incident }: Props) {
             {format(new Date(incident.createdAt), 'MMM dd, yyyy HH:mm')}
           </Typography>
         </Box>
-        
+
         <Chip
           label={statusLabels[incident.status] || incident.status}
           sx={{
@@ -56,7 +56,7 @@ export function IncidentHeader({ incident }: Props) {
             px: 2,
           }}
         />
-        
+
         <IconButton size="small" title="Print">
           <Print />
         </IconButton>

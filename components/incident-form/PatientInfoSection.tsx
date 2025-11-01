@@ -32,7 +32,7 @@ export function PatientInfoSection({ incident }: Props) {
       >
         <Person /> Patient Information
       </Typography>
-      
+
       <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow label="Patient Name" value={incident.patientName} />
@@ -50,7 +50,7 @@ export function PatientInfoSection({ incident }: Props) {
           <InfoRow label="Sex" value={incident.patientSex} />
         </Grid>
       </Grid>
-      
+
       <Box
         sx={{
           mt: 2,

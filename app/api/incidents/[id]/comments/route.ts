@@ -1,10 +1,8 @@
 import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
-import { requireAuth, handleApiError, validateBody } from '@/lib/api/middleware';
+import { handleApiError, requireAuth, validateBody } from '@/lib/api/middleware';
 import { createCommentSchema } from '@/lib/api/schemas';
-import { authOptions } from '@/lib/auth';
 import { desc, eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
@@ -14,7 +12,7 @@ export async function GET(
   try {
     await requireAuth(req);
     const { id } = await params;
-    
+
     const comments = await db.query.ovrComments.findMany({
       where: eq(ovrComments.ovrReportId, parseInt(id)),
       with: {
@@ -43,7 +41,7 @@ export async function POST(
   try {
     const session = await requireAuth(req);
     const { id } = await params;
-    
+
     // Validate request body
     const body = await validateBody(req, createCommentSchema);
 

@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import type { UserMinimal } from '@/lib/types';
 import { apiCall } from '@/lib/client/error-handler';
+import type { UserMinimal } from '@/lib/types';
+import useSWR from 'swr';
 
 export interface UseUsersOptions {
   role?: string;

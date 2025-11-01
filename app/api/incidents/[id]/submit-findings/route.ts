@@ -25,7 +25,7 @@ export async function POST(
 
     // Check if user is assigned as investigator
     const investigatorRecord = await db.query.ovrInvestigators.findFirst({
-      where: (investigators, { and, eq }) => 
+      where: (investigators, { and, eq }) =>
         and(
           eq(investigators.ovrReportId, parseInt(id)),
           eq(investigators.investigatorId, parseInt(session.user.id))

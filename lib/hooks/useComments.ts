@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import type { CommentWithUser } from '@/lib/types';
 import { apiCall } from '@/lib/client/error-handler';
+import type { CommentWithUser } from '@/lib/types';
+import useSWR from 'swr';
 
 export interface UseCommentsReturn {
   comments: CommentWithUser[];
@@ -8,7 +8,7 @@ export interface UseCommentsReturn {
   isError: boolean;
   error: any;
   mutate: () => void;
-  addComment: (comment: string) => Promise<void>;
+  addComment: (comment: string) => Promise<CommentWithUser>;
   updateComment: (commentId: number, comment: string) => Promise<void>;
   deleteComment: (commentId: number) => Promise<void>;
 }
@@ -53,6 +53,8 @@ export function useComments(incidentId: number | string | null | undefined): Use
 
     // Optimistic update
     mutate();
+
+    return newComment as CommentWithUser;
   };
 
   // Update comment

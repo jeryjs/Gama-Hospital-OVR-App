@@ -104,7 +104,7 @@ export function StatusTimeline({ status, submittedAt }: Props) {
           </Step>
         ))}
       </Stepper>
-      
+
       {submittedAt && (
         <Box sx={{ textAlign: 'center', mt: 2, fontSize: '0.875rem', color: 'text.secondary' }}>
           Submitted on {format(new Date(submittedAt), 'MMMM dd, yyyy HH:mm')}

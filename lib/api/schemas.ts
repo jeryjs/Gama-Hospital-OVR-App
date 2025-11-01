@@ -1,12 +1,12 @@
-import { z } from 'zod';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import {
-  ovrReports,
-  ovrInvestigators,
-  ovrComments,
-  users,
   locations,
+  ovrComments,
+  ovrInvestigators,
+  ovrReports,
+  users,
 } from '@/db/schema';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
 // ============================================
 // BASE SCHEMAS - GENERATED FROM DATABASE SCHEMA
@@ -54,9 +54,9 @@ export const commentSelectSchema = createSelectSchema(ovrComments);
 export const commentInsertSchema = createInsertSchema(ovrComments);
 
 export const commentWithUserSchema = commentSelectSchema.extend({
-    user: userMinimalSchema.extend({
-        profilePicture: userSelectSchema.shape.profilePicture,
-    }),
+  user: userMinimalSchema.extend({
+    profilePicture: userSelectSchema.shape.profilePicture,
+  }),
 });
 
 // OVR Report schemas (auto-generated from DB)

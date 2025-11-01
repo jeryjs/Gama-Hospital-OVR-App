@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme, alpha } from '@mui/material/styles';
+import { alpha, createTheme } from '@mui/material/styles';
 
 // Neon-inspired color palette
 const colors = {

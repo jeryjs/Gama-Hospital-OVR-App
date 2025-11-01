@@ -28,8 +28,8 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface FormData {
@@ -39,38 +39,38 @@ interface FormData {
   patientAge: string;
   patientSex: string;
   patientUnit: string;
-  
+
   // Occurrence Details
   occurrenceDate: Dayjs | null;
   occurrenceTime: Dayjs | null;
   locationId: number | null;
   specificLocation: string;
-  
+
   // Person Involved
   personInvolved: string;
   isSentinelEvent: boolean;
   sentinelEventDetails: string;
-  
+
   // Staff Involved (if applicable)
   staffInvolvedName: string;
   staffInvolvedPosition: string;
   staffInvolvedEmployeeId: string;
   staffInvolvedDepartment: string;
-  
+
   // Incident Classification
   occurrenceCategory: string;
   occurrenceSubcategory: string;
-  
+
   // Description
   description: string;
-  
+
   // Witness
   witnessName: string;
   witnessAccount: string;
   witnessDepartment: string;
   witnessPosition: string;
   witnessEmployeeId: string;
-  
+
   // Medical Assessment
   physicianNotified: boolean;
   physicianSawPatient: boolean;
@@ -80,7 +80,7 @@ interface FormData {
   treatmentProvided: string;
   physicianName: string;
   physicianId: string;
-  
+
   // Supervisor
   supervisorAction: string;
 }
@@ -679,7 +679,7 @@ export default function NewIncidentPage() {
                       label="Did Physician See the Patient?"
                     />
                   </Grid>
-                  
+
                   {formData.physicianSawPatient && (
                     <>
                       <Grid size={{ xs: 12 }}>
@@ -792,7 +792,7 @@ export default function NewIncidentPage() {
               {/* Footer Note */}
               <Box sx={{ mt: 4, p: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.05), borderRadius: 1 }}>
                 <Typography variant="caption" color="text.secondary">
-                  <strong>Important Notes:</strong>
+                  <strong>important Notes:</strong>
                   <br />• Completing this form does not constitute an admission of liability on any kind, on any person.
                   <br />• Record only known facts; Brief explanation of the occurrence without comment or conclusion.
                   <br />• For Confidentiality reason, NO OTHER COPIES SHOULD BE PRODUCED EXCEPT THIS.

@@ -17,7 +17,7 @@ import { redirect, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function LoginPage() {
-  const {data: session, status } = useSession();
+  const { data: session, status } = useSession();
   const searchParams = useSearchParams();
 
   useEffect(() => {

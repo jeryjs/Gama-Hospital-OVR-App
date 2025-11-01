@@ -1,5 +1,6 @@
 {
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "always"
-    }
+        "source.organizeimports": "always"
+    },
+    "editor.formatOnSave": true
 }

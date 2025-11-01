@@ -1,5 +1,5 @@
-import { Paper, Typography, Grid, Box, alpha } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
+import { Box, Grid, Paper, Typography, alpha } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -32,7 +32,7 @@ export function WitnessSection({ incident }: Props) {
       >
         <Visibility /> Witness Information
       </Typography>
-      
+
       {incident.witnessAccount && (
         <Box
           sx={{
@@ -51,7 +51,7 @@ export function WitnessSection({ incident }: Props) {
           </Typography>
         </Box>
       )}
-      
+
       <Grid container spacing={2} sx={{ mt: 2 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow label="Witness Name" value={incident.witnessName} />

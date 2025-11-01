@@ -12,7 +12,7 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   patientAge: 'Patient Age',
   patientSex: 'Patient Sex',
   patientUnit: 'Patient Unit',
-  
+
   // Occurrence
   occurrenceDate: 'Occurrence Date',
   occurrenceTime: 'Occurrence Time',
@@ -21,25 +21,25 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   occurrenceCategory: 'Category',
   occurrenceSubcategory: 'Subcategory',
   description: 'Description',
-  
+
   // Person Involved
   personInvolved: 'Person Involved',
   isSentinelEvent: 'Sentinel Event',
   sentinelEventDetails: 'Sentinel Event Details',
-  
+
   // Staff Involved
   staffInvolvedName: 'Staff Name',
   staffInvolvedPosition: 'Staff Position',
   staffInvolvedEmployeeId: 'Staff Employee ID',
   staffInvolvedDepartment: 'Staff Department',
-  
+
   // Witness
   witnessName: 'Witness Name',
   witnessAccount: 'Witness Account',
   witnessDepartment: 'Witness Department',
   witnessPosition: 'Witness Position',
   witnessEmployeeId: 'Witness Employee ID',
-  
+
   // Medical
   assessment: 'Medical Assessment',
   diagnosis: 'Diagnosis',
@@ -47,7 +47,7 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   treatmentProvided: 'Treatment Provided',
   physicianName: 'Physician Name',
   physicianId: 'Physician ID',
-  
+
   // Workflow
   action: 'Action/Comments',
   departmentHeadId: 'Department Head',

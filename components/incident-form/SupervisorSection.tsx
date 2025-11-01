@@ -1,5 +1,6 @@
 'use client';
 
+import { apiCall } from '@/lib/client/error-handler';
 import { CheckCircle, SupervisorAccount } from '@mui/icons-material';
 import {
   Alert,
@@ -14,7 +15,6 @@ import {
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
-import { apiCall } from '@/lib/client/error-handler';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -26,7 +26,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
   const [action, setAction] = useState(incident.supervisorAction || '');
   const [submitting, setSubmitting] = useState(false);
-  
+
   const isSupervisor = session?.user?.role === 'supervisor';
   const canApprove = isSupervisor && incident.status === 'submitted';
   const isApproved = incident.status !== 'draft' && incident.status !== 'submitted';

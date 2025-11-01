@@ -1,7 +1,7 @@
-import { Paper, Typography, Grid, Box, Chip, alpha } from '@mui/material';
-import { Place, Warning, Person } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS } from '@/lib/ovr-categories';
+import { Person, Place, Warning } from '@mui/icons-material';
+import { Box, Chip, Grid, Paper, Typography, alpha } from '@mui/material';
+import { format } from 'date-fns';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -38,7 +38,7 @@ export function OccurrenceDetailsSection({ incident }: Props) {
       >
         <Place /> Occurrence Details
       </Typography>
-      
+
       <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow

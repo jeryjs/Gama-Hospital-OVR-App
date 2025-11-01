@@ -1,5 +1,5 @@
-import { pgTable, serial, varchar, text, timestamp, integer, boolean, pgEnum, date, time } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { boolean, date, integer, pgEnum, pgTable, serial, text, time, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // ============================================
 // ENUMS - Based on actual OVR form
@@ -78,25 +78,25 @@ export const locations = pgTable('locations', {
 export const ovrReports = pgTable('ovr_reports', {
   id: serial('id').primaryKey(),
   refNo: varchar('ref_no', { length: 50 }).unique(), // Auto-generated
-  
+
   // Basic Information
   occurrenceDate: date('occurrence_date').notNull(),
   occurrenceTime: time('occurrence_time').notNull(),
   locationId: integer('location_id').references(() => locations.id),
   specificLocation: text('specific_location'),
-  
+
   // Patient Information (if applicable)
   patientName: varchar('patient_name', { length: 255 }),
   patientMRN: varchar('patient_mrn', { length: 100 }),
   patientAge: integer('patient_age'),
   patientSex: varchar('patient_sex', { length: 20 }),
   patientUnit: varchar('patient_unit', { length: 100 }),
-  
+
   // Person Involved
   personInvolved: personInvolvedEnum('person_involved').notNull(),
   isSentinelEvent: boolean('is_sentinel_event').default(false),
   sentinelEventDetails: text('sentinel_event_details'),
-  
+
   // Staff Involved
   staffInvolvedId: integer('staff_involved_id').references(() => users.id),
   staffInvolvedName: varchar('staff_involved_name', { length: 255 }),
@@ -108,22 +108,22 @@ export const ovrReports = pgTable('ovr_reports', {
   occurrenceCategory: varchar('occurrence_category', { length: 50 }).notNull(), // e.g., 'medication', 'falls_injury'
   occurrenceSubcategory: varchar('occurrence_subcategory', { length: 100 }).notNull(), // e.g., 'wrong_drug'
   occurrenceDetail: varchar('occurrence_detail', { length: 100 }),
-  
+
   // Description
   description: text('description').notNull(),
-  
+
   // Reporter Information
   reporterId: integer('reporter_id').notNull().references(() => users.id),
   reporterDepartment: varchar('reporter_department', { length: 100 }),
   reporterPosition: varchar('reporter_position', { length: 100 }),
-  
+
   // Witness Information
   witnessName: varchar('witness_name', { length: 255 }),
   witnessAccount: text('witness_account'),
   witnessDepartment: varchar('witness_department', { length: 100 }),
   witnessPosition: varchar('witness_position', { length: 100 }),
   witnessEmployeeId: varchar('witness_employee_id', { length: 50 }),
-  
+
   // Medical Assessment
   physicianNotified: boolean('physician_notified').default(false),
   physicianSawPatient: boolean('physician_saw_patient').default(false),
@@ -133,17 +133,17 @@ export const ovrReports = pgTable('ovr_reports', {
   treatmentProvided: text('treatment_provided'),
   physicianName: varchar('physician_name', { length: 255 }),
   physicianId: varchar('physician_id', { length: 50 }),
-  
+
   // Supervisor/Manager Action
   supervisorId: integer('supervisor_id').references(() => users.id),
   supervisorAction: text('supervisor_action'),
   supervisorActionDate: timestamp('supervisor_action_date'),
   supervisorApprovedAt: timestamp('supervisor_approved_at'),
-  
+
   // QI Department Assignment
   qiAssignedBy: integer('qi_assigned_by').references(() => users.id),
   qiAssignedDate: timestamp('qi_assigned_date'),
-  
+
   // Department Head Review & Investigation
   departmentHeadId: integer('department_head_id').references(() => users.id),
   hodAssignedAt: timestamp('hod_assigned_at'),
@@ -154,7 +154,7 @@ export const ovrReports = pgTable('ovr_reports', {
   preventionRecommendation: text('prevention_recommendation'),
   hodActionDate: timestamp('hod_action_date'),
   hodSubmittedAt: timestamp('hod_submitted_at'),
-  
+
   // QI Department
   qiReceivedBy: integer('qi_received_by').references(() => users.id),
   qiReceivedDate: timestamp('qi_received_date'),
@@ -165,10 +165,10 @@ export const ovrReports = pgTable('ovr_reports', {
   qiActionCompliesStandards: boolean('qi_action_complies_standards'),
   qiEffectiveCorrectiveAction: boolean('qi_effective_corrective_action'),
   severityLevel: severityLevelEnum('severity_level'),
-  
+
   // Status & Workflow
   status: ovrStatusEnum('status').notNull().default('draft'),
-  
+
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

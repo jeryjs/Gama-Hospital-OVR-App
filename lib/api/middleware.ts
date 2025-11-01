@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { PaginationParams, PaginationMeta } from './schemas';
+import { PaginationMeta, PaginationParams } from './schemas';
 
 // ============================================
 // ERROR CLASSES
@@ -85,8 +85,8 @@ export function handleApiError(error: unknown): NextResponse {
     {
       error: 'Internal server error',
       code: 'INTERNAL_ERROR',
-      message: process.env.NODE_ENV === 'development' 
-        ? (error as Error).message 
+      message: process.env.NODE_ENV === 'development'
+        ? (error as Error).message
         : 'An unexpected error occurred',
     },
     { status: 500 }
@@ -99,7 +99,7 @@ export function handleApiError(error: unknown): NextResponse {
 
 export async function requireAuth(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  
+
   if (!session) {
     throw new AuthenticationError();
   }

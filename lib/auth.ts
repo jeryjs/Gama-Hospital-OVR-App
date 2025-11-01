@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
           if (!existingUser.isActive) {
             return false;
           }
-          
+
           await db
             .update(users)
             .set({

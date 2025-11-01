@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import type { OVRReportWithRelations } from '@/lib/types';
 import { apiCall } from '@/lib/client/error-handler';
+import type { OVRReportWithRelations } from '@/lib/types';
+import useSWR from 'swr';
 
 export interface UseIncidentOptions {
   // SWR-specific options

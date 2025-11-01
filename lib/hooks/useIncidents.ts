@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import type { OVRReportListItem, IncidentListQuery, PaginationMeta } from '@/lib/types';
 import { apiCall } from '@/lib/client/error-handler';
+import type { IncidentListQuery, OVRReportListItem, PaginationMeta } from '@/lib/types';
+import useSWR from 'swr';
 
 export interface UseIncidentsOptions extends Partial<IncidentListQuery> {
   // SWR-specific options
@@ -53,7 +53,7 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
   params.append('limit', limit.toString());
   params.append('sortBy', sortBy);
   params.append('sortOrder', sortOrder);
-  
+
   if (status) params.append('status', status);
   if (category) params.append('category', category);
   if (reporterId) params.append('reporterId', reporterId.toString());

@@ -1,6 +1,6 @@
-import { Paper, Typography, Grid, Box, alpha, Chip } from '@mui/material';
-import { LocalHospital, CheckCircle, Cancel } from '@mui/icons-material';
 import { INJURY_OUTCOMES } from '@/lib/ovr-categories';
+import { Cancel, CheckCircle, LocalHospital } from '@mui/icons-material';
+import { alpha, Box, Chip, Grid, Paper, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -35,7 +35,7 @@ export function MedicalAssessmentSection({ incident }: Props) {
       >
         <LocalHospital /> Medical Assessment
       </Typography>
-      
+
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box>

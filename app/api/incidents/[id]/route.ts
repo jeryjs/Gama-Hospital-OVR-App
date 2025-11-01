@@ -1,15 +1,15 @@
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { NextRequest, NextResponse } from 'next/server';
 import {
+  AuthorizationError,
   handleApiError,
+  NotFoundError,
   requireAuth,
   validateBody,
-  AuthorizationError,
-  NotFoundError,
 } from '@/lib/api/middleware';
 import { updateIncidentSchema } from '@/lib/api/schemas';
+import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function GET(
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    
+
     const incident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
       with: {
@@ -96,7 +96,7 @@ export async function PATCH(
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    
+
     const existingIncident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
     });
@@ -145,7 +145,7 @@ export async function DELETE(
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    
+
     const incident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
     });

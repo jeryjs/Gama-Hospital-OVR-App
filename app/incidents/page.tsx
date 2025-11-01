@@ -34,7 +34,7 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import router from 'next/router';
 import { useState } from 'react';
 

@@ -1,9 +1,9 @@
+import { AuthProvider } from "@/components/AuthProvider";
+import { SWRProvider } from "@/components/SWRProvider";
+import { ThemeRegistry } from "@/components/ThemeRegistry";
 import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
 import "./globals.css";
-import { ThemeRegistry } from "@/components/ThemeRegistry";
-import { AuthProvider } from "@/components/AuthProvider";
-import { SWRProvider } from "@/components/SWRProvider";
 
 const inter = Inter({
   subsets: ['latin'],

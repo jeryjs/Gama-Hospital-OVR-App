@@ -197,7 +197,7 @@ export function CommentsSection({ incidentId }: Props) {
                             )}
                           </Stack>
                         </Stack>
-                        
+
                         {editingId === comment.id ? (
                           <Stack spacing={1} sx={{ mt: 1 }}>
                             <TextField

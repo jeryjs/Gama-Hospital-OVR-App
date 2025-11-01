@@ -1,21 +1,21 @@
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
-import { desc, eq, and, or, like, sql, asc } from 'drizzle-orm';
-import { NextRequest, NextResponse } from 'next/server';
 import {
-  handleApiError,
-  requireAuth,
   createPaginatedResponse,
+  handleApiError,
   parseFields,
+  requireAuth,
   validateBody,
 } from '@/lib/api/middleware';
 import { createIncidentSchema, incidentListQuerySchema } from '@/lib/api/schemas';
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
-    
+
     // Parse and validate query parameters
     const query = incidentListQuerySchema.parse({
       page: searchParams.get('page'),
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       .select({ count: sql<number>`count(*)` })
       .from(ovrReports)
       .where(whereClause);
-    
+
     const total = Number(countResult[0].count);
 
     // Parse field selection
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    
+
     // Validate request body
     const body = await validateBody(request, createIncidentSchema);
     const userId = parseInt(session.user.id);
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       .select({ count: sql<number>`count(*)` })
       .from(ovrReports)
       .where(sql`EXTRACT(YEAR FROM ${ovrReports.createdAt}) = ${year}`);
-    
+
     const count = Number(countResult[0].count) + 1;
 
     const newIncident = await db
@@ -183,44 +183,44 @@ export async function POST(request: NextRequest) {
       .values({
         refNo: `OVR-${year}-${String(count).padStart(4, '0')}`,
         reporterId: userId,
-        
+
         // Patient Information
         patientName: body.patientName,
         patientMRN: body.patientMRN,
         patientAge: body.patientAge,
         patientSex: body.patientSex,
         patientUnit: body.patientUnit,
-        
+
         // Occurrence Details
         occurrenceDate: body.occurrenceDate,
         occurrenceTime: body.occurrenceTime,
         locationId: body.locationId,
         specificLocation: body.specificLocation,
-        
+
         // Person Involved
         personInvolved: body.personInvolved,
         isSentinelEvent: body.isSentinelEvent,
         sentinelEventDetails: body.sentinelEventDetails,
-        
+
         // Staff Involved
         staffInvolvedId: body.staffInvolvedId,
         staffInvolvedName: body.staffInvolvedName,
         staffInvolvedPosition: body.staffInvolvedPosition,
         staffInvolvedEmployeeId: body.staffInvolvedEmployeeId,
         staffInvolvedDepartment: body.staffInvolvedDepartment,
-        
+
         // Classification
         occurrenceCategory: body.occurrenceCategory,
         occurrenceSubcategory: body.occurrenceSubcategory,
         description: body.description,
-        
+
         // Witness
         witnessName: body.witnessName,
         witnessAccount: body.witnessAccount,
         witnessDepartment: body.witnessDepartment,
         witnessPosition: body.witnessPosition,
         witnessEmployeeId: body.witnessEmployeeId,
-        
+
         // Medical
         physicianNotified: body.physicianNotified,
         physicianSawPatient: body.physicianSawPatient,
@@ -230,11 +230,11 @@ export async function POST(request: NextRequest) {
         treatmentProvided: body.treatmentProvided,
         physicianName: body.physicianName,
         physicianId: body.physicianId,
-        
+
         // Reporter Info
         reporterDepartment: body.reporterDepartment || session.user.department,
         reporterPosition: body.reporterPosition || session.user.position,
-        
+
         // Status
         status: body.status,
         submittedAt: body.status === 'submitted' ? new Date() : null,

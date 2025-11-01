@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import type { Location } from '@/lib/types';
 import { apiCall } from '@/lib/client/error-handler';
+import type { Location } from '@/lib/types';
+import useSWR from 'swr';
 
 export interface UseLocationsReturn {
   locations: Location[];

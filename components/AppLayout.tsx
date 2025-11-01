@@ -53,7 +53,7 @@ interface NavItem {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { data: session, status: sessionStatus, update: setSession} = useSession();
+  const { data: session, status: sessionStatus, update: setSession } = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -157,7 +157,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     {item.children?.map((child) => {
                       // Determine if child is active with support for search params
                       const isChildActive = `${pathname}${searchParams.toString() ? `?${searchParams}` : ''}`.replace(/\/?\??$/, '') === child.path;
-                      
+
                       return (
                         <ListItemButton
                           key={child.path}

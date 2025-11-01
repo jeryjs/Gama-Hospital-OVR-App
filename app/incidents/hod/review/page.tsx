@@ -4,14 +4,19 @@ import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
 import {
   AssignmentInd,
-  FilterList,
   Close,
+  FilterList,
   Visibility
 } from '@mui/icons-material';
 import {
+  alpha,
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   LinearProgress,
   Paper,
@@ -24,17 +29,12 @@ import {
   TableRow,
   TextField,
   Typography,
-  alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface HODIncident {
@@ -353,10 +353,10 @@ export default function HODReviewPage() {
                               label={incident.severity || 'Standard'}
                               size="small"
                               sx={{
-                                bgcolor: incident.severity === 'high' ? '#FEE2E2' : 
-                                         incident.severity === 'medium' ? '#FEF3C7' : '#DBEAFE',
-                                color: incident.severity === 'high' ? '#991B1B' : 
-                                       incident.severity === 'medium' ? '#92400E' : '#1E40AF',
+                                bgcolor: incident.severity === 'high' ? '#FEE2E2' :
+                                  incident.severity === 'medium' ? '#FEF3C7' : '#DBEAFE',
+                                color: incident.severity === 'high' ? '#991B1B' :
+                                  incident.severity === 'medium' ? '#92400E' : '#1E40AF',
                                 fontWeight: 600,
                                 borderRadius: 1,
                               }}

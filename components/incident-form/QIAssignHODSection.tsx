@@ -1,21 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import {
-  Paper,
-  Typography,
-  Box,
-  alpha,
-  TextField,
-  Button,
-  Stack,
-  Autocomplete,
-  Alert,
-} from '@mui/material';
-import { AssignmentInd } from '@mui/icons-material';
-import { useUsers } from '@/lib/hooks';
 import { apiCall } from '@/lib/client/error-handler';
+import { useUsers } from '@/lib/hooks';
+import { AssignmentInd } from '@mui/icons-material';
+import {
+  Alert,
+  alpha,
+  Autocomplete,
+  Box,
+  Button,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -44,7 +44,7 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
 
     setSubmitting(true);
     setErrorMessage('');
-    
+
     const { data, error } = await apiCall(`/api/incidents/${incident.id}/qi-assign-hod`, {
       method: 'POST',
       body: JSON.stringify({ departmentHeadId: selectedHOD }),

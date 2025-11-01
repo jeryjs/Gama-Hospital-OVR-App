@@ -1,9 +1,9 @@
 import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
+import { AuthorizationError, handleApiError, NotFoundError, requireAuth, validateBody } from '@/lib/api/middleware';
+import { updateCommentSchema } from '@/lib/api/schemas';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, handleApiError, validateBody, AuthorizationError, NotFoundError } from '@/lib/api/middleware';
-import { updateCommentSchema } from '@/lib/api/schemas';
 
 export async function PATCH(
   req: NextRequest,
@@ -12,7 +12,7 @@ export async function PATCH(
   try {
     const session = await requireAuth(req);
     const { commentId } = await params;
-    
+
     const comment = await db.query.ovrComments.findFirst({
       where: eq(ovrComments.id, parseInt(commentId)),
     });
@@ -66,7 +66,7 @@ export async function DELETE(
   try {
     const session = await requireAuth(req);
     const { commentId } = await params;
-    
+
     const comment = await db.query.ovrComments.findFirst({
       where: eq(ovrComments.id, parseInt(commentId)),
     });
