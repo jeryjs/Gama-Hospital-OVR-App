@@ -41,8 +41,7 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
     dateTo,
     search,
     fields,
-    revalidateOnFocus = false,
-    revalidateOnReconnect = true,
+    revalidateOnFocus = true,
     refreshInterval = 0,
   } = options;
 
@@ -81,7 +80,6 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
 
   const { data, error, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus,
-    revalidateOnReconnect,
     refreshInterval,
     dedupingInterval: 2000, // Dedupe requests within 2 seconds
     suspense: true, // Enable Suspense - component will suspend while loading

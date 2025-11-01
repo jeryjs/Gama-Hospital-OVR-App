@@ -20,7 +20,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
   const canDelete = (incident.status === 'draft' && isOwner) || session?.user?.role === 'admin';
 
   const handleEdit = () => {
-    router.push(`/incidents/view/${incident.id}/edit`);
+    router.push(`/incidents/new?draft=${incident.id}`);
   };
 
   const handleDelete = async () => {

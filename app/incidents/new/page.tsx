@@ -27,9 +27,8 @@ import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-picker
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface FormData {
@@ -88,8 +87,10 @@ interface FormData {
 const DRAFT_KEY = 'gh:draft:new';
 
 export default function NewIncidentPage() {
-  const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get('draft');
+
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -131,22 +132,75 @@ export default function NewIncidentPage() {
 
   // Initialize draft on mount
   useEffect(() => {
-    const draft = localStorage.getItem(DRAFT_KEY);
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setFormData({
-          ...parsed,
-          occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
-          occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
-        });
-        setDraftLoaded(true);
-      } catch (e) {
-        console.error('Failed to load draft:', e);
+    // If editing existing draft from URL
+    if (draftId) {
+      fetchDraftFromServer(draftId);
+    } else {
+      // Load from localStorage
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData({
+            ...parsed,
+            occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
+            occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
+          });
+          setDraftLoaded(true);
+        } catch (e) {
+          console.error('Failed to load draft:', e);
+        }
       }
     }
     fetchLocations();
-  }, []);
+  }, [draftId]);
+
+  const fetchDraftFromServer = async (id: string) => {
+    try {
+      const res = await fetch(`/api/incidents/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFormData({
+          patientName: data.patientName || '',
+          patientMRN: data.patientMRN || '',
+          patientAge: data.patientAge || 0,
+          patientSex: data.patientSex || '',
+          patientUnit: data.patientUnit || '',
+          occurrenceDate: data.occurrenceDate ? dayjs(data.occurrenceDate) : null,
+          occurrenceTime: data.occurrenceTime ? dayjs(data.occurrenceTime, 'HH:mm:ss') : null,
+          locationId: data.locationId,
+          specificLocation: data.specificLocation || '',
+          personInvolved: data.personInvolved || 'patient',
+          isSentinelEvent: data.isSentinelEvent || false,
+          sentinelEventDetails: data.sentinelEventDetails || '',
+          staffInvolvedName: data.staffInvolvedName || '',
+          staffInvolvedPosition: data.staffInvolvedPosition || '',
+          staffInvolvedEmployeeId: data.staffInvolvedEmployeeId || '',
+          staffInvolvedDepartment: data.staffInvolvedDepartment || '',
+          occurrenceCategory: data.occurrenceCategory || '',
+          occurrenceSubcategory: data.occurrenceSubcategory || '',
+          description: data.description || '',
+          witnessName: data.witnessName || '',
+          witnessAccount: data.witnessAccount || '',
+          witnessDepartment: data.witnessDepartment || '',
+          witnessPosition: data.witnessPosition || '',
+          witnessEmployeeId: data.witnessEmployeeId || '',
+          physicianNotified: data.physicianNotified || false,
+          physicianSawPatient: data.physicianSawPatient || false,
+          assessment: data.assessment || '',
+          diagnosis: data.diagnosis || '',
+          injuryOutcome: data.injuryOutcome || '',
+          treatmentProvided: data.treatmentProvided || '',
+          physicianName: data.physicianName || '',
+          physicianId: data.physicianId || '',
+          supervisorAction: data.supervisorAction || '',
+        });
+        setDraftLoaded(true);
+      }
+    } catch (error) {
+      console.error('Failed to load draft from server:', error);
+    }
+  };
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -218,15 +272,19 @@ export default function NewIncidentPage() {
         status: isDraft ? 'draft' : 'submitted',
       };
 
-      const res = await fetch('/api/incidents', {
-        method: 'POST',
+      const url = draftId ? `/api/incidents/${draftId}` : '/api/incidents';
+      const method = draftId ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const data = await res.json();
 
       if (res.ok) {
         localStorage.removeItem(DRAFT_KEY);
-        router.replace('/incidents');
+        router.replace(`/incidents/view/${draftId || data.id}`);
       } else {
         alert('Failed to submit report');
       }
