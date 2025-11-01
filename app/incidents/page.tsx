@@ -1,8 +1,8 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { fadeIn } from '@/lib/theme';
 import { useIncidents } from '@/lib/hooks';
+import { fadeIn } from '@/lib/theme';
 import {
   Add,
   Close,
@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogTitle,
   LinearProgress,
+  Pagination,
   Paper,
   Stack,
   Table,
@@ -29,12 +30,12 @@ import {
   TableRow,
   TextField,
   Typography,
-  Pagination,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import router from 'next/router';
 import { useState } from 'react';
 
 const statusColors: Record<string, string> = {
@@ -275,7 +276,7 @@ export default function IncidentsPage() {
                                 alpha(theme.palette.primary.main, 0.05),
                             },
                           }}
-                          onClick={() => window.location.href = `/incidents/view/${incident.id}`}
+                          onClick={() => router.push(`/incidents/view/${incident.id}`)}
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>

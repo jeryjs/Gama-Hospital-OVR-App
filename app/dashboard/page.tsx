@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface DashboardStats {
@@ -33,6 +34,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
     drafts: 0,
@@ -173,14 +175,14 @@ export default function DashboardPage() {
                   label="New Report"
                   clickable
                   color="primary"
-                  onClick={() => (window.location.href = '/incidents/new')}
+                  onClick={() => router.push('/incidents/new')}
                   sx={{ px: 2, py: 3, fontSize: '0.9rem' }}
                 />
                 <Chip
                   label="View All Reports"
                   clickable
                   variant="outlined"
-                  onClick={() => (window.location.href = '/incidents')}
+                  onClick={() => router.push('/incidents')}
                   sx={{ px: 2, py: 3, fontSize: '0.9rem' }}
                 />
               </Stack>

@@ -127,7 +127,7 @@ async function seed() {
         injuryOutcome: 'minor',
         physicianNotified: true,
         physicianSawPatient: true,
-        status: 'qi_review',
+        status: 'supervisor_approved',
         submittedAt: new Date('2025-01-18T22:30:00'),
       },
     ]);

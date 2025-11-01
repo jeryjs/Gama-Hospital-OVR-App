@@ -2,10 +2,10 @@ import { Box, Paper, Stack, Typography, Chip, IconButton } from '@mui/material';
 import { ArrowBack, Print, Download } from '@mui/icons-material';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import type { OVRReport } from '../../_shared/types';
+import { OVRReportListItem } from '@/lib/types';
 
 interface Props {
-  incident: OVRReport;
+  incident: OVRReportListItem;
 }
 
 const statusColors: Record<string, string> = {
@@ -32,7 +32,7 @@ export function IncidentHeader({ incident }: Props) {
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
       <Stack direction="row" alignItems="center" spacing={2}>
-        <IconButton component={Link} href="/incidents">
+        <IconButton component={Link} href="/incidents" size="small" title="Back to Incidents">
           <ArrowBack />
         </IconButton>
         
