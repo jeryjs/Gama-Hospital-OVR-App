@@ -8,7 +8,7 @@ export interface OVRReport {
   // Patient Information
   patientName: string;
   patientMRN: string;
-  patientAge: string | null;
+  patientAge: number | null;
   patientSex: string | null;
   patientUnit: string | null;
   
@@ -30,10 +30,11 @@ export interface OVRReport {
   sentinelEventDetails: string | null;
   
   // Staff Involved
+  staffInvolvedId: number | null;
   staffInvolvedName: string | null;
-  staffInvolvedPosition: string | null;
-  staffInvolvedEmployeeId: string | null;
-  staffInvolvedDepartment: string | null;
+  staffPosition: string | null;
+  staffEmployeeId: string | null;
+  staffDepartment: string | null;
   
   // Classification
   occurrenceCategory: string;
@@ -61,7 +62,6 @@ export interface OVRReport {
   reporterId: number;
   reporterDepartment: string | null;
   reporterPosition: string | null;
-  reporterEmployeeId: string | null;
   reporter?: {
     id: number;
     firstName: string;
@@ -87,10 +87,10 @@ export interface OVRReport {
   qiAssignedDate: string | null;
   qiFeedback: string | null;
   qiFormComplete: boolean | null;
-  qiCauseIdentified: boolean | null;
-  qiTimeframe: boolean | null;
-  qiActionComplies: boolean | null;
-  qiEffectiveAction: boolean | null;
+  qiProperCauseIdentified: boolean | null;
+  qiProperTimeframe: boolean | null;
+  qiActionCompliesStandards: boolean | null;
+  qiEffectiveCorrectiveAction: boolean | null;
   severityLevel: string | null;
   
   // Department Head
@@ -113,6 +113,7 @@ export interface OVRReport {
   createdAt: string;
   updatedAt: string;
   submittedAt: string | null;
+  resolvedAt: string | null;
   closedAt: string | null;
   
   // Relations
@@ -133,7 +134,7 @@ export interface OVRReport {
   
   comments?: Array<{
     id: number;
-    content: string;
+    comment: string;
     createdAt: string;
     user: {
       id: number;

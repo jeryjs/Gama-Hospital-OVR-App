@@ -122,13 +122,13 @@ export function OccurrenceDetailsSection({ incident }: Props) {
               <InfoRow label="Name" value={incident.staffInvolvedName} />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Position" value={incident.staffInvolvedPosition} />
+              <InfoRow label="Position" value={incident.staffPosition} />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Employee ID" value={incident.staffInvolvedEmployeeId} />
+              <InfoRow label="Employee ID" value={incident.staffEmployeeId} />
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Department" value={incident.staffInvolvedDepartment} />
+              <InfoRow label="Department" value={incident.staffDepartment} />
             </Grid>
           </Grid>
         </Box>

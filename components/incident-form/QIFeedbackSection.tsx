@@ -28,10 +28,10 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
   const [feedback, setFeedback] = useState(incident.qiFeedback || '');
   const [formComplete, setFormComplete] = useState(incident.qiFormComplete || false);
-  const [causeIdentified, setCauseIdentified] = useState(incident.qiCauseIdentified || false);
-  const [timeframe, setTimeframe] = useState(incident.qiTimeframe || false);
-  const [actionComplies, setActionComplies] = useState(incident.qiActionComplies || false);
-  const [effectiveAction, setEffectiveAction] = useState(incident.qiEffectiveAction || false);
+  const [causeIdentified, setCauseIdentified] = useState(incident.qiProperCauseIdentified || false);
+  const [timeframe, setTimeframe] = useState(incident.qiProperTimeframe || false);
+  const [actionComplies, setActionComplies] = useState(incident.qiActionCompliesStandards || false);
+  const [effectiveAction, setEffectiveAction] = useState(incident.qiEffectiveCorrectiveAction || false);
   const [severityLevel, setSeverityLevel] = useState(incident.severityLevel || '');
   const [submitting, setSubmitting] = useState(false);
 
