@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Box, LinearProgress } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
-import { StatusTimeline } from '../_shared/StatusTimeline';
-import { IncidentHeader } from './IncidentHeader';
-import { PatientInfoSection } from '@/components/incident-form/PatientInfoSection';
-import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceDetailsSection';
-import { WitnessSection } from '@/components/incident-form/WitnessSection';
-import { MedicalAssessmentSection } from '@/components/incident-form/MedicalAssessmentSection';
-import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { InvestigationSection } from '@/components/incident-form/InvestigationSection';
+import { MedicalAssessmentSection } from '@/components/incident-form/MedicalAssessmentSection';
+import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceDetailsSection';
+import { PatientInfoSection } from '@/components/incident-form/PatientInfoSection';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
-import { CommentsSection } from './CommentsSection';
-import { ActionButtons } from './ActionButtons';
+import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
+import { WitnessSection } from '@/components/incident-form/WitnessSection';
+import { Box, LinearProgress } from '@mui/material';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { StatusTimeline } from '../_shared/StatusTimeline';
 import type { OVRReport } from '../_shared/types';
+import { ActionButtons } from './ActionButtons';
+import { CommentsSection } from './CommentsSection';
+import { IncidentHeader } from './IncidentHeader';
 
 export default function IncidentViewPage() {
   const params = useParams();

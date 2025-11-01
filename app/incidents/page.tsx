@@ -1,34 +1,33 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { AppLayout } from '@/components/AppLayout';
+import { fadeIn } from '@/lib/theme';
+import {
+  Add,
+  Visibility
+} from '@mui/icons-material';
 import {
   Box,
-  Typography,
+  Button,
+  Chip,
+  IconButton,
+  LinearProgress,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
-  IconButton,
-  Stack,
-  Button,
-  LinearProgress,
+  Typography,
   alpha,
 } from '@mui/material';
-import {
-  Visibility,
-  Add,
-  FilterList,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { AppLayout } from '@/components/AppLayout';
-import { fadeIn } from '@/lib/theme';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface Incident {
   id: number;

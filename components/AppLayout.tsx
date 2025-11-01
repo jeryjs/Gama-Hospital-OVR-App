@@ -1,39 +1,37 @@
 'use client';
 
-import { useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
 import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
-  Divider,
-  IconButton,
-  Avatar,
-  Menu,
-  MenuItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Collapse,
-  alpha,
-  Stack,
-  Chip,
-} from '@mui/material';
-import {
+  AccountCircle,
   Dashboard,
   Description,
-  AddCircleOutline,
   ExpandLess,
   ExpandMore,
   Logout,
-  AccountCircle,
-  Menu as MenuIcon,
+  Menu as MenuIcon
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AppBar,
+  Avatar,
+  Box,
+  Chip,
+  Collapse,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Stack,
+  Toolbar,
+  Typography
+} from '@mui/material';
+import { AnimatePresence, motion } from 'framer-motion';
+import { signOut, useSession } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const DRAWER_WIDTH = 280;
 
@@ -55,6 +53,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [hasDraft, setHasDraft] = useState(false);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const draft = localStorage.getItem('gh:draft:new');
+    setHasDraft(!!draft);
+  }, []);
 
   const navItems: NavItem[] = [
     {
@@ -66,6 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       title: 'Incidents',
       icon: <Description />,
       children: [
+        ...(hasDraft ? [{ title: 'Continue Draft', path: '/incidents/new', badge: '●' }] : []),
         { title: 'My Reports', path: '/incidents' },
         { title: 'New Report', path: '/incidents/new', badge: 'New' },
         ...(session?.user?.role === 'quality_manager' || session?.user?.role === 'admin'

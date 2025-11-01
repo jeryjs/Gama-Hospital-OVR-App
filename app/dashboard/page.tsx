@@ -1,28 +1,28 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
-import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  Chip,
-  alpha,
-  LinearProgress,
-} from '@mui/material';
-import {
-  Description,
-  PendingActions,
-  CheckCircle,
-  Warning,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
+import {
+  CheckCircle,
+  Description,
+  PendingActions,
+  Warning,
+} from '@mui/icons-material';
+import {
+  alpha,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  LinearProgress,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 interface DashboardStats {
   total: number;

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
+import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -116,7 +116,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Cannot edit this report' }, { status: 403 });
     }
 
-    const updateData: any = {
+    const updateData: Partial<typeof body> = {
       ...body,
       updatedAt: new Date(),
     };

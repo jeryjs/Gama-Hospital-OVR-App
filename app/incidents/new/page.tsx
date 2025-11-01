@@ -1,35 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { AppLayout } from '@/components/AppLayout';
+import { INJURY_OUTCOMES, OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS } from '@/lib/ovr-categories';
+import { ArrowBack, Save, Send } from '@mui/icons-material';
 import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Grid,
-  Button,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio,
-  Divider,
-  Stack,
   Alert,
-  LinearProgress,
   alpha,
   Autocomplete,
+  Box,
+  Button,
   Checkbox,
+  Divider,
+  FormControl,
   FormControlLabel,
+  FormLabel,
+  Grid,
+  LinearProgress,
+  Paper,
+  Radio,
+  RadioGroup,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { Save, Send, ArrowBack } from '@mui/icons-material';
-import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
-import { AppLayout } from '@/components/AppLayout';
-import { OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS, INJURY_OUTCOMES } from '@/lib/ovr-categories';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface FormData {
   // Patient Information
@@ -84,14 +84,13 @@ interface FormData {
   supervisorAction: string;
 }
 
-const DRAFT_KEY_PREFIX = 'GH:draft';
+const DRAFT_KEY = 'gh:draft:new';
 
 export default function NewIncidentPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
-  const [draftKey, setDraftKey] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     patientName: '',
     patientMRN: '',
@@ -128,49 +127,31 @@ export default function NewIncidentPage() {
     supervisorAction: '',
   });
 
-  // Initialize draft key on mount
+  // Initialize draft on mount
   useEffect(() => {
-    // Generate unique draft key for this session
-    const timestamp = Date.now();
-    const key = `${DRAFT_KEY_PREFIX}:new:${timestamp}`;
-    setDraftKey(key);
-
-    // Try to load most recent draft
-    const allKeys = Object.keys(localStorage);
-    const draftKeys = allKeys.filter(k => k.startsWith(`${DRAFT_KEY_PREFIX}:new:`));
-    
-    if (draftKeys.length > 0) {
-      // Sort by timestamp and get most recent
-      const mostRecent = draftKeys.sort().reverse()[0];
-      const draft = localStorage.getItem(mostRecent);
-      
-      if (draft) {
-        try {
-          const parsed = JSON.parse(draft);
-          setFormData({
-            ...parsed,
-            occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
-            occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
-          });
-          setDraftKey(mostRecent); // Use this draft key
-        } catch (e) {
-          console.error('Failed to load draft:', e);
-        }
+    const draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        setFormData({
+          ...parsed,
+          occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : null,
+          occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : null,
+        });
+      } catch (e) {
+        console.error('Failed to load draft:', e);
       }
     }
-    
     fetchLocations();
   }, []);
 
-  // Auto-save draft
+  // Auto-save to localStorage
   useEffect(() => {
-    if (!draftKey) return;
-    
     const timer = setTimeout(() => {
-      localStorage.setItem(draftKey, JSON.stringify(formData));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [formData, draftKey]);
+  }, [formData]);
 
   const fetchLocations = async () => {
     try {
@@ -201,8 +182,7 @@ export default function NewIncidentPage() {
       });
 
       if (res.ok) {
-        // Clear draft on successful submission
-        if (draftKey) localStorage.removeItem(draftKey);
+        localStorage.removeItem(DRAFT_KEY);
         router.push('/incidents');
       } else {
         alert('Failed to submit report');

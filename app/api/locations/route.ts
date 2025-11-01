@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { locations } from '@/db/schema';
+import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,11 +33,10 @@ export async function POST(request: NextRequest) {
 
     const newLocation = await db.insert(locations).values({
       name: body.name,
-      address: body.address,
-      city: body.city,
-      state: body.state,
-      postalCode: body.postalCode,
-      country: body.country,
+      // Add other fields here only if they exist in the locations schema, e.g.:
+      // floor: body.floor,
+      // building: body.building,
+      // etc.
     }).returning();
 
     return NextResponse.json(newLocation[0], { status: 201 });

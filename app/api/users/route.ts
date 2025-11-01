@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
+import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const role = searchParams.get('role');
     const department = searchParams.get('department');
 
-    let query = db
+    const query = db
       .select({
         id: users.id,
         name: users.firstName,

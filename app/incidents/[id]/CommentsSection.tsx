@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { Comment as CommentIcon, Delete, Send } from '@mui/icons-material';
 import {
-  Paper,
-  Typography,
-  Box,
   alpha,
-  TextField,
-  Button,
-  Stack,
   Avatar,
-  IconButton,
+  Box,
+  Button,
   CircularProgress,
+  IconButton,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { Comment as CommentIcon, Send, Delete } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import type { Comment } from '../_shared/types';
 
 interface Props {

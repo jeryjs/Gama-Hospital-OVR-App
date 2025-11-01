@@ -1,5 +1,5 @@
-import { Box, Paper, Stepper, Step, StepLabel, StepConnector, styled, alpha } from '@mui/material';
 import { Check, Circle } from '@mui/icons-material';
+import { Box, Paper, Step, StepConnector, StepLabel, Stepper, styled } from '@mui/material';
 import { format } from 'date-fns';
 
 interface Props {

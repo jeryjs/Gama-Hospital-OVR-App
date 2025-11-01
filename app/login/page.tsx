@@ -1,18 +1,18 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { fadeIn } from '@/lib/theme';
+import { Google as GoogleIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
   Container,
   Paper,
-  Typography,
   Stack,
+  Typography,
   alpha,
 } from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { fadeIn, scaleIn } from '@/lib/theme';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const handleGoogleSignIn = () => {

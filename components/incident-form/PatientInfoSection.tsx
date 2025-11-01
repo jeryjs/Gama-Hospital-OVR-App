@@ -1,5 +1,5 @@
-import { Paper, Typography, Grid, Box, Divider, alpha, Chip } from '@mui/material';
-import { Person, MedicalServices, CalendarToday } from '@mui/icons-material';
+import { Person } from '@mui/icons-material';
+import { alpha, Box, Grid, Paper, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
 interface Props {
