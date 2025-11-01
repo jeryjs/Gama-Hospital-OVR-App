@@ -13,14 +13,11 @@ export function SWRProvider({ children }: SWRProviderProps) {
       value={{
         // Global cache and deduplication settings
         dedupingInterval: 2000, // Dedupe requests within 2 seconds
-        revalidateIfStale: false, // Don't revalidate if data is stale
         revalidateOnFocus: false, // Don't revalidate when window regains focus
         revalidateOnReconnect: true, // Revalidate when network reconnects
         shouldRetryOnError: false, // Don't retry failed requests
-        // Keep previous data while revalidating
-        keepPreviousData: true,
-        // Enable Suspense mode for declarative loading states
-        suspense: true,
+        keepPreviousData: true, // Keep previous data while revalidating
+        suspense: true, // Enable Suspense mode for declarative loading states
       }}
     >
       {children}

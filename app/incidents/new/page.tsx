@@ -36,7 +36,7 @@ interface FormData {
   // Patient Information
   patientName: string;
   patientMRN: string;
-  patientAge: string;
+  patientAge: number;
   patientSex: string;
   patientUnit: string;
 
@@ -96,7 +96,7 @@ export default function NewIncidentPage() {
   const [formData, setFormData] = useState<FormData>({
     patientName: '',
     patientMRN: '',
-    patientAge: '',
+    patientAge: 0,
     patientSex: '',
     patientUnit: '',
     occurrenceDate: null,
@@ -173,7 +173,7 @@ export default function NewIncidentPage() {
     setFormData({
       patientName: '',
       patientMRN: '',
-      patientAge: '',
+      patientAge: 0,
       patientSex: '',
       patientUnit: '',
       occurrenceDate: null,
@@ -360,7 +360,7 @@ export default function NewIncidentPage() {
                       label="Age"
                       type="number"
                       value={formData.patientAge}
-                      onChange={(e) => setFormData({ ...formData, patientAge: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, patientAge: Number(e.target.value) })}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
@@ -740,7 +740,7 @@ export default function NewIncidentPage() {
 
               {/* Supervisor Action */}
               <Box sx={{ mb: 4 }}>
-                <Typography
+                {/* <Typography
                   variant="subtitle1"
                   fontWeight={700}
                   gutterBottom
@@ -760,7 +760,7 @@ export default function NewIncidentPage() {
                       placeholder="Immediate action taken by supervisor..."
                     />
                   </Grid>
-                </Grid>
+                </Grid> */}
                 <Alert severity="warning" sx={{ mt: 2 }}>
                   <Typography variant="caption">
                     Thank you for reporting! Kindly send this OVR to QI DEPARTMENT and from there, it will be sent to the concerned Department Head
