@@ -105,7 +105,7 @@ export default function HODReviewPage() {
         // );
 
         setIncidents(
-          data.map((incident: any) => ({
+          data.data.map((incident: any) => ({
             id: incident.id,
             refNo: incident.refNo,
             reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,

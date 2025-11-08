@@ -74,7 +74,7 @@ export default function QIReviewPage() {
       const res = await fetch('/api/incidents?status=supervisor_approved');
       if (res.ok) {
         const data = await res.json();
-        setIncidents(data);
+        setIncidents(data.data);
       }
     } catch (error) {
       console.error('Error fetching incidents:', error);

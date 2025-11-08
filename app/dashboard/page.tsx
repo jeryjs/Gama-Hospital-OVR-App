@@ -30,8 +30,6 @@ import AdminDashboard from './AdminDashboard';
 import QIDashboard from './QIDashboard';
 import HODDashboard from './HODDashboard';
 
-export type { DashboardStats };
-
 // Inner component that uses the hook - will suspend while loading
 function DashboardContent() {
   const { data: session } = useSession();
@@ -85,9 +83,6 @@ export default function DashboardPage() {
     </Suspense>
   );
 }
-
-// Admin Dashboard Component
-
 
 // Default Dashboard for non-admin users
 function DefaultDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
