@@ -6,7 +6,7 @@ import {
   CheckCircle,
   Description,
   PendingActions,
-  Warning,
+  Warning
 } from '@mui/icons-material';
 import {
   alpha,
@@ -18,30 +18,63 @@ import {
   LinearProgress,
   Paper,
   Stack,
-  Typography,
+  Typography
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import AdminDashboard from './AdminDashboard';
 
-interface DashboardStats {
+export interface DashboardStats {
   total: number;
   drafts: number;
   submitted: number;
   resolved: number;
+  byStatus: {
+    draft: number;
+    submitted: number;
+    supervisor_approved: number;
+    hod_assigned: number;
+    qi_final_review: number;
+    closed: number;
+  };
+  byDepartment: Array<{ department: string; count: number }>;
+  recentIncidents: Array<{
+    id: number;
+    refNo: string;
+    occurrenceCategory: string;
+    status: string;
+    createdAt: string;
+    reporter: { firstName: string; lastName: string };
+  }>;
+  activeUsers: number;
+  avgResolutionTime: number;
 }
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
     drafts: 0,
     submitted: 0,
     resolved: 0,
+    byStatus: {
+      draft: 0,
+      submitted: 0,
+      supervisor_approved: 0,
+      hod_assigned: 0,
+      qi_final_review: 0,
+      closed: 0,
+    },
+    byDepartment: [],
+    recentIncidents: [],
+    activeUsers: 0,
+    avgResolutionTime: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = session?.user?.role === 'admin';
 
   useEffect(() => {
     fetchStats();
@@ -60,6 +93,30 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <LinearProgress />
+      </AppLayout>
+    );
+  }
+
+  // Admin Dashboard
+  if (isAdmin) {
+    return <AdminDashboard stats={stats} session={session} />;
+  }
+
+  // Default Dashboard for other roles
+  return <DefaultDashboard stats={stats} session={session} />;
+}
+
+// Admin Dashboard Component
+
+
+// Default Dashboard for non-admin users
+function DefaultDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
+  const router = useRouter();
 
   const statCards = [
     {
@@ -87,14 +144,6 @@ export default function DashboardPage() {
       color: '#10B981',
     },
   ];
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <LinearProgress />
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
