@@ -349,7 +349,146 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Regular user - their own stats
+    // Supervisor - their own reports + team reports + pending approvals
+    if (session.user.role === 'supervisor') {
+      // My reports
+      const [myTotalResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(eq(ovrReports.reporterId, userId));
+
+      const [myDraftsResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(and(eq(ovrReports.reporterId, userId), eq(ovrReports.status, 'draft')));
+
+      const [myInProgressResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(
+          and(
+            eq(ovrReports.reporterId, userId),
+            sql`${ovrReports.status} IN ('submitted', 'supervisor_approved', 'hod_assigned', 'qi_final_review')`
+          )
+        );
+
+      const [myResolvedResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(and(eq(ovrReports.reporterId, userId), eq(ovrReports.status, 'closed')));
+
+      // My recent reports
+      const myRecentReports = await db
+        .select({
+          id: ovrReports.id,
+          refNo: ovrReports.refNo,
+          occurrenceCategory: ovrReports.occurrenceCategory,
+          status: ovrReports.status,
+          createdAt: ovrReports.createdAt,
+        })
+        .from(ovrReports)
+        .where(eq(ovrReports.reporterId, userId))
+        .orderBy(desc(ovrReports.createdAt))
+        .limit(5);
+
+      // Pending approvals (submitted status - waiting for supervisor)
+      const [pendingResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(eq(ovrReports.status, 'submitted'));
+
+      const pendingReports = await db
+        .select({
+          id: ovrReports.id,
+          refNo: ovrReports.refNo,
+          status: ovrReports.status,
+          createdAt: ovrReports.createdAt,
+          reporterId: ovrReports.reporterId,
+        })
+        .from(ovrReports)
+        .where(eq(ovrReports.status, 'submitted'))
+        .orderBy(desc(ovrReports.createdAt))
+        .limit(10);
+
+      // Approved this month
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+
+      const [approvedThisMonthResult] = await db
+        .select({ count: count() })
+        .from(ovrReports)
+        .where(
+          and(
+            eq(ovrReports.status, 'supervisor_approved'),
+            gte(ovrReports.supervisorApprovedAt, firstDayOfMonth)
+          )
+        );
+
+      const approvedReports = await db
+        .select({
+          id: ovrReports.id,
+          refNo: ovrReports.refNo,
+          status: ovrReports.status,
+          createdAt: ovrReports.createdAt,
+          supervisorApprovedAt: ovrReports.supervisorApprovedAt,
+        })
+        .from(ovrReports)
+        .where(
+          and(
+            eq(ovrReports.supervisorId, userId),
+            sql`${ovrReports.supervisorApprovedAt} IS NOT NULL`
+          )
+        )
+        .orderBy(desc(ovrReports.supervisorApprovedAt))
+        .limit(5);
+
+      // Team reports count
+      const [teamReportsResult] = await db
+        .select({ count: count() })
+        .from(ovrReports);
+
+      // Get reporter info for pending
+      const reporterIds = pendingReports.map((r) => r.reporterId);
+      const reporterData = reporterIds.length > 0
+        ? await db.select().from(users).where(sql`${users.id} IN ${reporterIds}`)
+        : [];
+
+      const reporterMap = new Map(
+        reporterData.map((user) => [user.id, { firstName: user.firstName, lastName: user.lastName }])
+      );
+
+      const pendingWithReporters = pendingReports.map((report) => ({
+        ...report,
+        reporter: reporterMap.get(report.reporterId) || { firstName: 'Unknown', lastName: '' },
+      }));
+
+      return NextResponse.json({
+        total: 0,
+        drafts: 0,
+        submitted: 0,
+        resolved: 0,
+        byStatus: { draft: 0, submitted: 0, supervisor_approved: 0, hod_assigned: 0, qi_final_review: 0, closed: 0 },
+        byDepartment: [],
+        recentIncidents: [],
+        activeUsers: 0,
+        avgResolutionTime: 0,
+        myReports: {
+          total: myTotalResult?.count || 0,
+          drafts: myDraftsResult?.count || 0,
+          inProgress: myInProgressResult?.count || 0,
+          resolved: myResolvedResult?.count || 0,
+        },
+        myRecentReports,
+        supervisorPending: pendingResult?.count || 0,
+        supervisorApproved: approvedThisMonthResult?.count || 0,
+        teamReports: teamReportsResult?.count || 0,
+        supervisorPendingReports: pendingWithReporters,
+        supervisorApprovedReports: approvedReports,
+      });
+    }
+
+    // Regular user (Employee/Staff) - their own stats
     const [totalResult] = await db
       .select({ count: count() })
       .from(ovrReports)
@@ -365,13 +504,13 @@ export async function GET(req: NextRequest) {
         )
       );
 
-    const [submittedResult] = await db
+    const [inProgressResult] = await db
       .select({ count: count() })
       .from(ovrReports)
       .where(
         and(
           eq(ovrReports.reporterId, userId),
-          eq(ovrReports.status, 'submitted')
+          sql`${ovrReports.status} IN ('submitted', 'supervisor_approved', 'hod_assigned', 'qi_final_review')`
         )
       );
 
@@ -385,10 +524,23 @@ export async function GET(req: NextRequest) {
         )
       );
 
+    const myRecentReports = await db
+      .select({
+        id: ovrReports.id,
+        refNo: ovrReports.refNo,
+        occurrenceCategory: ovrReports.occurrenceCategory,
+        status: ovrReports.status,
+        createdAt: ovrReports.createdAt,
+      })
+      .from(ovrReports)
+      .where(eq(ovrReports.reporterId, userId))
+      .orderBy(desc(ovrReports.createdAt))
+      .limit(5);
+
     return NextResponse.json({
       total: totalResult?.count || 0,
       drafts: draftsResult?.count || 0,
-      submitted: submittedResult?.count || 0,
+      submitted: 0,
       resolved: resolvedResult?.count || 0,
       byStatus: {
         draft: 0,
@@ -402,6 +554,13 @@ export async function GET(req: NextRequest) {
       recentIncidents: [],
       activeUsers: 0,
       avgResolutionTime: 0,
+      myReports: {
+        total: totalResult?.count || 0,
+        drafts: draftsResult?.count || 0,
+        inProgress: inProgressResult?.count || 0,
+        resolved: resolvedResult?.count || 0,
+      },
+      myRecentReports,
     });
   } catch (error) {
     console.error('Error fetching stats:', error);

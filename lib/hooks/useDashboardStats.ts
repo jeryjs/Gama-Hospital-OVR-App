@@ -45,9 +45,41 @@ export interface DashboardStats {
         needsInvestigator?: boolean;
         needsFindings?: boolean;
     }>;
-}
 
-export interface UseDashboardStatsReturn {
+    // Employee/Supervisor-specific fields
+    myReports?: {
+        total: number;
+        drafts: number;
+        inProgress: number;
+        resolved: number;
+    };
+    myRecentReports?: Array<{
+        id: number;
+        refNo: string;
+        occurrenceCategory: string;
+        status: string;
+        createdAt: string;
+    }>;
+
+    // Supervisor-specific fields
+    supervisorPending?: number;
+    supervisorApproved?: number;
+    teamReports?: number;
+    supervisorPendingReports?: Array<{
+        id: number;
+        refNo: string;
+        status: string;
+        createdAt: string;
+        reporter: { firstName: string; lastName: string };
+    }>;
+    supervisorApprovedReports?: Array<{
+        id: number;
+        refNo: string;
+        status: string;
+        createdAt: string;
+        supervisorApprovedAt?: string;
+    }>;
+}export interface UseDashboardStatsReturn {
     stats: DashboardStats;
     isError: boolean;
     error: any;
