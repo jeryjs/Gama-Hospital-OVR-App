@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const query = db
       .select({
         id: users.id,
-        name: users.firstName,
+        firstName: users.firstName,
         lastName: users.lastName,
         email: users.email,
         department: users.department,
@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
     // Format for display
     const formattedUsers = filteredUsers.map(u => ({
       id: u.id,
-      name: `${u.name} ${u.lastName}`,
+      name: `${u.firstName} ${u.lastName}`,
+      firstName: u.firstName,
+      lastName: u.lastName,
       email: u.email,
       department: u.department,
       role: u.role,
