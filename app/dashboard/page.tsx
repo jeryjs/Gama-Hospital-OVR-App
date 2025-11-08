@@ -25,6 +25,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import AdminDashboard from './AdminDashboard';
+import QIDashboard from './QIDashboard';
+import HODDashboard from './HODDashboard';
 
 export interface DashboardStats {
   total: number;
@@ -47,9 +49,29 @@ export interface DashboardStats {
     status: string;
     createdAt: string;
     reporter: { firstName: string; lastName: string };
+    needsInvestigator?: boolean;
+    needsFindings?: boolean;
   }>;
   activeUsers: number;
   avgResolutionTime: number;
+  closedThisMonth?: number;
+
+  // HOD-specific fields
+  assignedToMe?: number;
+  myPendingInvestigations?: number;
+  myActiveInvestigations?: number;
+  myCompletedInvestigations?: number;
+  myNeedingFindings?: number;
+  myAssignedIncidents?: Array<{
+    id: number;
+    refNo: string;
+    occurrenceCategory: string;
+    status: string;
+    createdAt: string;
+    reporter: { firstName: string; lastName: string };
+    needsInvestigator?: boolean;
+    needsFindings?: boolean;
+  }>;
 }
 
 export default function DashboardPage() {
@@ -102,12 +124,22 @@ export default function DashboardPage() {
     );
   }
 
-  // Admin Dashboard
-  if (isAdmin) {
+  const userRole = session?.user?.role;
+
+  // Route to appropriate dashboard based on role
+  if (userRole === 'admin') {
     return <AdminDashboard stats={stats} session={session} />;
   }
 
-  // Default Dashboard for other roles
+  if (userRole === 'quality_manager') {
+    return <QIDashboard stats={stats} session={session} />;
+  }
+
+  if (userRole === 'department_head') {
+    return <HODDashboard stats={stats} session={session} />;
+  }
+
+  // Default Dashboard for other roles (staff, supervisor)
   return <DefaultDashboard stats={stats} session={session} />;
 }
 
