@@ -1,7 +1,9 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { fadeIn } from '@/lib/theme';
+import { CardLoadingFallback } from '@/components/LoadingFallback';
+import { useDashboardStats } from '@/lib/hooks';
+import type { DashboardStats } from '@/lib/hooks';
 import {
   CheckCircle,
   Description,
@@ -15,7 +17,6 @@ import {
   CardContent,
   Chip,
   Grid,
-  LinearProgress,
   Paper,
   Stack,
   Typography
@@ -23,107 +24,18 @@ import {
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense } from 'react';
+import { fadeIn } from '@/lib/theme';
 import AdminDashboard from './AdminDashboard';
 import QIDashboard from './QIDashboard';
 import HODDashboard from './HODDashboard';
 
-export interface DashboardStats {
-  total: number;
-  drafts: number;
-  submitted: number;
-  resolved: number;
-  byStatus: {
-    draft: number;
-    submitted: number;
-    supervisor_approved: number;
-    hod_assigned: number;
-    qi_final_review: number;
-    closed: number;
-  };
-  byDepartment: Array<{ department: string; count: number }>;
-  recentIncidents: Array<{
-    id: number;
-    refNo: string;
-    occurrenceCategory: string;
-    status: string;
-    createdAt: string;
-    reporter: { firstName: string; lastName: string };
-    needsInvestigator?: boolean;
-    needsFindings?: boolean;
-  }>;
-  activeUsers: number;
-  avgResolutionTime: number;
-  closedThisMonth?: number;
+export type { DashboardStats };
 
-  // HOD-specific fields
-  assignedToMe?: number;
-  myPendingInvestigations?: number;
-  myActiveInvestigations?: number;
-  myCompletedInvestigations?: number;
-  myNeedingFindings?: number;
-  myAssignedIncidents?: Array<{
-    id: number;
-    refNo: string;
-    occurrenceCategory: string;
-    status: string;
-    createdAt: string;
-    reporter: { firstName: string; lastName: string };
-    needsInvestigator?: boolean;
-    needsFindings?: boolean;
-  }>;
-}
-
-export default function DashboardPage() {
+// Inner component that uses the hook - will suspend while loading
+function DashboardContent() {
   const { data: session } = useSession();
-  const [stats, setStats] = useState<DashboardStats>({
-    total: 0,
-    drafts: 0,
-    submitted: 0,
-    resolved: 0,
-    byStatus: {
-      draft: 0,
-      submitted: 0,
-      supervisor_approved: 0,
-      hod_assigned: 0,
-      qi_final_review: 0,
-      closed: 0,
-    },
-    byDepartment: [],
-    recentIncidents: [],
-    activeUsers: 0,
-    avgResolutionTime: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = session?.user?.role === 'admin';
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await fetch('/api/stats');
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <LinearProgress />
-      </AppLayout>
-    );
-  }
-
+  const { stats } = useDashboardStats(); // This will suspend
   const userRole = session?.user?.role;
 
   // Route to appropriate dashboard based on role
@@ -141,6 +53,37 @@ export default function DashboardPage() {
 
   // Default Dashboard for other roles (staff, supervisor)
   return <DefaultDashboard stats={stats} session={session} />;
+}
+
+// Main page component with Suspense boundary
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <Box sx={{ maxWidth: 1400, mx: 'auto', py: 4 }}>
+          <Stack spacing={3}>
+            <CardLoadingFallback />
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <CardLoadingFallback />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <CardLoadingFallback />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <CardLoadingFallback />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <CardLoadingFallback />
+              </Grid>
+            </Grid>
+          </Stack>
+        </Box>
+      </AppLayout>
+    }>
+      <DashboardContent />
+    </Suspense>
+  );
 }
 
 // Admin Dashboard Component

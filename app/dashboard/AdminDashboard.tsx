@@ -2,6 +2,7 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { fadeIn } from '@/lib/theme';
+import type { DashboardStats } from '@/lib/hooks';
 import {
   Add,
   Assessment,
@@ -41,7 +42,6 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DashboardStats } from './page';
 
 export default function AdminDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
   const router = useRouter();
