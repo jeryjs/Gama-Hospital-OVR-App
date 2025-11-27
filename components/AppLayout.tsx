@@ -60,6 +60,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // Handle proper logout with Azure AD session cleanup
+  const handleLogout = async () => {
+    // Get the tenant ID for Azure AD logout
+    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
+
+    // Sign out from NextAuth (clears local session)
+    await signOut({ redirect: false });
+
+    // Redirect to Azure AD logout endpoint to clear SSO session
+    // This ensures user is fully logged out from Microsoft
+    const logoutUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin + '/login')}`;
+
+    window.location.href = logoutUrl;
+  };
+
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
     const items: NavItem[] = [
       { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
@@ -312,7 +328,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               Profile
             </MenuItem>
             <MenuItem
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={handleLogout}
               sx={{ borderRadius: 2, color: 'error.main', fontWeight: 500, gap: 1, px: 2 }}
             >
               <Logout fontSize="small" sx={{ color: 'error.main' }} />
