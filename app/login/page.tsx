@@ -28,8 +28,8 @@ export default function LoginPage() {
     }
   }, [session, searchParams]);
 
-  const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' });
+  const handleSignIn = () => {
+    signIn('azure-ad', { callbackUrl: '/dashboard' });
   };
 
   // return spinner if session is being checked
@@ -161,7 +161,7 @@ export default function LoginPage() {
                     size="large"
                     variant="contained"
                     startIcon={<GoogleIcon />}
-                    onClick={handleGoogleSignIn}
+                    onClick={handleSignIn}
                     sx={{
                       py: 1.5,
                       fontSize: '1rem',
@@ -175,7 +175,7 @@ export default function LoginPage() {
                       },
                     }}
                   >
-                    Continue with Google
+                    Continue with Azure AD
                   </Button>
                 </Box>
 

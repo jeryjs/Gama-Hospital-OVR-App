@@ -37,6 +37,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   googleId: varchar('google_id', { length: 255 }).unique(),
+  azureId: varchar('azure_id', { length: 255 }).unique(),
   employeeId: varchar('employee_id', { length: 50 }).unique(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),

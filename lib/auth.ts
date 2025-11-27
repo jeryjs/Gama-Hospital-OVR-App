@@ -1,10 +1,11 @@
 import { NextAuthOptions, User } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -15,20 +16,17 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: 'select_account',
-          hd: ALLOWED_DOMAIN,
-        },
-      },
+    AzureADProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      tenantId: process.env.AZURE_AD_TENANT_ID!,
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (!user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
+      // Skip domain check in development mode
+      if (!IS_DEV && !user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
+        console.log('Sign in rejected: Invalid domain for', user.email);
         return false;
       }
 
@@ -45,17 +43,16 @@ export const authOptions: NextAuthOptions = {
           await db
             .update(users)
             .set({
-              googleId: account?.providerAccountId,
+              azureId: account?.providerAccountId,
               profilePicture: user.image,
               updatedAt: new Date(),
-              role: existingUser.role,
             })
             .where(eq(users.id, existingUser.id));
         } else {
           const nameParts = user.name?.split(' ') || ['', ''];
           await db.insert(users).values({
             email: user.email,
-            googleId: account?.providerAccountId,
+            azureId: account?.providerAccountId,
             firstName: nameParts[0] || 'Unknown',
             lastName: nameParts.slice(1).join(' ') || 'User',
             role: 'employee',
@@ -67,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         return true;
       } catch (error) {
         console.error('Sign in error:', error);
+        console.error('User email:', user.email);
         return false;
       }
     },
@@ -90,7 +88,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'quality_manager' : token.role) as User['role'];  // Testing: set specific role for me
+        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'department_head' : token.role) as User['role'];  // Testing: set specific role for me
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;
