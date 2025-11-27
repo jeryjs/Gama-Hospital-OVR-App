@@ -106,11 +106,31 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         return data!;
     };
 
-    const { data, error, mutate } = useSWR(url, fetcher, {
+    const fallbackData: DashboardStats = {
+        total: 0,
+        drafts: 0,
+        submitted: 0,
+        resolved: 0,
+        byStatus: {
+            draft: 0,
+            submitted: 0,
+            supervisor_approved: 0,
+            hod_assigned: 0,
+            qi_final_review: 0,
+            closed: 0,
+        },
+        byDepartment: [],
+        recentIncidents: [],
+        activeUsers: 0,
+        avgResolutionTime: 0,
+    };
+
+    const { data = fallbackData, error, mutate } = useSWR(url, fetcher, {
         revalidateOnFocus: false,
         revalidateOnReconnect: false,
         dedupingInterval: 30000, // 30 seconds - stats don't change often
         suspense: true,
+        fallbackData,
     });
 
     return {
