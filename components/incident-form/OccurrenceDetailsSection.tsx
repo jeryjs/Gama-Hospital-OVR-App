@@ -1,7 +1,11 @@
-import { OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS } from '@/lib/ovr-categories';
+'use client';
+
+import { PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
+import { getTaxonomyItem, loadTaxonomy, type TaxonomyData } from '@/lib/services/taxonomyService';
 import { Person, Place, Warning } from '@mui/icons-material';
 import { Box, Chip, Grid, Paper, Typography, alpha } from '@mui/material';
 import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 
 interface Props {
@@ -18,9 +22,24 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 );
 
 export function OccurrenceDetailsSection({ incident }: Props) {
-  const category = OVR_CATEGORIES.find(c => c.id === incident.occurrenceCategory);
-  const subcategory = category?.subcategories.find(s => s.id === incident.occurrenceSubcategory);
-  const personInvolvedLabel = PERSON_INVOLVED_OPTIONS.find(p => p.value === incident.personInvolved)?.label;
+  const [taxonomy, setTaxonomy] = useState<TaxonomyData | null>(null);
+
+  useEffect(() => {
+    loadTaxonomy().then(setTaxonomy).catch(console.error);
+  }, []);
+
+  const taxonomyItem = taxonomy
+    ? getTaxonomyItem(
+      taxonomy,
+      incident.occurrenceCategory,
+      incident.occurrenceSubcategory,
+      incident.occurrenceDetail || undefined
+    )
+    : null;
+
+  const personInvolvedLabel = PERSON_INVOLVED_OPTIONS.find(
+    (p) => p.value === incident.personInvolved
+  )?.label;
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
@@ -140,12 +159,17 @@ export function OccurrenceDetailsSection({ incident }: Props) {
           Classification
         </Typography>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <InfoRow label="Category" value={category?.label} />
+          <Grid size={{ xs: 12, md: taxonomyItem?.detail ? 4 : 6 }}>
+            <InfoRow label="Category" value={taxonomyItem?.categoryDescription} />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <InfoRow label="Subcategory" value={subcategory?.label} />
+          <Grid size={{ xs: 12, md: taxonomyItem?.detail ? 4 : 6 }}>
+            <InfoRow label="Subcategory" value={taxonomyItem?.subcategoryDescription} />
           </Grid>
+          {taxonomyItem?.detail && (
+            <Grid size={{ xs: 12, md: 4 }}>
+              <InfoRow label="Detail" value={taxonomyItem.detailDescription} />
+            </Grid>
+          )}
         </Grid>
       </Box>
 

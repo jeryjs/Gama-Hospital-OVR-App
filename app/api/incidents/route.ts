@@ -212,6 +212,7 @@ export async function POST(request: NextRequest) {
         // Classification
         occurrenceCategory: body.occurrenceCategory,
         occurrenceSubcategory: body.occurrenceSubcategory,
+        occurrenceDetail: body.occurrenceDetail,
         description: body.description,
 
         // Witness

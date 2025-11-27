@@ -1,7 +1,8 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { INJURY_OUTCOMES, OVR_CATEGORIES, PERSON_INVOLVED_OPTIONS } from '@/lib/ovr-categories';
+import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
+import { INJURY_OUTCOMES, PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
 import { ArrowBack, Save, Send } from '@mui/icons-material';
 import {
   Alert,
@@ -29,7 +30,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface FormData {
   // Patient Information
@@ -59,6 +60,7 @@ interface FormData {
   // Incident Classification
   occurrenceCategory: string;
   occurrenceSubcategory: string;
+  occurrenceDetail: string;
 
   // Description
   description: string;
@@ -113,6 +115,7 @@ export default function NewIncidentPage() {
     staffInvolvedDepartment: '',
     occurrenceCategory: '',
     occurrenceSubcategory: '',
+    occurrenceDetail: '',
     description: '',
     witnessName: '',
     witnessAccount: '',
@@ -179,6 +182,7 @@ export default function NewIncidentPage() {
           staffInvolvedDepartment: data.staffInvolvedDepartment || '',
           occurrenceCategory: data.occurrenceCategory || '',
           occurrenceSubcategory: data.occurrenceSubcategory || '',
+          occurrenceDetail: data.occurrenceDetail || '',
           description: data.description || '',
           witnessName: data.witnessName || '',
           witnessAccount: data.witnessAccount || '',
@@ -202,13 +206,16 @@ export default function NewIncidentPage() {
     }
   };
 
-  // Auto-save to localStorage
+  // Auto-save to localStorage with increased debounce
   useEffect(() => {
+    if (!draftLoaded) return; // Don't save during initial load
+
     const timer = setTimeout(() => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
-    }, 1000);
+    }, 2000); // Increased from 1s to 2s for better performance
+
     return () => clearTimeout(timer);
-  }, [formData]);
+  }, [formData, draftLoaded]);
 
   const fetchLocations = async () => {
     try {
@@ -243,6 +250,7 @@ export default function NewIncidentPage() {
       staffInvolvedDepartment: '',
       occurrenceCategory: '',
       occurrenceSubcategory: '',
+      occurrenceDetail: '',
       description: '',
       witnessName: '',
       witnessAccount: '',
@@ -295,8 +303,6 @@ export default function NewIncidentPage() {
       setLoading(false);
     }
   };
-
-  const selectedCategory = OVR_CATEGORIES.find(cat => cat.id === formData.occurrenceCategory);
 
   return (
     <AppLayout>
@@ -606,40 +612,23 @@ export default function NewIncidentPage() {
                 >
                   Classification of Occurrence
                 </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <TaxonomySelector
+                    categoryValue={formData.occurrenceCategory}
+                    subcategoryValue={formData.occurrenceSubcategory}
+                    detailValue={formData.occurrenceDetail || ''}
+                    onChange={useCallback((cat: string, subcat: string, det: string) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        occurrenceCategory: cat,
+                        occurrenceSubcategory: subcat,
+                        occurrenceDetail: det
+                      }));
+                    }, [])}
+                    required
+                  />
+                </Box>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      select
-                      SelectProps={{ native: true }}
-                      label="Category *"
-                      value={formData.occurrenceCategory}
-                      onChange={(e) => setFormData({ ...formData, occurrenceCategory: e.target.value, occurrenceSubcategory: '' })}
-                      required
-                    >
-                      <option value=""></option>
-                      {OVR_CATEGORIES.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.label}</option>
-                      ))}
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      select
-                      SelectProps={{ native: true }}
-                      label="Subcategory *"
-                      value={formData.occurrenceSubcategory}
-                      onChange={(e) => setFormData({ ...formData, occurrenceSubcategory: e.target.value })}
-                      required
-                      disabled={!formData.occurrenceCategory}
-                    >
-                      <option value=""></option>
-                      {selectedCategory?.subcategories.map(sub => (
-                        <option key={sub.id} value={sub.id}>{sub.label}</option>
-                      ))}
-                    </TextField>
-                  </Grid>
                   <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth

@@ -1,4 +1,4 @@
-import { INJURY_OUTCOMES } from '@/lib/ovr-categories';
+import { INJURY_OUTCOMES } from '@/lib/constants';
 import { Cancel, CheckCircle, LocalHospital } from '@mui/icons-material';
 import { alpha, Box, Chip, Grid, Paper, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
