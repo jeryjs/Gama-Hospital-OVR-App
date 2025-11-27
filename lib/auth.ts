@@ -82,6 +82,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Prevent redirect loops and header size issues
+
+      // If URL contains /login, redirect to dashboard
+      if (url.includes('/login')) {
+        return `${baseUrl}/dashboard`;
+      }
+
+      // If URL is too long (potential loop), redirect to dashboard
+      if (url.length > 200) {
+        return `${baseUrl}/dashboard`;
+      }
+
+      // Allows relative callback URLs
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+
+      // Allows callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+
+      // Default to dashboard
+      return `${baseUrl}/dashboard`;
+    },
+
     async signIn({ user, account }) {
       console.log('🔐 SignIn attempt:', {
         email: user.email,
@@ -200,7 +227,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'department_head' : token.role) as NextAuthUser['role'];  // Testing: set specific role for me
+        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'admin' : token.role) as NextAuthUser['role'];  // Testing: set specific role for me
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;

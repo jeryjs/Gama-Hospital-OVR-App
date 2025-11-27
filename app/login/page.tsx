@@ -37,8 +37,20 @@ export default function LoginPage() {
 
     // Redirect if already authenticated
     if (session) {
-      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-      router.push(callbackUrl);
+      // Get callback URL, but sanitize it to prevent redirect loops
+      let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+      // Prevent redirect loops by checking if callback contains /login
+      if (callbackUrl.includes('/login') || callbackUrl.includes('%2Flogin')) {
+        callbackUrl = '/dashboard';
+      }
+
+      // Limit callback URL length to prevent header size issues
+      if (callbackUrl.length > 200) {
+        callbackUrl = '/dashboard';
+      }
+
+      router.replace(callbackUrl);
     }
   }, [session, searchParams, router]);
 
@@ -49,9 +61,22 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      // Get callback URL and sanitize it
+      let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+      // Prevent redirect loops
+      if (callbackUrl.includes('/login') || callbackUrl.includes('%2Flogin')) {
+        callbackUrl = '/dashboard';
+      }
+
+      // Limit length to prevent header size issues
+      if (callbackUrl.length > 200) {
+        callbackUrl = '/dashboard';
+      }
+
       await signIn('azure-ad', {
-        callbackUrl: searchParams.get('callbackUrl') || '/dashboard',
-        redirect: true, // Use redirect flow (not popup)
+        callbackUrl,
+        redirect: true,
       });
     } catch (err) {
       console.error('Sign in error:', err);
