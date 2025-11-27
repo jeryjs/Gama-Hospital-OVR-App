@@ -71,9 +71,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     // Redirect to Azure AD logout endpoint to clear SSO session
     // This ensures user is fully logged out from Microsoft
-    const logoutUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin + '/login')}`;
+    // const logoutUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin + '/login')}`;
 
-    window.location.href = logoutUrl;
+    // window.location.href = logoutUrl;
   };
 
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
