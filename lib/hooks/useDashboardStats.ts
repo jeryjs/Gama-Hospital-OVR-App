@@ -114,24 +114,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     });
 
     return {
-        stats: data || {
-            total: 0,
-            drafts: 0,
-            submitted: 0,
-            resolved: 0,
-            byStatus: {
-                draft: 0,
-                submitted: 0,
-                supervisor_approved: 0,
-                hod_assigned: 0,
-                qi_final_review: 0,
-                closed: 0,
-            },
-            byDepartment: [],
-            recentIncidents: [],
-            activeUsers: 0,
-            avgResolutionTime: 0,
-        },
+        stats: data,
         isError: !!error,
         error,
         mutate,
