@@ -90,6 +90,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       },
     ];
 
+    // Admin-only menu items
+    if (session?.user.role === 'admin') {
+      items.push({
+        title: 'Administration',
+        icon: <AccountCircle />,
+        open: pathname.startsWith('/users'),
+        children: [
+          { title: 'User Management', path: '/users', roles: ['admin'] },
+        ],
+      });
+    }
+
     // process the items based on the children roles
     items.forEach((item) => {
       if (item.children) {

@@ -22,6 +22,7 @@ export function useUsers(options: UseUsersOptions = {}): UseUsersReturn {
   const { role } = options;
 
   const params = new URLSearchParams();
+  params.append('legacy', 'true'); // Use legacy endpoint for dropdowns
   if (role) params.append('role', role);
 
   const url = `/api/users?${params.toString()}`;

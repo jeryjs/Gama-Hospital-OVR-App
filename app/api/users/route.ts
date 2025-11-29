@@ -1,64 +1,209 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { authOptions } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { handleApiError, requireAuth } from '@/lib/api/middleware';
+import { and, asc, count, desc, eq, ilike, or, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await requireAuth(request);
+    const { searchParams } = new URL(request.url);
 
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Legacy support for simple user list (used by dropdowns)
+    const legacy = searchParams.get('legacy');
+    if (legacy === 'true') {
+      const role = searchParams.get('role');
+      const department = searchParams.get('department');
+
+      const query = db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          department: users.department,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.isActive, true));
+
+      const allUsers = await query;
+      let filteredUsers = allUsers;
+
+      if (role) filteredUsers = filteredUsers.filter(u => u.role === role);
+      if (department) filteredUsers = filteredUsers.filter(u => u.department === department);
+
+      const formattedUsers = filteredUsers.map(u => ({
+        id: u.id,
+        name: `${u.firstName} ${u.lastName}`,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        department: u.department,
+        role: u.role,
+      }));
+
+      return NextResponse.json(formattedUsers);
     }
 
-    const searchParams = req.nextUrl.searchParams;
-    const role = searchParams.get('role');
-    const department = searchParams.get('department');
+    // New paginated user management endpoint (admin only)
+    if (session.user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
 
-    const query = db
+    // Parse query parameters with defaults
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '10')));
+    const search = searchParams.get('search')?.trim() || '';
+    const role = searchParams.get('role') || '';
+    const isActiveParam = searchParams.get('isActive') || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+
+    // Build WHERE conditions
+    const conditions: SQL[] = [];
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(users.email, `%${search}%`),
+          ilike(users.firstName, `%${search}%`),
+          ilike(users.lastName, `%${search}%`),
+          ilike(users.employeeId, `%${search}%`),
+          ilike(users.department, `%${search}%`)
+        )!
+      );
+    }
+
+    if (role) {
+      conditions.push(eq(users.role, role as any));
+    }
+
+    if (isActiveParam === 'true') {
+      conditions.push(eq(users.isActive, true));
+    } else if (isActiveParam === 'false') {
+      conditions.push(eq(users.isActive, false));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count for pagination
+    const countResult = await db
+      .select({ count: count() })
+      .from(users)
+      .where(whereClause);
+
+    const total = Number(countResult[0]?.count || 0);
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+
+    // Build ORDER BY clause - map string to actual column
+    const columnMap = {
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      department: users.department,
+    };
+    const orderByColumn = columnMap[sortBy as keyof typeof columnMap] || users.createdAt;
+    const orderByClause = sortOrder === 'asc' ? asc(orderByColumn) : desc(orderByColumn);
+
+    // Fetch paginated data
+    const data = await db
       .select({
         id: users.id,
+        email: users.email,
+        employeeId: users.employeeId,
         firstName: users.firstName,
         lastName: users.lastName,
-        email: users.email,
-        department: users.department,
         role: users.role,
+        department: users.department,
+        position: users.position,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
       })
       .from(users)
-      .where(eq(users.isActive, true));
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(pageSize)
+      .offset(offset);
 
-    const allUsers = await query;
-
-    // Filter by role if provided
-    let filteredUsers = allUsers;
-    if (role) {
-      filteredUsers = filteredUsers.filter(u => u.role === role);
-    }
-
-    // Filter by department if provided
-    if (department) {
-      filteredUsers = filteredUsers.filter(u => u.department === department);
-    }
-
-    // Format for display
-    const formattedUsers = filteredUsers.map(u => ({
-      id: u.id,
-      name: `${u.firstName} ${u.lastName}`,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      department: u.department,
-      role: u.role,
-    }));
-
-    return NextResponse.json(formattedUsers);
+    return NextResponse.json({
+      data,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error);
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await requireAuth(request);
+
+    if (session.user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { userId, updates } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    // Validate allowed fields
+    const allowedFields = ['role', 'department', 'position', 'isActive', 'employeeId'];
+    const filteredUpdates: any = {};
+
+    for (const key of allowedFields) {
+      if (key in updates) {
+        filteredUpdates[key] = updates[key];
+      }
+    }
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Prevent admin from deactivating themselves
+    if (updates.isActive === false && userId === parseInt(session.user.id)) {
+      return NextResponse.json(
+        { error: 'Cannot deactivate your own account' },
+        { status: 400 }
+      );
+    }
+
+    filteredUpdates.updatedAt = new Date();
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(filteredUpdates)
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (error) {
+    return handleApiError(error);
   }
 }

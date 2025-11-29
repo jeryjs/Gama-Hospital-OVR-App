@@ -279,3 +279,34 @@ export const createCommentSchema = z.object({
 export const updateCommentSchema = z.object({
   comment: z.string().min(1, 'Comment cannot be empty').max(5000, 'Comment is too long'),
 });
+
+// ============================================
+// USER MANAGEMENT SCHEMAS
+// ============================================
+
+export const userListQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1).catch(1),
+  pageSize: z.coerce.number().min(1).max(100).default(10).catch(10),
+  search: z.string().nullish(),
+  role: z.string().nullish(),
+  isActive: z.coerce.boolean().nullish(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'firstName', 'lastName', 'email', 'department']).default('createdAt').catch('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
+});
+
+export const userUpdateSchema = userInsertSchema.pick({
+  role: true,
+  department: true,
+  position: true,
+  isActive: true,
+  employeeId: true,
+}).partial();
+
+export const userListResponseSchema = z.object({
+  data: z.array(userSelectSchema),
+  pagination: paginationMetaSchema,
+});
+
+export type UserListQuery = z.infer<typeof userListQuerySchema>;
+export type UserUpdate = z.infer<typeof userUpdateSchema>;
+export type UserListResponse = z.infer<typeof userListResponseSchema>;

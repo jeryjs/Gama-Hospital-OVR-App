@@ -10,6 +10,7 @@ export { useComments } from './useComments';
 export { useUsers } from './useUsers';
 export { useLocations } from './useLocations';
 export { useDashboardStats } from './useDashboardStats';
+export { useUserManagement } from './useUserManagement';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
@@ -18,3 +19,6 @@ export type { UseCommentsReturn } from './useComments';
 export type { UseUsersOptions, UseUsersReturn } from './useUsers';
 export type { UseLocationsReturn } from './useLocations';
 export type { UseDashboardStatsReturn, DashboardStats } from './useDashboardStats';
+
+// User list management types
+export type { User, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
