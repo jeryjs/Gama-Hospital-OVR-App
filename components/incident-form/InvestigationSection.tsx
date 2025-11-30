@@ -2,6 +2,7 @@
 
 import { apiCall } from '@/lib/client/error-handler';
 import { useUsers } from '@/lib/hooks';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { PersonAdd, Science } from '@mui/icons-material';
 import {
   Alert,
@@ -39,12 +40,16 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
   // Fetch users with SWR
   const { users } = useUsers();
 
-  const isHOD = session?.user?.role === 'admin' || session?.user?.id === incident.departmentHeadId?.toString();
+  const isAssignedHOD = session?.user?.id === incident.departmentHeadId?.toString();
+  const canEditInvestigation = ACCESS_CONTROL.ui.incidentForm.canEditInvestigationSection(
+    session?.user.roles || [],
+    isAssignedHOD
+  );
   const isInvestigator = incident.investigators?.some(inv => inv.investigatorId.toString() === session?.user?.id);
 
-  const canAssignInvestigator = isHOD && incident.status === 'hod_assigned';
+  const canAssignInvestigator = canEditInvestigation && incident.status === 'hod_assigned';
   const canSubmitFindings = isInvestigator && incident.investigators?.find(inv => inv.investigatorId.toString() === session?.user?.id)?.status === 'pending';
-  const canSubmitHODReport = isHOD && incident.status === 'hod_assigned';
+  const canSubmitHODReport = canEditInvestigation && incident.status === 'hod_assigned';
 
   const handleAssignInvestigator = async () => {
     if (!selectedInvestigator) return;

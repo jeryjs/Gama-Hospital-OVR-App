@@ -36,6 +36,8 @@ import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { AppRole } from '@/lib/constants';
 
 const DRAWER_WIDTH = 280;
 
@@ -47,7 +49,7 @@ interface NavItem {
   children?: Array<{
     title: string;
     path: string;
-    roles?: User['role'][];
+    roles?: AppRole[];
     badge?: { content: string | React.ReactNode; link?: string; tooltip?: string };
   }>;
 }
@@ -77,38 +79,70 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
+    const userRoles = session?.user.roles || [];
+
     const items: NavItem[] = [
       { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
       {
-        title: 'Incidents', icon: <Description />, open: pathname.startsWith('/incidents'),
+        title: 'Incidents',
+        icon: <Description />,
+        open: pathname.startsWith('/incidents'),
         children: [
-          { title: 'My Reports', path: '/incidents', badge: { content: <Add />, link: '/incidents/new', tooltip: 'Report New incident' } },
-          { title: 'Pending Approval', path: '/incidents?status=submitted', roles: ['supervisor', 'employee'], badge: { content: 3, tooltip: 'Found 3 reports pending approval' } },
-          { title: 'Investigation', path: '/incidents/hod/review', roles: ['department_head', 'admin'], badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' } },
-          { title: 'QI Review', path: '/incidents/qi/review', roles: ['quality_manager', 'admin'], badge: { content: 1, tooltip: 'Found 1 QI reviews pending' } },
+          {
+            title: 'My Reports',
+            path: '/incidents',
+            badge: {
+              content: <Add />,
+              link: '/incidents/new',
+              tooltip: 'Report New incident'
+            }
+          },
+          {
+            title: 'Pending Approval',
+            path: '/incidents?status=submitted',
+            roles: ['supervisor', 'team_lead', 'employee'],
+            badge: { content: 3, tooltip: 'Found 3 reports pending approval' }
+          },
+          {
+            title: 'Investigation',
+            path: '/incidents/hod/review',
+            roles: ['department_head', 'assistant_dept_head', 'super_admin', 'developer'],
+            badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' }
+          },
+          {
+            title: 'QI Review',
+            path: '/incidents/qi/review',
+            roles: ['quality_manager', 'quality_analyst', 'super_admin', 'developer'],
+            badge: { content: 1, tooltip: 'Found 1 QI reviews pending' }
+          },
         ],
       },
     ];
 
-    // Admin-only menu items
-    if (session?.user.role === 'admin') {
+    // Administration menu (admin/tech users only)
+    if (ACCESS_CONTROL.ui.navigation.showAdministration(userRoles)) {
       items.push({
         title: 'Administration',
         icon: <AccountCircle />,
         open: pathname.startsWith('/users'),
         children: [
-          { title: 'User Management', path: '/users', roles: ['admin'] },
+          {
+            title: 'User Management',
+            path: '/users',
+            roles: ['super_admin', 'tech_admin', 'developer']
+          },
         ],
       });
     }
 
-    // process the items based on the children roles
+    // Filter children based on user's roles
     items.forEach((item) => {
       if (item.children) {
-        item.children = item.children.filter((child) =>
-          session?.user.role == 'admin' ||
-          !child.roles ||
-          child.roles.includes(session?.user?.role || 'employee'));
+        item.children = item.children.filter((child) => {
+          if (!child.roles) return true; // No role restriction
+          // User must have at least one of the required roles
+          return userRoles.some(role => child.roles?.includes(role));
+        });
       }
     });
 

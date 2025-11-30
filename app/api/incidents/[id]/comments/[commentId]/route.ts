@@ -4,6 +4,8 @@ import { AuthorizationError, handleApiError, NotFoundError, requireAuth, validat
 import { updateCommentSchema } from '@/lib/api/schemas';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { APP_ROLES } from '@/lib/constants';
+import { hasAnyRole } from '@/lib/auth-helpers';
 
 export async function PATCH(
   req: NextRequest,
@@ -75,8 +77,12 @@ export async function DELETE(
       throw new NotFoundError('Comment');
     }
 
-    // Only comment owner or admin can delete
-    if (comment.userId.toString() !== session.user.id && session.user.role !== 'admin') {
+    // Only comment owner or privileged users can delete
+    const canDelete =
+      comment.userId.toString() === session.user.id ||
+      hasAnyRole(session.user.roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.QUALITY_MANAGER, APP_ROLES.DEVELOPER]);
+
+    if (!canDelete) {
       throw new AuthorizationError('You can only delete your own comments');
     }
 

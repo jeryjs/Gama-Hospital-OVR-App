@@ -1,9 +1,10 @@
-import { NextAuthOptions, User as NextAuthUser } from 'next-auth';
-import AzureADProvider from 'next-auth/providers/azure-ad';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { NextAuthOptions } from 'next-auth';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 import { mapAdGroupsToRoles } from './auth-helpers';
+import { APP_ROLES } from './constants';
 
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
 // const IS_DEV = process.env.NODE_ENV === 'development';
@@ -210,7 +211,6 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         // Testing: set specific role for me
-        const { APP_ROLES } = require('./constants');
         session.user.roles = session.user.name?.toLowerCase().includes('jery')
           ? [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER] as any
           : (token.roles as any);

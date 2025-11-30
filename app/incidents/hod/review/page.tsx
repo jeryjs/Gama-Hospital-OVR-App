@@ -79,45 +79,8 @@ export default function HODReviewPage() {
     fetchIncidents();
   }, [session, router]);
 
+  // Apply filters and sorting whenever dependencies change
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [incidents, searchTerm, statusFilter, sortConfig]);
-
-  const fetchIncidents = async () => {
-    try {
-      const res = await fetch('/api/incidents?status=hod_assigned');
-      if (res.ok) {
-        const data = await res.json();
-        // Filter for HOD's department or admin sees all
-        // const filtered = data.filter((incident: any) =>
-        //   // session?.user?.role === 'admin' ||
-        //   // incident.staffInvolvedDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
-        // );
-
-        setIncidents(
-          data.data.map((incident: any) => ({
-            id: incident.id,
-            refNo: incident.refNo,
-            reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
-            reporterDepartment: incident.staffInvolvedDepartment || 'N/A',
-            occurrenceDate: incident.occurrenceDate,
-            occurrenceCategory: incident.occurrenceCategory,
-            status: incident.status,
-            createdAt: incident.createdAt,
-            severity: incident.severity || 'standard',
-            investigatorCount: incident.investigators?.length || 0,
-            findingsSubmitted: incident.findingsSubmitted || false,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFiltersAndSort = () => {
     let filtered = [...incidents];
 
     // Search filter
@@ -154,6 +117,40 @@ export default function HODReviewPage() {
     });
 
     setFilteredIncidents(filtered);
+  }, [incidents, searchTerm, statusFilter, sortConfig]);
+
+  const fetchIncidents = async () => {
+    try {
+      const res = await fetch('/api/incidents?status=hod_assigned');
+      if (res.ok) {
+        const data = await res.json();
+        // Filter for HOD's department or admin sees all
+        // const filtered = data.filter((incident: any) =>
+        //   // session?.user?.role === 'admin' ||
+        //   // incident.staffInvolvedDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
+        // );
+
+        setIncidents(
+          data.data.map((incident: any) => ({
+            id: incident.id,
+            refNo: incident.refNo,
+            reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
+            reporterDepartment: incident.staffInvolvedDepartment || 'N/A',
+            occurrenceDate: incident.occurrenceDate,
+            occurrenceCategory: incident.occurrenceCategory,
+            status: incident.status,
+            createdAt: incident.createdAt,
+            severity: incident.severity || 'standard',
+            investigatorCount: incident.investigators?.length || 0,
+            findingsSubmitted: incident.findingsSubmitted || false,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSort = (key: keyof HODIncident) => {

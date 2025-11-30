@@ -2,56 +2,44 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { CardLoadingFallback } from '@/components/LoadingFallback';
+import { getPrimaryRole } from '@/lib/auth-helpers';
+import { APP_ROLES } from '@/lib/constants';
 import { useDashboardStats } from '@/lib/hooks';
-import type { DashboardStats } from '@/lib/hooks';
 import {
-  CheckCircle,
-  Description,
-  PendingActions,
-  Warning
-} from '@mui/icons-material';
-import {
-  alpha,
   Box,
-  Card,
-  CardContent,
-  Chip,
   Grid,
-  Paper,
-  Stack,
-  Typography
+  Stack
 } from '@mui/material';
-import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
-import { fadeIn } from '@/lib/theme';
 import AdminDashboard from './AdminDashboard';
-import QIDashboard from './QIDashboard';
-import HODDashboard from './HODDashboard';
-import SupervisorDashboard from './SupervisorDashboard';
 import EmployeeDashboard from './EmployeeDashboard';
+import HODDashboard from './HODDashboard';
+import QIDashboard from './QIDashboard';
+import SupervisorDashboard from './SupervisorDashboard';
 
 // Inner component that uses the hook - will suspend while loading
 function DashboardContent() {
   const { data: session } = useSession();
   const { stats } = useDashboardStats(); // This will suspend
-  const userRole = session?.user?.role;
 
-  // Route to appropriate dashboard based on role
-  if (userRole === 'admin') {
+  // Determine primary role from user's roles array
+  const primaryRole = getPrimaryRole(session?.user?.roles || []);
+
+  // Route to appropriate dashboard based on highest priority role
+  if (primaryRole === APP_ROLES.SUPER_ADMIN || primaryRole === APP_ROLES.TECH_ADMIN || primaryRole === APP_ROLES.DEVELOPER) {
     return <AdminDashboard stats={stats} session={session} />;
   }
 
-  if (userRole === 'quality_manager') {
+  if (primaryRole === APP_ROLES.QUALITY_MANAGER || primaryRole === APP_ROLES.QUALITY_ANALYST) {
     return <QIDashboard stats={stats} session={session} />;
   }
 
-  if (userRole === 'department_head') {
+  if (primaryRole === APP_ROLES.DEPARTMENT_HEAD || primaryRole === APP_ROLES.ASSISTANT_DEPT_HEAD) {
     return <HODDashboard stats={stats} session={session} />;
   }
 
-  if (userRole === 'supervisor') {
+  if (primaryRole === APP_ROLES.SUPERVISOR || primaryRole === APP_ROLES.TEAM_LEAD) {
     return <SupervisorDashboard stats={stats} session={session} />;
   }
 

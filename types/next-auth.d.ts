@@ -21,5 +21,6 @@ declare module 'next-auth' {
 }
 
 declare module 'next-auth/jwt' {
-  interface JWT extends User { } // Extend JWT to include User properties
+  // Extend JWT to include User properties
+  interface JWT extends User { }  // eslint-disable-line @typescript-eslint/no-empty-object-type
 }

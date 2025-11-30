@@ -61,7 +61,7 @@ export default function QIReviewPage() {
       return router.replace('/dashboard');
     }
     fetchIncidents();
-  }, [session]);
+  }, [session, router]);
 
   const fetchIncidents = async () => {
     try {

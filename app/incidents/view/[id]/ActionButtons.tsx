@@ -1,5 +1,6 @@
 'use client';
 
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Delete, Edit } from '@mui/icons-material';
 import { Box, Button, Stack } from '@mui/material';
 import { useSession } from 'next-auth/react';
@@ -17,7 +18,12 @@ export function ActionButtons({ incident, onUpdate }: Props) {
 
   const isOwner = session?.user?.id === incident.reporterId.toString();
   const canEdit = incident.status === 'draft' && isOwner;
-  const canDelete = (incident.status === 'draft' && isOwner) || session?.user?.role === 'admin';
+  const isDraft = incident.status === 'draft';
+  const canDelete = ACCESS_CONTROL.api.incidents.canDelete(
+    session?.user.roles || [],
+    isOwner,
+    isDraft
+  );
 
   const handleEdit = () => {
     router.push(`/incidents/new?draft=${incident.id}`);

@@ -1,6 +1,7 @@
 'use client';
 
 import { apiCall } from '@/lib/client/error-handler';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { CheckCircle, SupervisorAccount } from '@mui/icons-material';
 import {
   Alert,
@@ -27,8 +28,8 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
   const [action, setAction] = useState(incident.supervisorAction || '');
   const [submitting, setSubmitting] = useState(false);
 
-  const isSupervisor = session?.user?.role === 'supervisor';
-  const canApprove = isSupervisor && incident.status === 'submitted';
+  const canEditSection = ACCESS_CONTROL.ui.incidentForm.canEditSupervisorSection(session?.user.roles || []);
+  const canApprove = canEditSection && incident.status === 'submitted';
   const isApproved = incident.status !== 'draft' && incident.status !== 'submitted';
 
   const handleApprove = async () => {

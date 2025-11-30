@@ -2,6 +2,7 @@
 
 import { apiCall } from '@/lib/client/error-handler';
 import { useUsers } from '@/lib/hooks';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AssignmentInd } from '@mui/icons-material';
 import {
   Alert,
@@ -33,8 +34,9 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
   // Fetch HODs with SWR
   const { users: hodUsers } = useUsers({ role: 'admin' });
 
-  const isQI = session?.user?.role === 'quality_manager' || session?.user?.role === 'admin';
-  const canAssignHOD = isQI && incident.status === 'supervisor_approved';
+  const canAssignHOD =
+    ACCESS_CONTROL.ui.incidentForm.canAssignHOD(session?.user.roles || []) &&
+    incident.status === 'supervisor_approved';
 
   const handleAssignHOD = async () => {
     if (!selectedHOD) {

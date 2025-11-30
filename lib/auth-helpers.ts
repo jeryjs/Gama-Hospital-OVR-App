@@ -3,7 +3,7 @@
  * Single source of truth for all role-based access control logic
  */
 
-import type { AppRole } from './constants';
+import { AD_GROUP_ROLE_MAP, APP_ROLES, ROLE_METADATA, ROLE_PRIORITY, type AppRole } from './constants';
 
 // ============================================
 // ROLE CHECK FUNCTIONS
@@ -50,8 +50,6 @@ export function hasAllRoles(
  */
 export function getPrimaryRole(roles: AppRole[]): AppRole {
     // Import inside function to avoid circular dependency
-    const { APP_ROLES, ROLE_PRIORITY } = require('./constants');
-
     for (const role of ROLE_PRIORITY) {
         if (roles.includes(role)) return role;
     }
@@ -68,7 +66,6 @@ export function getPrimaryRole(roles: AppRole[]): AppRole {
  * Centralized mapping logic - update AD_GROUP_ROLE_MAP in constants.ts
  */
 export function mapAdGroupsToRoles(adGroups: string[]): AppRole[] {
-    const { AD_GROUP_ROLE_MAP, APP_ROLES } = require('./constants');
     const roleSet = new Set<AppRole>();
 
     for (const group of adGroups) {
@@ -107,7 +104,6 @@ export function getRoleMetadata(role: AppRole): {
     color: string;
     description: string;
 } {
-    const { ROLE_METADATA } = require('./constants');
     return (
         ROLE_METADATA[role] || {
             label: role,
