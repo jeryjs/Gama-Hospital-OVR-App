@@ -52,7 +52,6 @@ function TaxonomySelectorComponent({
         }
         return 'staged';
     });
-    const [searchValue, setSearchValue] = useState<TaxonomyItem | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Load taxonomy on mount
@@ -63,14 +62,12 @@ function TaxonomySelectorComponent({
             .finally(() => setLoading(false));
     }, []);
 
-    // Initialize search value from props (memoized to prevent unnecessary recalculations)
-    useEffect(() => {
-        if (taxonomy && categoryValue && subcategoryValue && mode === 'search') {
-            const item = getTaxonomyItem(taxonomy, categoryValue, subcategoryValue, detailValue);
-            if (item) {
-                setSearchValue(item);
-            }
+    // Derive selected taxonomy item from props when in search mode
+    const selectedTaxonomyItem = useMemo(() => {
+        if (mode === 'search' && taxonomy && categoryValue && subcategoryValue) {
+            return getTaxonomyItem(taxonomy, categoryValue, subcategoryValue, detailValue) || null;
         }
+        return null;
     }, [taxonomy, categoryValue, subcategoryValue, detailValue, mode]);
 
     const handleModeToggle = useCallback(() => {
@@ -83,10 +80,8 @@ function TaxonomySelectorComponent({
 
     const handleSearchSelect = useCallback((item: TaxonomyItem | null) => {
         if (item) {
-            setSearchValue(item);
             onChange(item.category, item.subcategory, item.detail || '');
         } else {
-            setSearchValue(null);
             onChange('', '', '');
         }
     }, [onChange]);
@@ -154,7 +149,7 @@ function TaxonomySelectorComponent({
 
             {mode === 'search' ? (
                 <Autocomplete
-                    value={searchValue}
+                    value={selectedTaxonomyItem}
                     onChange={(_, value) => {
                         if (typeof value === 'object' || value === null) {
                             handleSearchSelect(value as TaxonomyItem | null);

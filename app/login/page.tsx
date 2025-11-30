@@ -22,19 +22,21 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Initialize error state from URL params directly
+  const errorParam = searchParams.get('error');
+  const [error, setError] = useState<string | null>(() => {
+    if (errorParam === 'AccessDenied') {
+      return 'Access denied. Please ensure you are using a @gamahospital.com email address.';
+    } else if (errorParam === 'Configuration') {
+      return 'Authentication configuration error. Please contact support.';
+    } else if (errorParam) {
+      return 'An authentication error occurred. Please try again.';
+    }
+    return null;
+  });
 
   useEffect(() => {
-    // Check for error in URL
-    const errorParam = searchParams.get('error');
-    if (errorParam === 'AccessDenied') {
-      setError('Access denied. Please ensure you are using a @gamahospital.com email address.');
-    } else if (errorParam === 'Configuration') {
-      setError('Authentication configuration error. Please contact support.');
-    } else if (errorParam) {
-      setError('An authentication error occurred. Please try again.');
-    }
-
     // Redirect if already authenticated
     if (session) {
       // Get callback URL, but sanitize it to prevent redirect loops
