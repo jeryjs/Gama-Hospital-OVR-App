@@ -3,6 +3,8 @@
  * Single source of truth for roles, permissions, and access control
  */
 
+import { injuryOutcomeEnum, personInvolvedEnum, severityLevelEnum } from '@/db/schema';
+
 // ============================================
 // ROLES & PERMISSIONS
 // ============================================
@@ -64,75 +66,20 @@ export const ROLE_PRIORITY: AppRole[] = [
 /**
  * Role metadata for UI display
  */
-export const ROLE_METADATA: Record<
-    AppRole,
-    { label: string; color: string; description: string }
-> = {
-    [APP_ROLES.SUPER_ADMIN]: {
-        label: 'Super Admin',
-        color: '#DC2626',
-        description: 'Full system access',
-    },
-    [APP_ROLES.TECH_ADMIN]: {
-        label: 'Tech Admin',
-        color: '#7C3AED',
-        description: 'System management access',
-    },
-    [APP_ROLES.DEVELOPER]: {
-        label: 'Developer',
-        color: '#059669',
-        description: 'Development and testing access',
-    },
-    [APP_ROLES.CEO]: {
-        label: 'CEO',
-        color: '#1E40AF',
-        description: 'Executive oversight',
-    },
-    [APP_ROLES.EXECUTIVE]: {
-        label: 'Executive',
-        color: '#4F46E5',
-        description: 'Executive level access',
-    },
-    [APP_ROLES.QUALITY_MANAGER]: {
-        label: 'Quality Manager',
-        color: '#8B5CF6',
-        description: 'QI workflow management',
-    },
-    [APP_ROLES.QUALITY_ANALYST]: {
-        label: 'Quality Analyst',
-        color: '#A78BFA',
-        description: 'Quality assurance support',
-    },
-    [APP_ROLES.DEPARTMENT_HEAD]: {
-        label: 'Department Head',
-        color: '#EC4899',
-        description: 'Department leadership',
-    },
-    [APP_ROLES.ASSISTANT_DEPT_HEAD]: {
-        label: 'Assistant Head',
-        color: '#F472B6',
-        description: 'Department support',
-    },
-    [APP_ROLES.SUPERVISOR]: {
-        label: 'Supervisor',
-        color: '#3B82F6',
-        description: 'Team supervision',
-    },
-    [APP_ROLES.TEAM_LEAD]: {
-        label: 'Team Lead',
-        color: '#60A5FA',
-        description: 'Team coordination',
-    },
-    [APP_ROLES.FACILITY_MANAGER]: {
-        label: 'Facility Manager',
-        color: '#F59E0B',
-        description: 'Facility management',
-    },
-    [APP_ROLES.EMPLOYEE]: {
-        label: 'Employee',
-        color: '#6B7280',
-        description: 'Standard user access',
-    },
+export const ROLE_METADATA: Record<AppRole, { label: string; color: string; description: string }> = {
+    [APP_ROLES.SUPER_ADMIN]: { label: 'Super Admin', color: '#DC2626', description: 'Full system access' },
+    [APP_ROLES.TECH_ADMIN]: { label: 'Tech Admin', color: '#7C3AED', description: 'System management access' },
+    [APP_ROLES.DEVELOPER]: { label: 'Developer', color: '#059669', description: 'Development and testing access' },
+    [APP_ROLES.CEO]: { label: 'CEO', color: '#1E40AF', description: 'Executive oversight' },
+    [APP_ROLES.EXECUTIVE]: { label: 'Executive', color: '#4F46E5', description: 'Executive level access' },
+    [APP_ROLES.QUALITY_MANAGER]: { label: 'Quality Manager', color: '#8B5CF6', description: 'QI workflow management' },
+    [APP_ROLES.QUALITY_ANALYST]: { label: 'Quality Analyst', color: '#A78BFA', description: 'Quality assurance support' },
+    [APP_ROLES.DEPARTMENT_HEAD]: { label: 'Department Head', color: '#EC4899', description: 'Department leadership' },
+    [APP_ROLES.ASSISTANT_DEPT_HEAD]: { label: 'Assistant Head', color: '#F472B6', description: 'Department support' },
+    [APP_ROLES.SUPERVISOR]: { label: 'Supervisor', color: '#3B82F6', description: 'Team supervision' },
+    [APP_ROLES.TEAM_LEAD]: { label: 'Team Lead', color: '#60A5FA', description: 'Team coordination' },
+    [APP_ROLES.FACILITY_MANAGER]: { label: 'Facility Manager', color: '#F59E0B', description: 'Facility management' },
+    [APP_ROLES.EMPLOYEE]: { label: 'Employee', color: '#6B7280', description: 'Standard user access' },
 };
 
 /**
@@ -156,29 +103,55 @@ export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> = {
 };
 
 // ============================================
-// OVR FORM CONSTANTS
+// OVR FORM CONSTANTS (WITH UI METADATA)
 // ============================================
 
+// Extract values directly from schema enums
+export const INJURY_OUTCOME_VALUES = injuryOutcomeEnum.enumValues;
+export const PERSON_INVOLVED_VALUES = personInvolvedEnum.enumValues;
+export const SEVERITY_LEVEL_VALUES = severityLevelEnum.enumValues;
+
+/**
+ * Injury outcomes with display labels
+ * Values derived from database schema enum
+ */
 export const INJURY_OUTCOMES = [
+    { value: '', label: 'Not Specified' },
     { value: 'no_injury', label: 'No Injury' },
     { value: 'minor', label: 'Minor' },
     { value: 'serious', label: 'Serious' },
     { value: 'death', label: 'Death' },
-];
-
+] as const satisfies ReadonlyArray<{ value: typeof INJURY_OUTCOME_VALUES[number]; label: string }>;
+/**
+ * Person involved options with display labels
+ * Values derived from database schema enum
+ */
 export const PERSON_INVOLVED_OPTIONS = [
     { value: 'patient', label: 'Patient' },
     { value: 'staff', label: 'Staff' },
     { value: 'visitor_watcher', label: 'Visitor/ Watcher' },
     { value: 'others', label: 'Others' },
-];
+] as const satisfies ReadonlyArray<{ value: typeof PERSON_INVOLVED_VALUES[number]; label: string }>;
 
+/**
+ * Severity levels with display labels and colors
+ * Values derived from database schema enum
+ */
 export const SEVERITY_LEVELS = [
+    { value: "", label: "Not Specified", color: "#6B7280" },
     { value: 'near_miss_level_1', label: 'Near Miss (Level 1)', color: '#10B981' },
     { value: 'no_apparent_injury_level_2', label: 'No Apparent injury (Level 2)', color: '#3B82F6' },
     { value: 'minor_level_3', label: 'Minor (Level 3)', color: '#F59E0B' },
     { value: 'major_level_4', label: 'Major (Level 4)', color: '#EF4444' },
-];
+] as const satisfies ReadonlyArray<{ value: typeof SEVERITY_LEVEL_VALUES[number]; label: string; color: string }>;
+
+/**
+ * Helper to get severity level label from value
+ */
+export function getSeverityLabel(value: string | null | undefined): string {
+    if (!value) return 'N/A';
+    return SEVERITY_LEVELS.find(s => s.value === value)?.label || value;
+}
 
 export interface CauseClassification {
     id: string;

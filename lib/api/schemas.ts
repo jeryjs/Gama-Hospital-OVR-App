@@ -3,6 +3,7 @@ import {
   ovrComments,
   ovrInvestigators,
   ovrReports,
+  severityLevelEnum,
   users,
 } from '@/db/schema';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -166,8 +167,8 @@ export const incidentListQuerySchema = z.object({
   reporterId: z.coerce.number().nullish(),
   departmentHeadId: z.coerce.number().nullish(),
   supervisorId: z.coerce.number().nullish(),
-  dateFrom: z.string().datetime().nullish(),
-  dateTo: z.string().datetime().nullish(),
+  dateFrom: z.iso.datetime().nullish(),
+  dateTo: z.iso.datetime().nullish(),
   search: z.string().nullish(),
   fields: z.string().nullish(),
 });
@@ -269,7 +270,7 @@ export const qiFeedbackSchema = z.object({
   timeframe: z.boolean(),
   actionComplies: z.boolean(),
   effectiveAction: z.boolean(),
-  severityLevel: z.enum(['near_miss_level_1', 'no_apparent_injury_level_2', 'minor_level_3', 'major_level_4']),
+  severityLevel: z.enum(severityLevelEnum.enumValues),
 });
 
 export const createCommentSchema = z.object({
@@ -295,7 +296,7 @@ export const userListQuerySchema = z.object({
 });
 
 export const userUpdateSchema = userInsertSchema.pick({
-  roles: true, // Changed from 'role' to 'roles'
+  roles: true,
   adGroups: true,
   department: true,
   position: true,

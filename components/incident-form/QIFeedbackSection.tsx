@@ -1,6 +1,7 @@
 'use client';
 
 import { apiCall } from '@/lib/client/error-handler';
+import { getSeverityLabel, SEVERITY_LEVELS } from '@/lib/constants';
 import { Assessment, CheckCircle } from '@mui/icons-material';
 import {
   Alert,
@@ -19,6 +20,7 @@ import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 interface Props {
   incident: OVRReport;
@@ -36,8 +38,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const [severityLevel, setSeverityLevel] = useState(incident.severityLevel || '');
   const [submitting, setSubmitting] = useState(false);
 
-  const isQI = session?.user?.role === 'quality_manager';
-  const canSubmit = isQI && incident.status === 'qi_final_review';
+  const canSubmit = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []) && incident.status === 'qi_final_review';
   const isClosed = incident.status === 'closed';
 
   const handleSubmit = async () => {
@@ -154,10 +155,11 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
               required
             >
               <option value=""></option>
-              <option value="near_miss_level_1">Near Miss (Level 1)</option>
-              <option value="no_apparent_injury_level_2">No Apparent Injury (Level 2)</option>
-              <option value="minor_level_3">Minor (Level 3)</option>
-              <option value="major_level_4">Major (Level 4)</option>
+              {SEVERITY_LEVELS.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
+                </option>
+              ))}
             </TextField>
 
             <Button
@@ -192,10 +194,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
                   Severity Level
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  {incident.severityLevel === 'near_miss_level_1' && 'Near Miss (Level 1)'}
-                  {incident.severityLevel === 'no_apparent_injury_level_2' && 'No Apparent Injury (Level 2)'}
-                  {incident.severityLevel === 'minor_level_3' && 'Minor (Level 3)'}
-                  {incident.severityLevel === 'major_level_4' && 'Major (Level 4)'}
+                  {getSeverityLabel(incident.severityLevel)}
                 </Typography>
               </Box>
             )}

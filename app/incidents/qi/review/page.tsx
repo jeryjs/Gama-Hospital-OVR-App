@@ -1,6 +1,8 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { OVRReportListItem, UserMinimal } from '@/lib/api/schemas';
 import { AssignmentInd, Visibility } from '@mui/icons-material';
 import {
   alpha,
@@ -27,34 +29,27 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface QIIncident {
-  id: number;
-  refNo: string;
-  occurrenceDate: string;
-  occurrenceCategory: string;
-  status: string;
-  createdAt: string;
+type QIIncident = OVRReportListItem & {
   reporter: {
     firstName: string;
     lastName: string;
   };
-}
+};
 
-interface User {
-  id: number;
+type HODUser = UserMinimal & {
   name: string;
   department: string | null;
-}
+};
 
 export default function QIReviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [incidents, setIncidents] = useState<QIIncident[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<HODUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<number | null>(null);
@@ -62,9 +57,8 @@ export default function QIReviewPage() {
   const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.role !== 'quality_manager' && session?.user?.role !== 'admin') {
-      router.replace('/dashboard');
-      return;
+    if (session && !ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || [])) {
+      return router.replace('/dashboard');
     }
     fetchIncidents();
   }, [session]);

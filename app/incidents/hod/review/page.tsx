@@ -1,6 +1,8 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { OVRReportListItem } from '@/lib/api/schemas';
 import { fadeIn } from '@/lib/theme';
 import {
   AssignmentInd,
@@ -37,24 +39,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface HODIncident {
-  id: number;
-  refNo: string;
+type HODIncident = OVRReportListItem & {
   reporterName: string;
   reporterDepartment: string;
-  occurrenceDate: string;
-  occurrenceCategory: string;
-  status: string;
-  createdAt: string;
   severity?: string;
   investigatorCount?: number;
   findingsSubmitted?: boolean;
-}
-
-const statusColors: Record<string, string> = {
-  hod_assigned: '#EC4899',
-  qi_final_review: '#10B981',
-  closed: '#059669',
 };
 
 const statusLabels: Record<string, string> = {
@@ -82,12 +72,12 @@ export default function HODReviewPage() {
       // Session is still loading, do nothing
       return;
     }
-    if (session?.user?.role !== 'department_head' && session?.user?.role !== 'admin') {
+    if (session && !ACCESS_CONTROL.ui.navigation.showHODReview(session.user.roles)) {
       router.replace('/dashboard');
       return;
     }
     fetchIncidents();
-  }, [session]);
+  }, [session, router]);
 
   useEffect(() => {
     applyFiltersAndSort();
@@ -134,8 +124,8 @@ export default function HODReviewPage() {
     if (searchTerm) {
       filtered = filtered.filter(
         (incident) =>
-          incident.refNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          incident.reporterDepartment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (incident.refNo?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+          (incident.reporterDepartment?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
           incident.occurrenceCategory.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }

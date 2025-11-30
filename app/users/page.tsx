@@ -4,6 +4,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { User, UserUpdate } from '@/lib/api/schemas';
 import { useUserManagement } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
+import { APP_ROLES, ROLE_METADATA, AppRole } from '@/lib/constants';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
   AdminPanelSettings,
   CheckCircle,
@@ -47,13 +49,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const ROLES = [
+// Build role filter options from ROLE_METADATA
+const ROLE_FILTER_OPTIONS = [
   { value: '', label: 'All Roles' },
-  { value: 'admin', label: 'Admin', color: '#EF4444' },
-  { value: 'quality_manager', label: 'Quality Manager', color: '#8B5CF6' },
-  { value: 'department_head', label: 'Department Head', color: '#EC4899' },
-  { value: 'supervisor', label: 'Supervisor', color: '#3B82F6' },
-  { value: 'employee', label: 'Employee', color: '#6B7280' },
+  ...Object.entries(ROLE_METADATA).map(([value, meta]) => ({ value, label: meta.label, color: meta.color })),
 ];
 
 const STATUS_OPTIONS = [
@@ -77,7 +76,6 @@ function EditUserDialog({ open, user, onClose, onSave }: EditUserDialogProps) {
   useEffect(() => {
     if (user) {
       setFormData({
-        role: user.role,
         department: user.department || '',
         position: user.position || '',
         employeeId: user.employeeId || '',
@@ -120,21 +118,6 @@ function EditUserDialog({ open, user, onClose, onSave }: EditUserDialogProps) {
 
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField label="Email" value={user.email} disabled fullWidth />
-
-          <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
-            <Select
-              value={formData.role || ''}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              label="Role"
-            >
-              {ROLES.slice(1).map((role) => (
-                <MenuItem key={role.value} value={role.value}>
-                  {role.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
           <TextField
             label="Employee ID"
@@ -202,7 +185,7 @@ export default function UsersManagementPage() {
 
   // Redirect non-admins
   useEffect(() => {
-    if (session && session.user.role !== 'admin') {
+    if (session && !ACCESS_CONTROL.ui.userManagement.canAccess(session.user.roles)) {
       router.replace('/dashboard');
     }
   }, [session, router]);
@@ -232,7 +215,7 @@ export default function UsersManagementPage() {
     page,
     pageSize,
     search: debouncedSearch,
-    role,
+    roles: role ? [role] : undefined,
     isActive,
     sortBy,
     sortOrder,
@@ -273,11 +256,18 @@ export default function UsersManagementPage() {
   );
 
   const getRoleInfo = (roleValue: string) => {
-    return ROLES.find((r) => r.value === roleValue) || ROLES[ROLES.length - 1];
+    const meta = ROLE_METADATA[roleValue as AppRole];
+    if (meta) {
+      return { value: roleValue, label: meta.label, color: meta.color };
+    }
+    // Fallback for unknown roles
+    return { value: roleValue, label: roleValue, color: '#6B7280' };
   };
 
   if (session === null) return null;
-  if (session && session.user.role !== 'admin') return null;
+  if (session && !ACCESS_CONTROL.ui.userManagement.canAccess(session.user.roles)) {
+    return null;
+  }
 
   const hasActiveFilters = search || role || isActive || sortBy !== 'createdAt';
 
@@ -321,7 +311,7 @@ export default function UsersManagementPage() {
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Role</InputLabel>
                   <Select value={role} onChange={(e) => setRole(e.target.value)} label="Role">
-                    {ROLES.map((r) => (
+                    {ROLE_FILTER_OPTIONS.map((r) => (
                       <MenuItem key={r.value} value={r.value}>
                         {r.label}
                       </MenuItem>
@@ -429,7 +419,6 @@ export default function UsersManagementPage() {
                     )}
                     {!isLoading &&
                       users.map((user) => {
-                        const roleInfo = getRoleInfo(user.role);
                         return (
                           <TableRow
                             key={user.id}
@@ -458,16 +447,23 @@ export default function UsersManagementPage() {
                               <Typography variant="body2">{user.employeeId || 'N/A'}</Typography>
                             </TableCell>
                             <TableCell>
-                              <Chip
-                                label={roleInfo.label}
-                                size="small"
-                                sx={{
-                                  bgcolor: alpha(roleInfo.color || '#6B7280', 0.15),
-                                  color: roleInfo.color || '#6B7280',
-                                  fontWeight: 600,
-                                  borderRadius: 1,
-                                }}
-                              />
+                              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                                {user.roles?.map((roleValue) => {
+                                  const roleInfo = getRoleInfo(roleValue);
+                                  return (
+                                    <Chip
+                                      key={roleValue}
+                                      label={roleInfo.label}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: alpha(roleInfo.color, 0.15),
+                                        color: roleInfo.color,
+                                        fontWeight: 600,
+                                        borderRadius: 1,
+                                      }}
+                                    />
+                                  );
+                                })}\n                              </Stack>
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2">
