@@ -3,6 +3,7 @@
 import { AppLayout } from '@/components/AppLayout';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { OVRReportListItem, UserMinimal } from '@/lib/api/schemas';
+import { APP_ROLES } from '@/lib/constants';
 import { AssignmentInd, Visibility } from '@mui/icons-material';
 import {
   alpha,
@@ -79,10 +80,18 @@ export default function QIReviewPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/users?role=admin'); // HODs should have appropriate role
+      const hodRoles = [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD].join(',');
+      const res = await fetch(`/api/users?legacy=true&roles=${hodRoles}`);
       if (res.ok) {
         const data = await res.json();
-        setUsers(data);
+        const formattedUsers: HODUser[] = data.map((user: any) => ({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          name: user.name ?? `${user.firstName} ${user.lastName}`,
+          department: user.department ?? null,
+        }));
+        setUsers(formattedUsers);
       }
     } catch (error) {
       console.error('Error fetching users:', error);

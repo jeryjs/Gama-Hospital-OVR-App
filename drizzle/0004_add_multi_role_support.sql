@@ -26,17 +26,8 @@ ALTER TABLE users
 ADD CONSTRAINT users_roles_not_empty 
 CHECK (array_length(roles, 1) > 0);
 
--- Step 5: Drop old role column (COMMENTED OUT - uncomment after verifying migration)
--- ALTER TABLE users DROP COLUMN IF EXISTS role;
+-- Step 5: Drop old role column
+ALTER TABLE users DROP COLUMN IF EXISTS role;
 
--- Step 6: Drop old role enum (COMMENTED OUT - uncomment after verifying migration)
--- DROP TYPE IF EXISTS role CASCADE;
-
--- Rollback instructions (if needed):
--- ALTER TABLE users DROP COLUMN IF EXISTS roles;
--- ALTER TABLE users DROP COLUMN IF EXISTS ad_groups;
--- ALTER TABLE users DROP COLUMN IF EXISTS last_ad_sync;
--- DROP INDEX IF EXISTS idx_users_roles;
--- DROP INDEX IF EXISTS idx_users_ad_groups;
--- DROP INDEX IF EXISTS idx_users_last_ad_sync;
--- ALTER TABLE users DROP CONSTRAINT IF EXISTS users_roles_not_empty;
+-- Step 6: Drop old role enum
+DROP TYPE IF EXISTS role CASCADE;

@@ -125,11 +125,11 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         avgResolutionTime: 0,
     };
 
-    const { data = fallbackData, error, mutate } = useSWR(url, fetcher, {
+    const { data, error, mutate } = useSWR(url, fetcher, {
         revalidateOnFocus: false,
         revalidateOnReconnect: false,
         dedupingInterval: 30000, // 30 seconds - stats don't change often
-        suspense: true,
+        suspense: false,
         fallbackData,
     });
 

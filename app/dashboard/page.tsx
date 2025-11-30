@@ -21,7 +21,7 @@ import SupervisorDashboard from './SupervisorDashboard';
 // Inner component that uses the hook - will suspend while loading
 function DashboardContent() {
   const { data: session } = useSession();
-  const { stats } = useDashboardStats(); // This will suspend
+  const { stats } = useDashboardStats();
 
   // Determine primary role from user's roles array
   const primaryRole = getPrimaryRole(session?.user?.roles || []);

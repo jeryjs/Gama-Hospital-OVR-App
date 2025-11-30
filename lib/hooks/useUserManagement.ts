@@ -16,7 +16,7 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
         page = 1,
         pageSize = 10,
         search = '',
-        role = '',
+        roles = [],
         isActive,
         sortBy = 'createdAt',
         sortOrder = 'desc',
@@ -28,12 +28,12 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
         params.set('page', page.toString());
         params.set('pageSize', pageSize.toString());
         if (search) params.set('search', search);
-        if (role) params.set('role', role);
+        if (roles && roles.length > 0) params.set('roles', roles.join(','));
         if (isActive !== undefined) params.set('isActive', String(isActive));
         params.set('sortBy', sortBy);
         params.set('sortOrder', sortOrder);
         return params.toString();
-    }, [page, pageSize, search, role, isActive, sortBy, sortOrder]);
+    }, [page, pageSize, search, roles, isActive, sortBy, sortOrder]);
 
     const { data, error, isLoading, mutate } = useSWR<UserListResponse>(
         `/api/users?${queryParams}`,
