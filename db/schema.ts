@@ -1,11 +1,12 @@
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { boolean, date, integer, pgEnum, pgTable, serial, text, time, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // ============================================
 // ENUMS - Based on actual OVR form
 // ============================================
 
-export const roleEnum = pgEnum('role', ['admin', 'quality_manager', 'department_head', 'supervisor', 'employee']);
+// Note: roleEnum removed - now using TEXT[] for multi-role support
+// Migration: roles column uses TEXT[] to support multiple roles per user
 
 export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'visitor_watcher', 'others']);
 
@@ -41,7 +42,12 @@ export const users = pgTable('users', {
   employeeId: varchar('employee_id', { length: 50 }).unique(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
-  role: roleEnum('role').notNull().default('employee'),
+
+  // Multi-role support - users can have multiple roles via Azure AD groups
+  roles: text('roles').array().notNull().default(sql`ARRAY['employee']::text[]`),
+  adGroups: text('ad_groups').array().notNull().default(sql`ARRAY[]::text[]`),
+  lastAdSync: timestamp('last_ad_sync'),
+
   department: varchar('department', { length: 100 }),
   position: varchar('position', { length: 100 }),
   isActive: boolean('is_active').notNull().default(true),

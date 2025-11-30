@@ -288,14 +288,15 @@ export const userListQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).catch(1),
   pageSize: z.coerce.number().min(1).max(100).default(10).catch(10),
   search: z.string().nullish(),
-  role: z.string().nullish(),
+  roles: z.array(z.string()).nullish(), // Changed from single 'role' to 'roles' array
   isActive: z.coerce.boolean().nullish(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'firstName', 'lastName', 'email', 'department']).default('createdAt').catch('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
 });
 
 export const userUpdateSchema = userInsertSchema.pick({
-  role: true,
+  roles: true, // Changed from 'role' to 'roles'
+  adGroups: true,
   department: true,
   position: true,
   isActive: true,

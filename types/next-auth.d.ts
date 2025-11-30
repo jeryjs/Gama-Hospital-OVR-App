@@ -1,5 +1,6 @@
 import 'next-auth';
 import 'next-auth/jwt';
+import type { AppRole } from '@/lib/constants';
 
 declare module 'next-auth' {
   interface User {
@@ -7,7 +8,8 @@ declare module 'next-auth' {
     name: string;
     email: string;
     image?: string;
-    role: 'admin' | 'quality_manager' | 'department_head' | 'supervisor' | 'employee';
+    roles: AppRole[]; // Changed from single 'role' to 'roles' array
+    adGroups?: string[]; // Azure AD security groups
     employeeId?: string | null;
     department?: string | null;
     position?: string | null;
