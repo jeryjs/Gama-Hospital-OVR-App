@@ -1,5 +1,6 @@
 import { db } from '@/db';
 import { ovrReports } from '@/db/schema';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
   AuthorizationError,
   handleApiError,
@@ -77,9 +78,13 @@ export async function GET(
     const isSupervisor = incident.supervisorId === userId;
     const isHOD = incident.departmentHeadId === userId;
     const isInvestigator = incident.investigators?.some(inv => inv.investigatorId === userId);
-    const isQI = session.user.role === 'quality_manager' || session.user.role === 'admin';
+    const canViewAll = ACCESS_CONTROL.api.incidents.canViewAll(session.user.roles);
+    const canViewDept = ACCESS_CONTROL.api.incidents.canViewDepartment(session.user.roles);
+    const canViewTeam = ACCESS_CONTROL.api.incidents.canViewTeam(session.user.roles);
 
-    if (!isOwner && !isSupervisor && !isHOD && !isInvestigator && !isQI) {
+    const hasAccess = isOwner || isSupervisor || isHOD || isInvestigator || canViewAll || (canViewDept && isHOD) || (canViewTeam && isSupervisor);
+
+    if (!hasAccess) {
       throw new AuthorizationError('You do not have permission to view this incident');
     }
 
@@ -154,13 +159,13 @@ export async function DELETE(
       throw new NotFoundError('Incident');
     }
 
-    // Only owner (if draft) or admin can delete
+    // Only owner (if draft) or privileged roles can delete
     const isOwner = incident.reporterId.toString() === session.user.id;
-    const isAdmin = session.user.role === 'admin';
     const isDraft = incident.status === 'draft';
+    const canDelete = ACCESS_CONTROL.api.incidents.canDelete(session.user.roles, isOwner, isDraft);
 
-    if (!(isOwner && isDraft) && !isAdmin) {
-      throw new AuthorizationError('You can only delete draft reports or be an admin');
+    if (!canDelete) {
+      throw new AuthorizationError('You can only delete draft reports or have elevated permissions');
     }
 
     await db.delete(ovrReports).where(eq(ovrReports.id, parseInt(id)));

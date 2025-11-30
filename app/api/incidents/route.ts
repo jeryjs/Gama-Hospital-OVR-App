@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/middleware';
 import { createIncidentSchema, incidentListQuerySchema } from '@/lib/api/schemas';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -39,9 +40,34 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = [];
 
-    // Role-based access control
-    if (session.user.role !== 'quality_manager' && session.user.role !== 'admin') {
-      conditions.push(eq(ovrReports.reporterId, userId));
+    // Role-based access control using centralized config
+    const canViewAll = ACCESS_CONTROL.api.incidents.canViewAll(session.user.roles);
+    const canViewDept = ACCESS_CONTROL.api.incidents.canViewDepartment(session.user.roles);
+    const canViewTeam = ACCESS_CONTROL.api.incidents.canViewTeam(session.user.roles);
+
+    if (!canViewAll) {
+      // Restrict visibility based on role scope
+      if (canViewDept) {
+        // Department-level users: show reports where they are departmentHead OR reporter OR supervisor
+        conditions.push(
+          or(
+            eq(ovrReports.departmentHeadId, userId),
+            eq(ovrReports.reporterId, userId),
+            eq(ovrReports.supervisorId, userId)
+          ) as any
+        );
+      } else if (canViewTeam) {
+        // Team-level users: show reports they supervise or reported
+        conditions.push(
+          or(
+            eq(ovrReports.supervisorId, userId),
+            eq(ovrReports.reporterId, userId)
+          ) as any
+        );
+      } else {
+        // Regular employees: only own reports
+        conditions.push(eq(ovrReports.reporterId, userId));
+      }
     }
 
     // Apply filters

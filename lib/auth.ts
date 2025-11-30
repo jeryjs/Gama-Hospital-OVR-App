@@ -2,7 +2,8 @@ import { NextAuthOptions, User as NextAuthUser } from 'next-auth';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { mapAdGroupsToRoles } from './auth-helpers';
 
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
 // const IS_DEV = process.env.NODE_ENV === 'development';
@@ -130,33 +131,9 @@ export const authOptions: NextAuthOptions = {
           where: eq(users.email, user.email),
         });
 
-        // Map Entra ID roles/groups to our application roles
-        // You can customize this mapping based on your Entra ID setup
-        const mapEntraRoleToAppRole = (user: any): string => {
-          const groups = user.groups || [];
-          const roles = user.roles || [];
-          const jobTitle = (user.jobTitle || '').toLowerCase();
-
-          // Priority 1: Check Entra ID App Roles
-          if (roles.includes('Admin') || roles.includes('System Administrator')) return 'admin';
-          if (roles.includes('Quality Manager') || roles.includes('QI Manager')) return 'quality_manager';
-          if (roles.includes('Department Head') || roles.includes('HOD')) return 'department_head';
-          if (roles.includes('Supervisor') || roles.includes('Team Lead')) return 'supervisor';
-
-          // Priority 2: Check Entra ID Security Groups (you'll need to configure these in Azure)
-          // Example: if (groups.includes('SG-OVR-Admins')) return 'admin';
-
-          // Priority 3: Check Job Title
-          if (jobTitle.includes('administrator') || jobTitle.includes('admin')) return 'admin';
-          if (jobTitle.includes('quality') && jobTitle.includes('manager')) return 'quality_manager';
-          if (jobTitle.includes('head') || jobTitle.includes('hod')) return 'department_head';
-          if (jobTitle.includes('supervisor') || jobTitle.includes('lead')) return 'supervisor';
-
-          // Default role
-          return 'employee';
-        };
-
-        const mappedRole = mapEntraRoleToAppRole(user);
+        // Map Azure AD security groups to application roles
+        const adGroups = (user as any).groups || [];
+        const mappedRoles = mapAdGroupsToRoles(adGroups);
 
         if (existingUser) {
           if (!existingUser.isActive) {
@@ -171,7 +148,9 @@ export const authOptions: NextAuthOptions = {
               azureId: account?.providerAccountId,
               firstName: (user as any).givenName || existingUser.firstName,
               lastName: (user as any).surname || existingUser.lastName,
-              role: mappedRole as any, // Update role from Entra ID
+              roles: sql`${mappedRoles}::text[]`, // Update roles from AD groups
+              adGroups: sql`${adGroups}::text[]`, // Store AD group names
+              lastAdSync: new Date(),
               department: (user as any).department || existingUser.department,
               position: (user as any).jobTitle || existingUser.position,
               employeeId: (user as any).employeeId || existingUser.employeeId,
@@ -180,7 +159,7 @@ export const authOptions: NextAuthOptions = {
             })
             .where(eq(users.id, existingUser.id));
 
-          console.log('✅ Updated existing user:', user.email, 'with role:', mappedRole);
+          console.log('✅ Updated existing user:', user.email, 'with roles:', mappedRoles);
         } else {
           // Create new user with all available information from Entra ID
           const nameParts = user.name?.split(' ') || ['', ''];
@@ -189,7 +168,9 @@ export const authOptions: NextAuthOptions = {
             azureId: account?.providerAccountId,
             firstName: (user as any).givenName || nameParts[0] || 'Unknown',
             lastName: (user as any).surname || nameParts.slice(1).join(' ') || 'User',
-            role: mappedRole as any,
+            roles: mappedRoles,
+            adGroups: adGroups,
+            lastAdSync: new Date(),
             department: (user as any).department,
             position: (user as any).jobTitle,
             employeeId: (user as any).employeeId,
@@ -197,7 +178,7 @@ export const authOptions: NextAuthOptions = {
             isActive: true,
           });
 
-          console.log('✅ Created new user:', user.email, 'with role:', mappedRole);
+          console.log('✅ Created new user:', user.email, 'with roles:', mappedRoles);
         }
 
         return true;
@@ -215,7 +196,8 @@ export const authOptions: NextAuthOptions = {
 
         if (dbUser) {
           token.id = dbUser.id.toString();
-          token.role = dbUser.role;
+          token.roles = dbUser.roles;
+          token.adGroups = dbUser.adGroups;
           token.employeeId = dbUser.employeeId;
           token.department = dbUser.department;
           token.position = dbUser.position;
@@ -227,7 +209,12 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (session.user.name?.toLowerCase().includes('jery') ? 'admin' : token.role) as NextAuthUser['role'];  // Testing: set specific role for me
+        // Testing: set specific role for me
+        const { APP_ROLES } = require('./constants');
+        session.user.roles = session.user.name?.toLowerCase().includes('jery')
+          ? [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER] as any
+          : (token.roles as any);
+        session.user.adGroups = token.adGroups as string[];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;

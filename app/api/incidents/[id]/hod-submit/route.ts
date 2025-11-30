@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 export async function POST(
   req: NextRequest,
@@ -36,7 +37,9 @@ export async function POST(
     }
 
     // Only HOD or admin can submit
-    if (incident.departmentHeadId?.toString() !== session.user.id && session.user.role !== 'admin') {
+    const isAssignedHOD = incident.departmentHeadId?.toString() === session.user.id;
+
+    if (!ACCESS_CONTROL.api.hodInvestigation.canSubmit(session.user.roles, isAssignedHOD)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

@@ -1,8 +1,9 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
-import { and, asc, count, desc, eq, ilike, or, SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, SQL, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Legacy support for simple user list (used by dropdowns)
     const legacy = searchParams.get('legacy');
     if (legacy === 'true') {
-      const role = searchParams.get('role');
+      const rolesParam = searchParams.get('roles');
       const department = searchParams.get('department');
 
       const query = db
@@ -22,32 +23,40 @@ export async function GET(request: NextRequest) {
           lastName: users.lastName,
           email: users.email,
           department: users.department,
-          role: users.role,
+          roles: users.roles,
         })
         .from(users)
         .where(eq(users.isActive, true));
 
-      const allUsers = await query;
-      let filteredUsers = allUsers;
+      let allUsers = await query;
 
-      if (role) filteredUsers = filteredUsers.filter(u => u.role === role);
-      if (department) filteredUsers = filteredUsers.filter(u => u.department === department);
+      // Filter by roles if specified (user must have ANY of the specified roles)
+      if (rolesParam) {
+        const targetRoles = rolesParam.split(',').map(r => r.trim());
+        allUsers = allUsers.filter(u =>
+          u.roles?.some(role => targetRoles.includes(role))
+        );
+      }
 
-      const formattedUsers = filteredUsers.map(u => ({
+      if (department) {
+        allUsers = allUsers.filter(u => u.department === department);
+      }
+
+      const formattedUsers = allUsers.map(u => ({
         id: u.id,
         name: `${u.firstName} ${u.lastName}`,
         firstName: u.firstName,
         lastName: u.lastName,
         email: u.email,
         department: u.department,
-        role: u.role,
+        roles: u.roles,
       }));
 
       return NextResponse.json(formattedUsers);
     }
 
-    // New paginated user management endpoint (admin only)
-    if (session.user.role !== 'admin') {
+    // New paginated user management endpoint (requires admin access)
+    if (!ACCESS_CONTROL.api.users.canView(session.user.roles)) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin access required' },
         { status: 403 }
@@ -58,7 +67,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '10')));
     const search = searchParams.get('search')?.trim() || '';
-    const role = searchParams.get('role') || '';
+    const rolesParam = searchParams.get('roles'); // Comma-separated roles
     const isActiveParam = searchParams.get('isActive') || '';
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
@@ -78,8 +87,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (role) {
-      conditions.push(eq(users.role, role as any));
+    // Filter by roles (user must have ANY of the specified roles)
+    if (rolesParam) {
+      const targetRoles = rolesParam.split(',').map(r => r.trim());
+      // PostgreSQL: roles array overlaps with target roles array
+      conditions.push(
+        sql`${users.roles}::text[] && ARRAY[${sql.join(targetRoles.map(r => sql`${r}`), sql`, `)}]::text[]`
+      );
     }
 
     if (isActiveParam === 'true') {
@@ -120,12 +134,14 @@ export async function GET(request: NextRequest) {
         employeeId: users.employeeId,
         firstName: users.firstName,
         lastName: users.lastName,
-        role: users.role,
+        roles: users.roles,
+        adGroups: users.adGroups,
         department: users.department,
         position: users.position,
         isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
+        lastAdSync: users.lastAdSync,
       })
       .from(users)
       .where(whereClause)
@@ -151,7 +167,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await requireAuth(request);
 
-    if (session.user.role !== 'admin') {
+    if (!ACCESS_CONTROL.api.users.canManage(session.user.roles)) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin access required' },
         { status: 403 }
@@ -165,8 +181,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Validate allowed fields
-    const allowedFields = ['role', 'department', 'position', 'isActive', 'employeeId'];
+    // Validate allowed fields (roles and adGroups should come from AD sync, not manual updates)
+    const allowedFields = ['department', 'position', 'isActive', 'employeeId'];
     const filteredUpdates: any = {};
 
     for (const key of allowedFields) {

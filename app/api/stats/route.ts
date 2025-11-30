@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { and, count, eq, sql, desc, gte } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { hasAnyRole } from '@/lib/auth-helpers';
+import { APP_ROLES, AppRole } from '@/lib/constants';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -435,6 +438,59 @@ async function getEmployeeStats(userId: number) {
   };
 }
 
+
+type Stats = Awaited<
+  ReturnType<
+    typeof getAdminStats |
+    typeof getQualityManagerStats |
+    typeof getDepartmentHeadStats |
+    typeof getSupervisorStats |
+    typeof getEmployeeStats
+  >
+> & { combinedView?: boolean };
+
+/**
+ * Ordered handlers that decide which stats to return based on roles.
+ * Keep the inline comments exactly as they were in the original if/else for clarity.
+ */
+const STATS_HANDLERS: { predicate: (roles: AppRole[]) => boolean; handler: (userId: number, roles: AppRole[]) => Promise<Stats> }[] = [
+  {
+    // Super admins, tech admins, developers see full system stats
+    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewSystemStats(roles),
+    handler: async () => getAdminStats(),
+  },
+  {
+    // Executives see high-level overview
+    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewExecutiveStats(roles),
+    handler: async () => getAdminStats(), // TODO: Create getExecutiveStats() for filtered view
+  },
+  {
+    // Quality managers/analysts see QI workflow stats
+    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewQIStats(roles),
+    handler: async (userId, roles) => {
+      let stats = await getQualityManagerStats() as any;
+
+      // If user also has HOD role, merge department stats
+      if (hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD])) {
+        const hodStats = await getDepartmentHeadStats(userId);
+        stats = { ...stats, ...hodStats, combinedView: true } as Stats;
+      }
+
+      return stats;
+    },
+  },
+  {
+    // Department heads see their department's incidents
+    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewDepartmentStats(roles),
+    handler: async (userId) => getDepartmentHeadStats(userId),
+  },
+  {
+    // Supervisors see team incidents
+    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewTeamStats(roles),
+    handler: async (userId) => getSupervisorStats(userId),
+  },
+];
+
 // ============================================
 // MAIN ROUTE HANDLER
 // ============================================
@@ -449,32 +505,11 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = parseInt(session.user.id);
-    const userRole = session.user.role;
+    const roles = session.user.roles;
 
-    // Route to appropriate stats function based on role
-    let stats;
-
-    switch (userRole) {
-      case 'admin':
-        stats = await getAdminStats();
-        break;
-
-      case 'quality_manager':
-        stats = await getQualityManagerStats();
-        break;
-
-      case 'department_head':
-        stats = await getDepartmentHeadStats(userId);
-        break;
-
-      case 'supervisor':
-        stats = await getSupervisorStats(userId);
-        break;
-
-      default: // employee
-        stats = await getEmployeeStats(userId);
-        break;
-    }
+    // Route to appropriate stats function based on highest priority role
+    const matched = STATS_HANDLERS.find((h) => h.predicate(roles));
+    const stats = matched ? await matched.handler(userId, roles) : await getEmployeeStats(userId);
 
     return NextResponse.json(stats);
   } catch (error) {

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 export async function POST(
   req: NextRequest,
@@ -15,8 +16,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only QI or admin can assign to HOD
-    if (session.user.role !== 'quality_manager' && session.user.role !== 'admin') {
+    // Only QI or analysts can assign to HOD
+    if (!ACCESS_CONTROL.api.qualityInspection.canAssignHOD(session.user.roles)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

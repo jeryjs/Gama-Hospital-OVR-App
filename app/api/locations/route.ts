@@ -3,6 +3,7 @@ import { locations } from '@/db/schema';
 import { authOptions } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role === 'employee') {
+    if (!session || !ACCESS_CONTROL.api.locations.canCreate(session.user.roles)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

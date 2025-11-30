@@ -156,15 +156,20 @@ export const ACCESS_CONTROL = {
          * /api/stats permissions
          */
         stats: {
-            getRoleLevel: (roles: AppRole[]): 'super' | 'tech' | 'executive' | 'qi' | 'hod' | 'supervisor' | 'employee' => {
-                if (hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER])) return 'super';
-                if (hasRole(roles, APP_ROLES.TECH_ADMIN)) return 'tech';
-                if (hasAnyRole(roles, [APP_ROLES.CEO, APP_ROLES.EXECUTIVE])) return 'executive';
-                if (hasAnyRole(roles, [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST])) return 'qi';
-                if (hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD])) return 'hod';
-                if (hasAnyRole(roles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD])) return 'supervisor';
-                return 'employee';
-            },
+            canViewSystemStats: (roles: AppRole[]) =>
+                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER]),
+
+            canViewExecutiveStats: (roles: AppRole[]) =>
+                hasAnyRole(roles, [APP_ROLES.CEO, APP_ROLES.EXECUTIVE]),
+
+            canViewQIStats: (roles: AppRole[]) =>
+                hasAnyRole(roles, [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST]),
+
+            canViewDepartmentStats: (roles: AppRole[]) =>
+                hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD]),
+
+            canViewTeamStats: (roles: AppRole[]) =>
+                hasAnyRole(roles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD]),
         },
     },
 

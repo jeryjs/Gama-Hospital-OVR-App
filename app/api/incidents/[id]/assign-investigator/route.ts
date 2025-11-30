@@ -3,6 +3,7 @@ import { ovrInvestigators } from '@/db/schema';
 import { authOptions } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 export async function POST(
   req: NextRequest,
@@ -14,9 +15,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only HOD or admin can assign investigators
-    if (session.user.role !== 'admin') {
-      // TODO: Check if user is actual HOD for this incident
+    // Only QI, HOD, or super admins can assign investigators
+    if (!ACCESS_CONTROL.api.investigatorAssignment.canAssign(session.user.roles)) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { id } = await params;

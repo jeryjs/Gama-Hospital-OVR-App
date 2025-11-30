@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { PaginationMeta, PaginationParams } from './schemas';
+import { hasAnyRole } from '../auth-helpers';
+import type { AppRole } from '../constants';
 
 // ============================================
 // ERROR CLASSES
@@ -107,14 +109,26 @@ export async function requireAuth(req: NextRequest) {
   return session;
 }
 
-export async function requireRole(req: NextRequest, roles: string[]) {
+/**
+ * @deprecated Use ACCESS_CONTROL configuration instead
+ * 
+ * Require user to have ANY of the specified roles
+ */
+export async function requireAnyRole(req: NextRequest, roles: AppRole[]) {
   const session = await requireAuth(req);
 
-  if (!roles.includes(session.user.role)) {
+  if (!hasAnyRole(session.user.roles, roles)) {
     throw new AuthorizationError(`This action requires one of the following roles: ${roles.join(', ')}`);
   }
 
   return session;
+}
+
+/**
+ * @deprecated Legacy function - use requireAnyRole instead
+ */
+export async function requireRole(req: NextRequest, roles: string[]) {
+  return requireAnyRole(req, roles as AppRole[]);
 }
 
 // ============================================

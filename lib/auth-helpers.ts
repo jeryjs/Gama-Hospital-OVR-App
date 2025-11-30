@@ -11,7 +11,7 @@ import type { AppRole } from './constants';
 
 /**
  * Check if user has a specific role
- * @example hasRole(['admin', 'supervisor'], 'admin') // true
+ * @example hasRole(['super_admin', 'supervisor'], APP_ROLES.SUPER_ADMIN) // true
  */
 export function hasRole(roles: AppRole[] | undefined | null, targetRole: AppRole): boolean {
     if (!roles || roles.length === 0) return false;
@@ -20,7 +20,7 @@ export function hasRole(roles: AppRole[] | undefined | null, targetRole: AppRole
 
 /**
  * Check if user has ANY of the specified roles
- * @example hasAnyRole(['supervisor'], ['admin', 'supervisor']) // true
+ * @example hasAnyRole(['supervisor'], [APP_ROLES.SUPER_ADMIN, APP_ROLES.SUPERVISOR]) // true
  */
 export function hasAnyRole(
     roles: AppRole[] | undefined | null,
@@ -33,7 +33,7 @@ export function hasAnyRole(
 
 /**
  * Check if user has ALL of the specified roles
- * @example hasAllRoles(['admin', 'developer'], ['admin', 'developer']) // true
+ * @example hasAllRoles(['super_admin', 'developer'], [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER]) // true
  */
 export function hasAllRoles(
     roles: AppRole[] | undefined | null,
@@ -46,7 +46,7 @@ export function hasAllRoles(
 
 /**
  * Get highest priority role for display purposes
- * @example getPrimaryRole(['employee', 'supervisor', 'admin']) // 'admin'
+ * @example getPrimaryRole(['employee', 'supervisor', 'super_admin']) // 'super_admin'
  */
 export function getPrimaryRole(roles: AppRole[]): AppRole {
     // Import inside function to avoid circular dependency
