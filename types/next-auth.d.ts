@@ -8,8 +8,7 @@ declare module 'next-auth' {
     name: string;
     email: string;
     image?: string;
-    roles: AppRole[]; // Changed from single 'role' to 'roles' array
-    adGroups?: string[]; // Azure AD security groups
+    roles: AppRole[];
     employeeId?: string | null;
     department?: string | null;
     position?: string | null;

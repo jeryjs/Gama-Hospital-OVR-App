@@ -84,22 +84,36 @@ export const ROLE_METADATA: Record<AppRole, { label: string; color: string; desc
 
 /**
  * Azure AD Security Group to App Role mapping
- * Update these group names to match your Azure AD configuration
+ * Uses Group Object IDs (not display names) for reliable mapping
+ * Update these IDs to match your Azure AD security groups
  */
 export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> = {
-    'SG-OVR-SuperAdmins': [APP_ROLES.SUPER_ADMIN],
-    'SG-OVR-TechAdmins': [APP_ROLES.TECH_ADMIN],
-    'SG-OVR-Developers': [APP_ROLES.DEVELOPER],
-    'SG-OVR-CEO': [APP_ROLES.CEO],
-    'SG-OVR-Executives': [APP_ROLES.EXECUTIVE],
-    'SG-OVR-QualityManagers': [APP_ROLES.QUALITY_MANAGER],
-    'SG-OVR-QualityAnalysts': [APP_ROLES.QUALITY_ANALYST],
-    'SG-OVR-DepartmentHeads': [APP_ROLES.DEPARTMENT_HEAD],
-    'SG-OVR-AssistantHeads': [APP_ROLES.ASSISTANT_DEPT_HEAD],
-    'SG-OVR-Supervisors': [APP_ROLES.SUPERVISOR],
-    'SG-OVR-TeamLeads': [APP_ROLES.TEAM_LEAD],
-    'SG-OVR-FacilityManagers': [APP_ROLES.FACILITY_MANAGER],
-    'SG-OVR-Employees': [APP_ROLES.EMPLOYEE],
+    // System Administration
+    '73a2c9f3-9282-4b99-be01-2813c93a5458': [APP_ROLES.SUPER_ADMIN], // SG-OVR-SuperAdmins
+    '3909b6bd-c691-4d60-888c-a6a9c7dc4cef': [APP_ROLES.TECH_ADMIN],   // SG-OVR-TechAdmins
+    '0407bc66-a177-4a36-981a-c8109da6d7a7': [APP_ROLES.DEVELOPER],    // SG-OVR-Developers
+
+    // Executive Leadership
+    'CEO_GROUP_ID_PLACEHOLDER': [APP_ROLES.CEO],
+    'cbbffd0f-7b17-4e8b-93d4-9f9f4e5f0b1f': [APP_ROLES.EXECUTIVE],    // SG-OVR-Executives
+
+    // Quality & Safety
+    '42e686a5-1f6a-46bd-98e3-cdb19020a999': [APP_ROLES.QUALITY_MANAGER], // SG-OVR-QualityManagers
+    'QUALITY_ANALYST_GROUP_ID_PLACEHOLDER': [APP_ROLES.QUALITY_ANALYST],
+
+    // Department Management
+    'fd2f96d7-072e-4941-ab27-59505db59c39': [APP_ROLES.DEPARTMENT_HEAD],    // SG-OVR-DepartmentHeads
+    '8149fa15-e119-4d5e-a97b-1a68e71fd0bd': [APP_ROLES.ASSISTANT_DEPT_HEAD], // SG-OVR-AssistantHeads
+
+    // Team Management
+    '6ed1d31f-e276-46ae-8bb3-da64c9efb8fe': [APP_ROLES.SUPERVISOR], // SG-OVR-Supervisors
+    'TEAM_LEAD_GROUP_ID_PLACEHOLDER': [APP_ROLES.TEAM_LEAD],
+
+    // Specialized Roles
+    '437034f5-9a13-4d2d-b09a-30b454376f87': [APP_ROLES.FACILITY_MANAGER], // SG-OVR-FacilityManagers
+
+    // Standard Access
+    '677b3153-3137-47a0-8823-68b5eb3c1fa4': [APP_ROLES.EMPLOYEE], // SG-OVR-Employees
 };
 
 // ============================================

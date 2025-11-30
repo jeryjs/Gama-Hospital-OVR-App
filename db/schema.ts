@@ -45,8 +45,6 @@ export const users = pgTable('users', {
 
   // Multi-role support - users can have multiple roles via Azure AD groups
   roles: text('roles').array().notNull().default(sql`ARRAY['employee']::text[]`),
-  adGroups: text('ad_groups').array().notNull().default(sql`ARRAY[]::text[]`),
-  lastAdSync: timestamp('last_ad_sync'),
 
   department: varchar('department', { length: 100 }),
   position: varchar('position', { length: 100 }),

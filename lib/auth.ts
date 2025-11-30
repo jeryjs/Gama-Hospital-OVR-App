@@ -30,7 +30,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           prompt: 'select_account',
-          scope: 'openid profile email User.Read User.ReadBasic.All Directory.Read.All', // Extended permissions for more user details
+          scope: 'openid profile email User.Read',
         },
       },
       async profile(profile, tokens) {
@@ -38,10 +38,9 @@ export const authOptions: NextAuthOptions = {
         let graphData: any = {};
 
         try {
+          // Fetch user profile
           const graphResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
           });
 
           if (graphResponse.ok) {
@@ -49,6 +48,29 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('Error fetching Microsoft Graph data:', error);
+        }
+
+        // Try to fetch profile photo as binary and convert to data URI (base64).
+        // Graph returns the binary at /me/photo/$value (requires User.Read scope).
+        if (tokens?.access_token) {
+          try {
+            const photoResp = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+              headers: { Authorization: `Bearer ${tokens.access_token}` },
+            });
+
+            if (photoResp.ok) {
+              const arrBuf = await photoResp.arrayBuffer();
+              // Buffer is available in Node, used server-side by NextAuth
+              const buffer = Buffer.from(arrBuf);
+              const mime = photoResp.headers.get('content-type') || 'image/jpeg';
+              graphData.photo = `data:${mime};base64,${buffer.toString('base64')}`;
+            } else {
+              // No photo; keep graphData.photo undefined
+              graphData.photo = undefined;
+            }
+          } catch (err) {
+            console.error('Error fetching profile photo:', err);
+          }
         }
 
         // Extract all available user information
@@ -70,8 +92,8 @@ export const authOptions: NextAuthOptions = {
           userPrincipalName: profile.preferred_username || graphData.userPrincipalName,
 
           // Entra ID groups/roles - these will be used for role management
-          groups: profile.groups || [], // If using group claims
-          roles: profile.roles || [], // If using app roles
+          groups: profile.groups || [], // Group Object IDs from token
+          roles: profile.roles || [], // App role IDs (we use groups instead)
 
           // Additional metadata
           accountEnabled: graphData.accountEnabled,
@@ -132,9 +154,9 @@ export const authOptions: NextAuthOptions = {
           where: eq(users.email, user.email),
         });
 
-        // Map Azure AD security groups to application roles
-        const adGroups = (user as any).groups || [];
-        const mappedRoles = mapAdGroupsToRoles(adGroups);
+        // Map Azure AD security groups (using group IDs) to application roles
+        const adGroupIds = (user as any).groups || [];
+        const mappedRoles = mapAdGroupsToRoles(adGroupIds);
 
         if (existingUser) {
           if (!existingUser.isActive) {
@@ -149,13 +171,11 @@ export const authOptions: NextAuthOptions = {
               azureId: account?.providerAccountId,
               firstName: (user as any).givenName || existingUser.firstName,
               lastName: (user as any).surname || existingUser.lastName,
-              roles: sql`${mappedRoles}::text[]`, // Update roles from AD groups
-              adGroups: sql`${adGroups}::text[]`, // Store AD group names
-              lastAdSync: new Date(),
+              roles: mappedRoles.length > 0 ? mappedRoles : [APP_ROLES.EMPLOYEE],
               department: (user as any).department || existingUser.department,
               position: (user as any).jobTitle || existingUser.position,
               employeeId: (user as any).employeeId || existingUser.employeeId,
-              profilePicture: user.image || existingUser.profilePicture,
+              profilePicture: (user.image?.startsWith('data:') ? undefined : user.image) || existingUser.profilePicture,
               updatedAt: new Date(),
             })
             .where(eq(users.id, existingUser.id));
@@ -169,9 +189,7 @@ export const authOptions: NextAuthOptions = {
             azureId: account?.providerAccountId,
             firstName: (user as any).givenName || nameParts[0] || 'Unknown',
             lastName: (user as any).surname || nameParts.slice(1).join(' ') || 'User',
-            roles: mappedRoles,
-            adGroups: adGroups,
-            lastAdSync: new Date(),
+            roles: mappedRoles.length > 0 ? mappedRoles : [APP_ROLES.EMPLOYEE],
             department: (user as any).department,
             position: (user as any).jobTitle,
             employeeId: (user as any).employeeId,
@@ -198,7 +216,6 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.id = dbUser.id.toString();
           token.roles = dbUser.roles;
-          token.adGroups = dbUser.adGroups;
           token.employeeId = dbUser.employeeId;
           token.department = dbUser.department;
           token.position = dbUser.position;
@@ -212,9 +229,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         // Testing: set specific role for me
         session.user.roles = session.user.name?.toLowerCase().includes('jery')
-          ? [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER] as any
-          : (token.roles as any);
-        session.user.adGroups = token.adGroups as string[];
+          ? [APP_ROLES.EXECUTIVE] as any
+          : (token.roles as any) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;
