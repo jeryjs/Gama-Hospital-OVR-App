@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, LinearProgress, Skeleton, Stack, Paper } from '@mui/material';
+import { AppLayout } from './AppLayout';
 
 /**
  * Loading fallback for Suspense boundaries
@@ -8,9 +9,9 @@ import { Box, LinearProgress, Skeleton, Stack, Paper } from '@mui/material';
  */
 export function LoadingFallback() {
     return (
-        <Box sx={{ py: 2 }}>
+        <AppLayout>
             <LinearProgress sx={{ mb: 3 }} />
-        </Box>
+        </AppLayout>
     );
 }
 

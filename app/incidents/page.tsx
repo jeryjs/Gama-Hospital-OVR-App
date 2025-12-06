@@ -11,6 +11,7 @@ import {
   Visibility
 } from '@mui/icons-material';
 import {
+  Alert,
   alpha,
   Box,
   Button,
@@ -35,7 +36,7 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
 
 const statusColors: Record<string, string> = {
   draft: '#6B7280',
@@ -57,8 +58,7 @@ const statusLabels: Record<string, string> = {
   closed: 'Closed',
 };
 
-// Inner component that fetches data - will suspend while loading
-function IncidentsTable() {
+export default function IncidentsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -68,8 +68,7 @@ function IncidentsTable() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
-  // This will suspend while loading - Suspense boundary will show fallback
-  const { incidents, pagination } = useIncidents({
+  const { incidents, pagination, isLoading, error } = useIncidents({
     page,
     limit: 10,
     sortBy,
@@ -96,6 +95,20 @@ function IncidentsTable() {
   };
 
   const hasActiveFilters = searchTerm || statusFilter;
+
+  if (!!error) {
+    return (
+      <AppLayout>
+        <Alert severity="error" sx={{ mt: 4 }}>
+          Failed to load incidents. ${error}
+        </Alert>
+      </AppLayout>
+    );
+  }
+
+  if (isLoading) {
+    return <LoadingFallback />;
+  }
 
   return (
     <AppLayout>
@@ -331,18 +344,5 @@ function IncidentsTable() {
         </motion.div>
       </Box>
     </AppLayout>
-  );
-}
-
-// Main page component with Suspense boundary
-export default function IncidentsPage() {
-  return (
-    <Suspense fallback={
-      <AppLayout>
-        <LoadingFallback />
-      </AppLayout>
-    }>
-      <IncidentsTable />
-    </Suspense>
   );
 }

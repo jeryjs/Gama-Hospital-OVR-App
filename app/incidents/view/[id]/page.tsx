@@ -88,16 +88,7 @@ function IncidentDetails() {
 export default function IncidentViewPage() {
   return (
     <Suspense fallback={
-      <AppLayout>
-        {/* <Box sx={{ maxWidth: 1400, mx: 'auto', py: 4 }}>
-          <Stack spacing={3}>
-            <CardLoadingFallback />
-            <CardLoadingFallback />
-            <CardLoadingFallback />
-          </Stack>
-        </Box> */}
-        <LoadingFallback />
-      </AppLayout>
+      <LoadingFallback />
     }>
       <IncidentDetails />
     </Suspense>

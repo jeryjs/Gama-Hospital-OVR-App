@@ -389,6 +389,108 @@ export default function NewIncidentPage() {
 
               <Divider sx={{ my: 3 }} />
 
+              {/* Occurrence Details */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  gutterBottom
+                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
+                >
+                  Occurrence Details
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <DatePicker
+                      label="Occurrence Date *"
+                      value={formData.occurrenceDate}
+                      onChange={(date) => setFormData({ ...formData, occurrenceDate: date })}
+                      slotProps={{ textField: { fullWidth: true, required: true } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TimePicker
+                      label="Occurrence Time *"
+                      value={formData.occurrenceTime}
+                      onChange={(time) => setFormData({ ...formData, occurrenceTime: time })}
+                      slotProps={{ textField: { fullWidth: true, required: true } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Autocomplete
+                      options={locations}
+                      getOptionLabel={(option) => option.name}
+                      value={locations.find(l => l.id === formData.locationId) || null}
+                      onChange={(_, value) => setFormData({ ...formData, locationId: value?.id || null })}
+                      renderInput={(params) => <TextField {...params} label="Location / Dept *" required />}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Specific Location"
+                      value={formData.specificLocation}
+                      onChange={(e) => setFormData({ ...formData, specificLocation: e.target.value })}
+                      placeholder="e.g., Room 305, Waiting Area, Corridor 2B"
+                    />
+                  </Grid>
+                </Grid>
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="caption" fontWeight={600}>
+                    Do not file in the Medical Record
+                  </Typography>
+                </Alert>
+              </Box>
+
+              {/* Person Involved & Sentinel Event */}
+              <Box sx={{ mb: 4 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend">Person Involved *</FormLabel>
+                      <RadioGroup
+                        value={formData.personInvolved}
+                        onChange={(e) => setFormData({ ...formData, personInvolved: e.target.value })}
+                      >
+                        {PERSON_INVOLVED_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            value={option.value}
+                            control={<Radio />}
+                            label={option.label}
+                          />
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend">SENTINEL EVENT</FormLabel>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={formData.isSentinelEvent}
+                            onChange={(e) => setFormData({ ...formData, isSentinelEvent: e.target.checked })}
+                          />
+                        }
+                        label="Yes, this is a sentinel event"
+                      />
+                      {formData.isSentinelEvent && (
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          label="Please specify"
+                          value={formData.sentinelEventDetails}
+                          onChange={(e) => setFormData({ ...formData, sentinelEventDetails: e.target.value })}
+                          sx={{ mt: 1 }}
+                        />
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Box>
+
               {/* Patient Information */}
               <Box sx={{ mb: 4 }}>
                 <Typography
@@ -448,108 +550,6 @@ export default function NewIncidentPage() {
                       value={formData.patientUnit}
                       onChange={(e) => setFormData({ ...formData, patientUnit: e.target.value })}
                     />
-                  </Grid>
-                </Grid>
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="caption" fontWeight={600}>
-                    Do not file in the Medical Record
-                  </Typography>
-                </Alert>
-              </Box>
-
-              {/* Occurrence Details */}
-              <Box sx={{ mb: 4 }}>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={700}
-                  gutterBottom
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
-                >
-                  Occurrence Details
-                </Typography>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <DatePicker
-                      label="Occurrence Date *"
-                      value={formData.occurrenceDate}
-                      onChange={(date) => setFormData({ ...formData, occurrenceDate: date })}
-                      slotProps={{ textField: { fullWidth: true, required: true } }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TimePicker
-                      label="Occurrence Time *"
-                      value={formData.occurrenceTime}
-                      onChange={(time) => setFormData({ ...formData, occurrenceTime: time })}
-                      slotProps={{ textField: { fullWidth: true, required: true } }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <Autocomplete
-                      options={locations}
-                      getOptionLabel={(option) => option.name}
-                      value={locations.find(l => l.id === formData.locationId) || null}
-                      onChange={(_, value) => setFormData({ ...formData, locationId: value?.id || null })}
-                      renderInput={(params) => <TextField {...params} label="Location / Dept *" required />}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Specific Location"
-                      value={formData.specificLocation}
-                      onChange={(e) => setFormData({ ...formData, specificLocation: e.target.value })}
-                      placeholder="e.g., Room 305, Waiting Area, Corridor 2B"
-                    />
-                  </Grid>
-                </Grid>
-              </Box>
-
-              {/* Person Involved & Sentinel Event */}
-              <Box sx={{ mb: 4 }}>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend">Person Involved *</FormLabel>
-                      <RadioGroup
-                        value={formData.personInvolved}
-                        onChange={(e) => setFormData({ ...formData, personInvolved: e.target.value })}
-                      >
-                        {PERSON_INVOLVED_OPTIONS.map(option => (
-                          <FormControlLabel
-                            key={option.value}
-                            value={option.value}
-                            control={<Radio />}
-                            label={option.label}
-                          />
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend">SENTINEL EVENT</FormLabel>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formData.isSentinelEvent}
-                            onChange={(e) => setFormData({ ...formData, isSentinelEvent: e.target.checked })}
-                          />
-                        }
-                        label="Yes, this is a sentinel event"
-                      />
-                      {formData.isSentinelEvent && (
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2}
-                          label="Please specify"
-                          value={formData.sentinelEventDetails}
-                          onChange={(e) => setFormData({ ...formData, sentinelEventDetails: e.target.value })}
-                          sx={{ mt: 1 }}
-                        />
-                      )}
-                    </FormControl>
                   </Grid>
                 </Grid>
               </Box>

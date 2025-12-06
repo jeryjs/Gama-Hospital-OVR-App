@@ -2,8 +2,9 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { OVRReportListItem } from '@/lib/api/schemas';
 import { fadeIn } from '@/lib/theme';
+import { useIncidents } from '@/lib/hooks';
+import { OVRReportListItem } from '@/lib/api/schemas';
 import {
   AssignmentInd,
   Close,
@@ -37,7 +38,7 @@ import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type HODIncident = OVRReportListItem & {
   reporterName: string;
@@ -56,9 +57,6 @@ const statusLabels: Record<string, string> = {
 export default function HODReviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [incidents, setIncidents] = useState<HODIncident[]>([]);
-  const [filteredIncidents, setFilteredIncidents] = useState<HODIncident[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof HODIncident; direction: 'asc' | 'desc' }>({
@@ -67,16 +65,37 @@ export default function HODReviewPage() {
   });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
+  // Fetch incidents using the hook
+  const { incidents: rawIncidents, isLoading, error } = useIncidents({
+    status: 'hod_assigned',
+    revalidateOnFocus: false,
+  });
+
+  // Transform raw incidents to HODIncident format
+  const incidents = useMemo<HODIncident[]>(() =>
+    rawIncidents.map((incident) => ({
+      ...incident,
+      reporterName: incident.reporter
+        ? `${incident.reporter.firstName} ${incident.reporter.lastName}`
+        : 'Unknown',
+      reporterDepartment: 'N/A', // Not in list schema
+      severity: 'standard',
+      investigatorCount: 0,
+      findingsSubmitted: false,
+    })),
+    [rawIncidents]
+  );
+
+  const [filteredIncidents, setFilteredIncidents] = useState<HODIncident[]>([]);
+
   useEffect(() => {
     if (session === undefined) {
       // Session is still loading, do nothing
       return;
     }
     if (session && !ACCESS_CONTROL.ui.navigation.showHODReview(session.user.roles)) {
-      router.replace('/dashboard');
-      return;
+      return router.replace('/dashboard');
     }
-    fetchIncidents();
   }, [session, router]);
 
   // Apply filters and sorting whenever dependencies change
@@ -119,40 +138,6 @@ export default function HODReviewPage() {
     setFilteredIncidents(filtered);
   }, [incidents, searchTerm, statusFilter, sortConfig]);
 
-  const fetchIncidents = async () => {
-    try {
-      const res = await fetch('/api/incidents?status=hod_assigned');
-      if (res.ok) {
-        const data = await res.json();
-        // Filter for HOD's department or admin sees all
-        // const filtered = data.filter((incident: any) =>
-        //   // session?.user?.role === 'admin' ||
-        //   // incident.staffInvolvedDepartment === session?.user?.department  // TODO: implement department heads with multiple departments
-        // );
-
-        setIncidents(
-          data.data.map((incident: any) => ({
-            id: incident.id,
-            refNo: incident.refNo,
-            reporterName: `${incident.reporter?.firstName || 'Unknown'} ${incident.reporter?.lastName || ''}`,
-            reporterDepartment: incident.staffInvolvedDepartment || 'N/A',
-            occurrenceDate: incident.occurrenceDate,
-            occurrenceCategory: incident.occurrenceCategory,
-            status: incident.status,
-            createdAt: incident.createdAt,
-            severity: incident.severity || 'standard',
-            investigatorCount: incident.investigators?.length || 0,
-            findingsSubmitted: incident.findingsSubmitted || false,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSort = (key: keyof HODIncident) => {
     setSortConfig((prev) => ({
       key,
@@ -166,7 +151,7 @@ export default function HODReviewPage() {
     setSortConfig({ key: 'createdAt', direction: 'desc' });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout>
         <LinearProgress />

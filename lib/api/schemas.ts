@@ -23,6 +23,7 @@ export const userPublicSchema = userSelectSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
+  department: true,
 });
 
 export const userMinimalSchema = userSelectSchema.pick({
@@ -83,7 +84,7 @@ export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
   occurrenceCategory: true,
   createdAt: true,
 }).extend({
-  reporter: userMinimalSchema.optional(),
+  reporter: userPublicSchema.optional(),
 });
 
 // ============================================

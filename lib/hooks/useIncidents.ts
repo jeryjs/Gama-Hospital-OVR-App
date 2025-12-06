@@ -12,7 +12,7 @@ export interface UseIncidentsOptions extends Partial<IncidentListQuery> {
 export interface UseIncidentsReturn {
   incidents: OVRReportListItem[];
   pagination: PaginationMeta | null;
-  isError: boolean;
+  isLoading: boolean;
   error: any;
   mutate: () => void;
 }
@@ -78,17 +78,17 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
     return data!;
   };
 
-  const { data, error, mutate } = useSWR(url, fetcher, {
+  const { data, error, mutate, isLoading } = useSWR(url, fetcher, {
     revalidateOnFocus,
     refreshInterval,
     dedupingInterval: 2000, // Dedupe requests within 2 seconds
-    suspense: true, // Enable Suspense - component will suspend while loading
+    suspense: false,
   });
 
   return {
     incidents: data?.data || [],
     pagination: data?.pagination || null,
-    isError: !!error,
+    isLoading,
     error,
     mutate,
   };
