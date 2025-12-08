@@ -2,6 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../db/schema';
+import { formatOVRId } from '../lib/generate-ovr-id'; // DRY: Use utility
 
 dotenv.config({ path: ['.env.local', '.env'] });
 
@@ -90,10 +91,10 @@ async function seed() {
 
     console.log('✅ Created locations');
 
-    // Create sample OVR reports
+    // Create sample OVR reports using ID format generator (DRY)
     await db.insert(schema.ovrReports).values([
       {
-        refNo: 'OVR-2025-001',
+        id: formatOVRId(2025, 1), // OVR-2025-001
         occurrenceDate: '2025-01-15',
         occurrenceTime: '14:30:00',
         locationId: location1.id,
@@ -106,11 +107,11 @@ async function seed() {
         reporterId: employee.id,
         reporterDepartment: 'Nursing',
         reporterPosition: 'Registered Nurse',
-        status: 'submitted',
+        status: 'hod_assigned', // Updated to new flow
         submittedAt: new Date('2025-01-15T15:00:00'),
       },
       {
-        refNo: 'OVR-2025-002',
+        id: formatOVRId(2025, 2), // OVR-2025-002
         occurrenceDate: '2025-01-18',
         occurrenceTime: '22:15:00',
         locationId: location2.id,
@@ -127,7 +128,7 @@ async function seed() {
         injuryOutcome: 'minor',
         physicianNotified: true,
         physicianSawPatient: true,
-        status: 'supervisor_approved',
+        status: 'qi_final_review', // Updated to new flow
         submittedAt: new Date('2025-01-18T22:30:00'),
       },
     ]);

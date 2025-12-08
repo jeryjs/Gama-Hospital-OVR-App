@@ -165,14 +165,15 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
 
 // OVR Report list item (minimal - auto-extends from ovrReportSelectSchema)
 export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
-  id: true,
-  refNo: true,
+  id: true, // Now string format: OVR-YYYY-NNN
+  // refNo removed - id IS the refNo
   status: true,
   occurrenceDate: true,
   occurrenceCategory: true,
   createdAt: true,
 }).extend({
   reporter: userPublicSchema.optional(),
+  refNo: z.string().optional(), // For backward compatibility in UI
 });
 
 // ============================================
@@ -250,7 +251,7 @@ export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export const incidentListQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).catch(1),
   limit: z.coerce.number().min(1).max(100).default(10).catch(10),
-  sortBy: z.enum(['createdAt', 'occurrenceDate', 'refNo', 'status']).default('createdAt').catch('createdAt'),
+  sortBy: z.enum(['createdAt', 'occurrenceDate', 'id', 'status']).default('createdAt').catch('createdAt'), // Changed refNo to id
   sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
   status: z.string().nullish(),
   category: z.string().nullish(),
@@ -272,8 +273,8 @@ export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 
 export const createIncidentSchema = ovrReportInsertSchema
   .omit({
-    id: true,
-    refNo: true,
+    id: true, // Auto-generated as OVR-YYYY-NNN
+    // refNo removed - id IS the refNo
     reporterId: true,
     createdAt: true,
     updatedAt: true,

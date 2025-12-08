@@ -82,8 +82,8 @@ export const locations = pgTable('locations', {
 // MAIN OVR INCIDENT REPORTS TABLE
 // ============================================
 export const ovrReports = pgTable('ovr_reports', {
-  id: serial('id').primaryKey(),
-  refNo: varchar('ref_no', { length: 50 }).unique(), // Auto-generated
+  id: varchar('id', { length: 20 }).primaryKey(), // Format: OVR-YYYY-NNN
+  // refNo removed - id IS the refNo now
 
   // Basic Information
   occurrenceDate: date('occurrence_date').notNull(),
@@ -203,7 +203,7 @@ export const ovrReports = pgTable('ovr_reports', {
 // ============================================
 export const ovrInvestigators = pgTable('ovr_investigators', {
   id: serial('id').primaryKey(),
-  ovrReportId: integer('ovr_report_id').notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
   investigatorId: integer('investigator_id').notNull().references(() => users.id),
   assignedBy: integer('assigned_by').notNull().references(() => users.id),
   findings: text('findings'), // Markdown format
@@ -219,7 +219,7 @@ export const ovrInvestigators = pgTable('ovr_investigators', {
 // ============================================
 export const ovrAttachments = pgTable('ovr_attachments', {
   id: serial('id').primaryKey(),
-  ovrReportId: integer('ovr_report_id').notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
   fileName: varchar('file_name', { length: 255 }).notNull(),
   fileUrl: text('file_url').notNull(),
   fileType: varchar('file_type', { length: 100 }),
@@ -233,7 +233,7 @@ export const ovrAttachments = pgTable('ovr_attachments', {
 // ============================================
 export const ovrComments = pgTable('ovr_comments', {
   id: serial('id').primaryKey(),
-  ovrReportId: integer('ovr_report_id').notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
   userId: integer('user_id').notNull().references(() => users.id),
   comment: text('comment').notNull(),
   isSystemComment: boolean('is_system_comment').default(false), // For automated status changes

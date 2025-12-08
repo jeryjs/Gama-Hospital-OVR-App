@@ -26,7 +26,7 @@ export async function GET(
 
     // Get all columns and relations for detail view
     const incident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, parseInt(id)),
+      where: eq(ovrReports.id, id), // String ID now
       columns: getDetailColumns(), // undefined = all columns
       with: incidentRelations, // all relations
     });
@@ -66,7 +66,7 @@ export async function PATCH(
     const { id } = await params;
 
     const existingIncident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, parseInt(id)),
+      where: eq(ovrReports.id, id), // String ID now
     });
 
     if (!existingIncident) {
@@ -98,7 +98,7 @@ export async function PATCH(
     const updatedIncident = await db
       .update(ovrReports)
       .set(updateData)
-      .where(eq(ovrReports.id, parseInt(id)))
+      .where(eq(ovrReports.id, id)) // String ID
       .returning();
 
     return NextResponse.json(updatedIncident[0]);
@@ -116,7 +116,7 @@ export async function DELETE(
     const { id } = await params;
 
     const incident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, parseInt(id)),
+      where: eq(ovrReports.id, id), // String ID
     });
 
     if (!incident) {
@@ -132,7 +132,7 @@ export async function DELETE(
       throw new AuthorizationError('You can only delete draft reports or have elevated permissions');
     }
 
-    await db.delete(ovrReports).where(eq(ovrReports.id, parseInt(id)));
+    await db.delete(ovrReports).where(eq(ovrReports.id, id)); // String ID
 
     return NextResponse.json({ success: true, message: 'Incident deleted successfully' });
   } catch (error) {

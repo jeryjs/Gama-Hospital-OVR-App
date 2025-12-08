@@ -13,6 +13,7 @@ import {
   getListColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
+import { generateOVRId } from '@/lib/generate-ovr-id';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { NextRequest, NextResponse } from 'next/server';
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
     if (query.search) {
       conditions.push(
         or(
-          like(ovrReports.refNo, `%${query.search}%`),
+          like(ovrReports.id, `%${query.search}%`), // Search by OVR ID
           like(ovrReports.description, `%${query.search}%`),
           like(ovrReports.involvedPersonName, `%${query.search}%`),
           like(ovrReports.involvedPersonMRN, `%${query.search}%`)
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
     const sortColumn = {
       createdAt: ovrReports.createdAt,
       occurrenceDate: ovrReports.occurrenceDate,
-      refNo: ovrReports.refNo,
+      id: ovrReports.id, // Changed from refNo to id
       status: ovrReports.status,
     }[query.sortBy];
 
@@ -170,19 +171,13 @@ export async function POST(request: NextRequest) {
     const body = await validateBody(request, createIncidentSchema);
     const userId = parseInt(session.user.id);
 
-    // Generate reference number
-    const year = new Date().getFullYear();
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(ovrReports)
-      .where(sql`EXTRACT(YEAR FROM ${ovrReports.createdAt}) = ${year}`);
-
-    const count = Number(countResult[0].count) + 1;
+    // Generate OVR ID using utility (DRY principle)
+    const ovrId = await generateOVRId();
 
     const newIncident = await db
       .insert(ovrReports)
       .values({
-        refNo: `OVR-${year}-${String(count).padStart(3, '0')}`,
+        id: ovrId,
         reporterId: userId,
 
         // Occurrence Details

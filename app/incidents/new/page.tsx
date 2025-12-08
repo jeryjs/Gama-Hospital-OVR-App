@@ -173,7 +173,7 @@ async function submitForm(
   formData: FormData,
   isDraft: boolean,
   draftId: string | null
-): Promise<{ success: boolean; id?: number }> {
+): Promise<{ success: boolean; id?: string }> { // ID is now string
   try {
     const payload = preparePayload(formData, isDraft);
     const url = draftId ? `/api/incidents/${draftId}` : '/api/incidents';

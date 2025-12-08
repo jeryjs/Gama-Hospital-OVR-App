@@ -36,7 +36,7 @@ export async function POST(
 
         // 3. Fetch incident (single DB query)
         const incident = await db.query.ovrReports.findFirst({
-            where: eq(ovrReports.id, parseInt(id)),
+            where: eq(ovrReports.id, id), // String ID
             with: {
                 investigators: {
                     with: {
