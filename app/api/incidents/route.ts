@@ -7,7 +7,12 @@ import {
   requireAuth,
   validateBody,
 } from '@/lib/api/middleware';
-import { createIncidentSchema, incidentListQuerySchema } from '@/lib/api/schemas';
+import {
+  createIncidentSchema,
+  incidentListQuerySchema,
+  getListColumns,
+  incidentRelations,
+} from '@/lib/api/schemas';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { NextRequest, NextResponse } from 'next/server';
@@ -130,19 +135,7 @@ export async function GET(request: NextRequest) {
 
     const total = Number(countResult[0].count);
 
-    // Default columns for list view - only what's needed for display
-    // Can be overridden with ?fields=col1,col2,col3
-    const defaultListColumns = {
-      id: true,
-      refNo: true,
-      status: true,
-      occurrenceDate: true,
-      occurrenceCategory: true,
-      createdAt: true,
-    } as const;
-
-    // Parse custom field selection or use defaults
-    const fieldSelection = parseFields(query.fields) || defaultListColumns;
+    const columns = parseFields(query.fields) || getListColumns();
 
     // Fetch paginated data with relations
     const incidents = await db.query.ovrReports.findMany({
@@ -150,16 +143,9 @@ export async function GET(request: NextRequest) {
       limit: query.limit,
       offset,
       orderBy,
-      columns: fieldSelection,
+      columns,
       with: {
-        reporter: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
+        reporter: incidentRelations.reporter,
       },
     });
 

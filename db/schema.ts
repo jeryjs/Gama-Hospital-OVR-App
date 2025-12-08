@@ -277,10 +277,10 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     references: [users.id],
     relationName: 'reporter',
   }),
-  involvedStaff: one(users, {
+  involvedPerson: one(users, {
     fields: [ovrReports.involvedStaffId],
     references: [users.id],
-    relationName: 'involvedStaff',
+    relationName: 'involvedPerson',
   }),
   supervisor: one(users, {
     fields: [ovrReports.supervisorId],

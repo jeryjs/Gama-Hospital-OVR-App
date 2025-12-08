@@ -7,6 +7,7 @@ import {
   users,
 } from '@/db/schema';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { getTableColumns } from 'drizzle-orm';
 import { z } from 'zod';
 
 // ============================================
@@ -65,17 +66,104 @@ export const commentWithUserSchema = commentSelectSchema.extend({
 export const ovrReportSelectSchema = createSelectSchema(ovrReports);
 export const ovrReportInsertSchema = createInsertSchema(ovrReports);
 
-// OVR Report with relations
+// ============================================
+// COLUMN HELPERS
+// Programmatically generate column selections without repeating field names
+// ============================================
+
+const ovrColumns = getTableColumns(ovrReports);
+
+// Extract column keys programmatically - single source of truth!
+const LIST_COLUMN_KEYS = ['id', 'refNo', 'status', 'occurrenceDate', 'occurrenceCategory', 'createdAt'] as const;
+
+/**
+ * Column selections for list view
+ * Auto-generates boolean flags from column keys
+ */
+export function getListColumns() {
+  return LIST_COLUMN_KEYS.reduce((acc, key) => {
+    acc[key] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
+}
+
+/**
+ * For detail view, return undefined to get all columns
+ * Drizzle will automatically select all fields when columns is undefined
+ */
+export function getDetailColumns() {
+  return undefined;
+}
+
+/**
+ * Relation configurations - reusable for both list and detail
+ */
+export const incidentRelations = {
+  reporter: {
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      department: true,
+    },
+  },
+  location: {
+    columns: {
+      id: true,
+      name: true,
+      building: true,
+      floor: true,
+    },
+  },
+  supervisor: {
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+  departmentHead: {
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+  involvedPerson: {
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  },
+  investigators: {
+    with: {
+      investigator: {
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  },
+} as const;
+
+// OVR Report with relations (used by detail view)
 export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   reporter: userPublicSchema.optional(),
   location: locationMinimalSchema.optional(),
   supervisor: userMinimalSchema.optional(),
   departmentHead: userMinimalSchema.optional(),
+  involvedPerson: userPublicSchema.optional(),
   investigators: z.array(investigatorWithUserSchema).optional(),
   comments: z.array(commentWithUserSchema).optional(),
 });
 
-// OVR Report list item (minimal)
+// OVR Report list item (minimal - auto-extends from ovrReportSelectSchema)
 export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
   id: true,
   refNo: true,

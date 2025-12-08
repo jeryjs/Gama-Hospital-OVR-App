@@ -8,24 +8,24 @@ export type {
   User,
   UserPublic,
   UserMinimal,
-  
+
   // Location types
   Location,
   LocationMinimal,
-  
+
   // Investigator types
   Investigator,
   InvestigatorWithUser,
-  
+
   // Comment types
   Comment,
   CommentWithUser,
-  
+
   // OVR Report types
   OVRReport,
   OVRReportWithRelations,
   OVRReportListItem,
-  
+
   // API types
   ApiError,
   PaginationParams,
@@ -34,3 +34,6 @@ export type {
   CreateIncidentInput,
   UpdateIncidentInput,
 } from './api/schemas';
+
+// Re-export helper functions for column selection (no duplication)
+export { getListColumns, getDetailColumns, incidentRelations } from './api/schemas';

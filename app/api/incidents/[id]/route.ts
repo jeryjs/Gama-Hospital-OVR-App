@@ -8,7 +8,11 @@ import {
   requireAuth,
   validateBody,
 } from '@/lib/api/middleware';
-import { updateIncidentSchema } from '@/lib/api/schemas';
+import {
+  updateIncidentSchema,
+  getDetailColumns,
+  incidentRelations,
+} from '@/lib/api/schemas';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,53 +24,11 @@ export async function GET(
     const session = await requireAuth(request);
     const { id } = await params;
 
+    // Get all columns and relations for detail view
     const incident = await db.query.ovrReports.findFirst({
       where: eq(ovrReports.id, parseInt(id)),
-      with: {
-        reporter: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            department: true,
-          },
-        },
-        location: {
-          columns: {
-            id: true,
-            name: true,
-            building: true,
-            floor: true,
-          },
-        },
-        supervisor: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        departmentHead: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        investigators: {
-          with: {
-            investigator: {
-              columns: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
+      columns: getDetailColumns(), // undefined = all columns
+      with: incidentRelations, // all relations
     });
 
     if (!incident) {
