@@ -190,7 +190,7 @@ async function getAdminStats() {
   return {
     total: totalResult?.count || 0,
     drafts: byStatus.draft,
-    submitted: byStatus.submitted,
+    // submitted: byStatus.submitted,
     resolved: byStatus.closed,
     byStatus,
     byDepartment,
@@ -215,7 +215,7 @@ async function getQualityManagerStats() {
   return {
     total: totalResult?.count || 0,
     drafts: byStatus.draft,
-    submitted: byStatus.submitted,
+    // submitted: byStatus.submitted,
     resolved: byStatus.closed,
     byStatus,
     byDepartment: [],

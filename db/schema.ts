@@ -11,7 +11,7 @@ import { boolean, date, integer, pgEnum, pgTable, serial, text, time, timestamp,
 // Person involved in the incident (one of 4 types)
 export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'visitor_watcher', 'others']);
 
-export const injuryOutcomeEnum = pgEnum('injury_outcome', ['', 'no_injury', 'minor', 'serious', 'death']);
+export const injuryOutcomeEnum = pgEnum('injury_outcome', ['no_injury', 'minor', 'serious', 'death']);
 
 // Level of Harm - Medication-specific (A-I) or General (Near Miss to Catastrophic)
 export const levelOfHarmEnum = pgEnum('level_of_harm', [

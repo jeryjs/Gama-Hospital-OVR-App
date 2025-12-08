@@ -15,6 +15,7 @@ import {
   RISK_LEVELS,
   calculateRiskScore,
   getRiskLevel,
+  SENTINEL_EVENTS,
 } from '@/lib/constants';
 import { CreateIncidentInput } from '@/lib/api/schemas';
 import { useUsers } from '@/lib/hooks';
@@ -324,14 +325,42 @@ function PersonInvolvedSection({
               label="Yes, this is a sentinel event"
             />
             {formData.isSentinelEvent && (
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Please specify"
-                value={formData.sentinelEventDetails}
-                onChange={(e) => onChange('sentinelEventDetails', e.target.value)}
-                sx={{ mt: 1 }}
+              <Autocomplete
+                options={
+                  SENTINEL_EVENTS.flatMap(group =>
+                    group.events.map(event => ({
+                      value: event.value,
+                      label: `${group.category} → ${event.label}`,
+                    }))
+                  )
+                }
+                getOptionLabel={option => option.label}
+                value={
+                  SENTINEL_EVENTS
+                    .flatMap(group => group.events)
+                    .find(event => event.value === formData.sentinelEventDetails)
+                    ? {
+                      value: formData.sentinelEventDetails,
+                      label:
+                        SENTINEL_EVENTS.flatMap(group =>
+                          group.events.map(event => ({
+                            value: event.value,
+                            label: `${group.category} → ${event.label}`,
+                          }))
+                        ).find(e => e.value === formData.sentinelEventDetails)?.label || '',
+                    }
+                    : null
+                }
+                onChange={(_, value) => onChange('sentinelEventDetails', value?.value || '')}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    label="Specify Sentinel Event"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
               />
             )}
           </FormControl>
@@ -545,6 +574,34 @@ function ClassificationSection({
             </Typography>
           </Box>
         </Grid>
+
+        {/* Level of Harm - Conditional based on category */}
+        <Grid size={{ xs: 12 }}>
+          <Autocomplete
+            fullWidth
+            options={[...getHarmLevelsForCategory(formData.occurrenceCategory)]}
+            getOptionLabel={(option) => option.label}
+            value={
+              getHarmLevelsForCategory(formData.occurrenceCategory).find(
+                (level) => level.value === formData.levelOfHarm
+              ) || null
+            }
+            onChange={(_, value) => onChange('levelOfHarm', value?.value || '')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Level of Harm *"
+                required
+                helperText={
+                  formData.occurrenceCategory === 'CAT019'
+                    ? 'Select medication error severity level (NCC MERP Index)'
+                    : 'Select the level of harm to the patient or person involved'
+                }
+              />
+            )}
+            isOptionEqualToValue={(option, value) => option.value === value?.value}
+          />
+        </Grid>
       </Grid>
     </Box>
   );
@@ -623,8 +680,8 @@ function WitnessSection({
 }
 
 /**
- * Immediate Actions Section (previously Medical Assessment)
- * Includes physician notification and supervisor notification
+ * Immediate Actions Section - Physician Follow-up
+ * Layout matches PDF - all fields visible (not hidden behind checkboxes)
  */
 function ImmediateActionsSection({
   formData,
@@ -641,158 +698,155 @@ function ImmediateActionsSection({
         gutterBottom
         sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.1), p: 1, borderRadius: 1 }}
       >
-        Immediate Actions
+        Physician Follow-up (If Medical Intervention Required)
       </Typography>
+
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        {/* Physician Notification Subsection */}
-        <Grid size={{ xs: 12 }}>
-          <Typography variant="body2" fontWeight={600} gutterBottom sx={{ mt: 2 }}>
-            Physician Notification
-          </Typography>
-        </Grid>
+        {/* Physician Informed & Seen - Side by side like PDF */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.physicianNotified || undefined}
-                onChange={(e) => {
-                  if (!e.target.checked) {
-                    if (formData.assessment !== '' && !confirm('This will clear all entered physician information. Are you sure?')) {
-                      return;
-                    }
-                    onChange('physicianSawPatient', false);
-                    onChange('assessment', '');
-                    onChange('injuryOutcome', '');
-                    onChange('physicianName', '');
-                    onChange('treatmentProvided', '');
-                    onChange('physicianId', '');
-                  }
-                  onChange('physicianNotified', e.target.checked);
-                }}
-              />
-            }
-            label="Physician Notified?"
-          />
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
+              Physician Informed:
+            </FormLabel>
+            <RadioGroup
+              row
+              value={formData.physicianNotified ? 'yes' : 'no'}
+              onChange={(e) => onChange('physicianNotified', e.target.value === 'yes')}
+            >
+              <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+              <FormControlLabel value="no" control={<Radio />} label="No" />
+            </RadioGroup>
+          </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }} hidden={!formData.physicianNotified}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.physicianSawPatient || undefined}
-                onChange={(e) => onChange('physicianSawPatient', e.target.checked)}
-              />
-            }
-            label="Did Physician See the Patient?"
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
+              Seen by Physician:
+            </FormLabel>
+            <RadioGroup
+              row
+              value={formData.physicianSawPatient ? 'yes' : 'no'}
+              onChange={(e) => onChange('physicianSawPatient', e.target.value === 'yes')}
+            >
+              <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+              <FormControlLabel value="no" control={<Radio />} label="No" />
+            </RadioGroup>
+          </FormControl>
+        </Grid>
+
+        {/* Physician Details - Name, ID, Signature & Date */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Physician's Name"
+            required={!!(formData.physicianSawPatient)}
+            value={formData.physicianName || ''}
+            onChange={(e) => onChange('physicianName', e.target.value)}
           />
         </Grid>
 
-        {formData.physicianSawPatient && (
-          <>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Physician ID #"
+            required={!!(formData.physicianSawPatient)}
+            value={formData.physicianId || ''}
+            onChange={(e) => onChange('physicianId', e.target.value)}
+          />
+        </Grid>
+
+        {/* Assessment / Diagnosis - Always visible */}
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label="Assessment / Diagnosis"
+            placeholder="Describe the medical assessment and diagnosis..."
+            value={formData.assessment || ''}
+            onChange={(e) => onChange('assessment', e.target.value)}
+          />
+        </Grid>
+
+        {/* Hospitalized / Transferred To - Show if selected */}
+        {((formData.treatmentTypes as string[])?.includes('hospitalized') ||
+          (formData.treatmentTypes as string[])?.includes('transferred')) && (
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                multiline
-                rows={2}
-                label="Assessment / Diagnosis"
-                placeholder="Describe the medical assessment and diagnosis..."
-                value={formData.assessment}
-                onChange={(e) => onChange('assessment', e.target.value)}
+                label="Hospitalized / Transferred To"
+                placeholder="Specify facility or department..."
+                value={formData.hospitalizedDetails || ''}
+                onChange={(e) => onChange('hospitalizedDetails', e.target.value)}
               />
             </Grid>
+          )}
 
-            <Grid size={{ xs: 12, md: 6 }}>
+        {/* Physician's Notes */}
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            required={!!(formData.physicianSawPatient)}
+            label="Physician's Response"
+            placeholder="Additional treatment notes or observations..."
+            value={formData.treatmentProvided || ''}
+            onChange={(e) => onChange('treatmentProvided', e.target.value)}
+          />
+        </Grid>
+
+        {/* Injury Outcome */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <TextField
+            fullWidth
+            select
+            SelectProps={{ native: true }}
+            label="Injury Outcome"
+            value={formData.injuryOutcome || ''}
+            onChange={(e) => onChange('injuryOutcome', e.target.value)}
+          >
+            {INJURY_OUTCOMES.map(outcome => (
+              <option key={outcome.value} value={outcome.value}>{outcome.label}</option>
+            ))}
+          </TextField>
+        </Grid>
+
+        {/* Nature of Treatment/Exam */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Autocomplete
+            multiple
+            options={TREATMENT_TYPES.map(t => t.value)}
+            getOptionLabel={(option) => TREATMENT_TYPES.find(t => t.value === option)?.label || option}
+            value={(formData.treatmentTypes as string[]) || []}
+            onChange={(_, newValue) => {
+              onChange('treatmentTypes', newValue);
+              // Clear hospitalized details if not selected
+              if (!newValue.includes('hospitalized') && !newValue.includes('transferred')) {
+                onChange('hospitalizedDetails', '');
+              }
+            }}
+            renderInput={(params) => (
               <TextField
-                fullWidth
-                select
-                SelectProps={{ native: true }}
-                label="Injury Outcome"
-                value={formData.injuryOutcome}
-                onChange={(e) => onChange('injuryOutcome', e.target.value)}
-              >
-                <option value=""></option>
-                {INJURY_OUTCOMES.map(outcome => (
-                  <option key={outcome.value} value={outcome.value}>{outcome.label}</option>
-                ))}
-              </TextField>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Autocomplete
-                multiple
-                options={TREATMENT_TYPES.map(t => t.value)}
-                getOptionLabel={(option) => TREATMENT_TYPES.find(t => t.value === option)?.label || option}
-                value={(formData.treatmentTypes as string[]) || []}
-                onChange={(_, newValue) => {
-                  onChange('treatmentTypes', newValue);
-                  // Clear hospitalized details if not selected
-                  if (!newValue.includes('hospitalized') && !newValue.includes('transferred')) {
-                    onChange('hospitalizedDetails', '');
-                  }
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Nature of Treatment/Exam *"
-                    placeholder="Select all that apply..."
-                  />
-                )}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      label={TREATMENT_TYPES.find(t => t.value === option)?.label}
-                      size="small"
-                      {...getTagProps({ index })}
-                    />
-                  ))
-                }
+                {...params}
+                label="Nature of Treatment/Exam"
+                placeholder="Select all that apply..."
               />
-            </Grid>
-
-            {/* Show transfer/hospitalized details if selected */}
-            {((formData.treatmentTypes as string[])?.includes('hospitalized') ||
-              (formData.treatmentTypes as string[])?.includes('transferred')) && (
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    label="Hospitalized / Transferred To"
-                    placeholder="Specify facility or department..."
-                    value={formData.hospitalizedDetails}
-                    onChange={(e) => onChange('hospitalizedDetails', e.target.value)}
-                  />
-                </Grid>
-              )}
-
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Physician's Notes"
-                placeholder="Additional treatment notes or observations..."
-                value={formData.treatmentProvided}
-                onChange={(e) => onChange('treatmentProvided', e.target.value)}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Physician Name"
-                value={formData.physicianName}
-                onChange={(e) => onChange('physicianName', e.target.value)}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Physician ID #"
-                value={formData.physicianId}
-                onChange={(e) => onChange('physicianId', e.target.value)}
-              />
-            </Grid>
-          </>
-        )}
+            )}
+            renderValue={(selected) =>
+              selected.map((option, index) => (
+                <Chip
+                  label={TREATMENT_TYPES.find(t => t.value === option)?.label}
+                  size="small"
+                  sx={{ mr: 0.5 }}
+                  // MUI Autocomplete provides key via getTagProps, so no explicit key needed
+                  {...(typeof option === 'string' ? { key: option } : {})}
+                />
+              ))
+            }
+          />
+        </Grid>
 
         {/* Supervisor Notification Subsection */}
         <Grid size={{ xs: 12 }}>
@@ -828,7 +882,7 @@ function ImmediateActionsSection({
                 rows={3}
                 label="Supervisor Action Taken"
                 placeholder="Describe what action the supervisor took..."
-                value={formData.supervisorAction}
+                value={formData.supervisorAction || ''}
                 onChange={(e) => onChange('supervisorAction', e.target.value)}
               />
             </Grid>

@@ -146,6 +146,68 @@ export const PERSON_INVOLVED_OPTIONS = [
     { value: 'others', label: 'Others' },
 ] as const satisfies ReadonlyArray<{ value: typeof PERSON_INVOLVED_VALUES[number]; label: string }>;
 
+export interface SentinelEvent {
+    category: string;
+    events: { value: string; label: string }[];
+}
+
+export const SENTINEL_EVENTS: SentinelEvent[] = [
+    {
+        category: "Surgical/Procedure-Related", events: [
+            { value: "wrong_site_surgery", label: "Surgery/invasive procedure performed at the wrong site, on the wrong patient, or the wrong procedure." },
+            { value: "retained_foreign_object", label: "Unintended retention of a foreign object in a patient after a surgical/invasive procedure." },
+            { value: "asa_class1_death", label: "Intraoperative or immediately postoperative/post-procedure death in an ASA Class I patient." },
+        ]
+    },
+    {
+        category: "Medication & Transfusion", events: [
+            { value: "medication_error_severe", label: "Medication error leading to death, permanent, or severe temporary harm." },
+            { value: "incompatible_transfusion", label: "Administration of incompatible ABO, Non-ABO of blood/blood products, or transplantation of incompatible organs." },
+            { value: "contaminated_transfusion", label: "Transfusing/transplantation of contaminated blood, blood products, organ, or tissue." },
+        ]
+    },
+    {
+        category: "Maternal & Neonatal", events: [
+            { value: "neonatal_harm", label: "Neonatal death, permanent or severe temporary harm." },
+            { value: "wrong_discharge_newborn", label: "Infant discharged to the wrong family." },
+            { value: "patient_abduction", label: "Abduction of any patient (including infants) receiving care." },
+            { value: "neonatal_hyperbilirubinemia", label: "Death or serious disability associated with failure to manage/identify neonatal hyperbilirubinemia." },
+        ]
+    },
+    {
+        category: "Patient Harm/Injury", events: [
+            { value: "unexpected_death_or_harm", label: "Unexpected death, permanent, or severe temporary harm (not primarily related to the natural course of the illness)." },
+            { value: "loss_of_limb", label: "Unexpected loss of a limb or function." },
+            { value: "patient_fall_severe", label: "Patient death, permanent harm, or severe temporary harm as a result of patient fall." },
+            { value: "pressure_injury", label: "Any (stage 3, 4, or unstageable) healthcare facility-acquired pressure injury (ulcer)." },
+            { value: "accidental_burn", label: "Accidental burn of second degree and above during patient care." },
+            { value: "vte_harm", label: "Patient death, permanent or severe temporary harm associated with venous thromboembolism (VTE)." },
+            { value: "patient_suicide", label: "Suicide, attempted suicide, or self-harm that results in severe, temporary harm, permanent harm, or death while being cared for in a healthcare setting or within 72 hours of discharge." },
+        ]
+    },
+    {
+        category: "Security & Safety", events: [
+            { value: "rape_on_site", label: "Rape of a patient, staff member, or visitor while on-site." },
+            { value: "assault_or_homicide", label: "Assault leading to death, permanent harm, or severe, temporary harm, or homicide while on-site." },
+            { value: "fire_incident", label: "Fire, flame, or unanticipated smoke or flashes occurring during patient care." },
+        ]
+    },
+    {
+        category: "Equipment & Environment", events: [
+            { value: "device_failure", label: "Patient death, permanent or severe temporary harm as a result of medical device breakdown or failure when in use." },
+            { value: "building_collapse", label: "Unexpected collapse of any building or malfunctioning structure within a healthcare facility." },
+        ]
+    },
+    {
+        category: "Other Critical Events", events: [
+            { value: "wrong_medical_gas", label: "Patient death, permanent harm, or severe temporary harm associated with wrong administration/connection of medical gas." },
+            { value: "transmission_disease", label: "Transmission of disease as a result of using contaminated instruments or equipment." },
+            { value: "radiotherapy_error", label: "Delivery of radiotherapy to the wrong body region or a dose that exceeds more than 25% of the total planned dose." },
+            { value: "patient_absconded", label: "Unauthorized departure of the patient (absconded) that resulted in death, permanent harm, or severe temporary harm." },
+        ]
+    }
+];
+
 /**
  * Severity levels with display labels and colors
  * Values derived from database schema enum
@@ -196,6 +258,12 @@ export const TREATMENT_TYPES = [
     { value: 'radiology', label: 'Radiology Test' },
     { value: 'hospitalized', label: 'Hospitalized' },
     { value: 'transferred', label: 'Transferred' },
+    { value: 'medication', label: 'Medication Given' },
+    { value: 'surgery', label: 'Surgery/Procedure' },
+    { value: 'consultation', label: 'Specialist Consultation' },
+    { value: 'follow_up', label: 'Follow-up Required' },
+    { value: 'none', label: 'No Treatment Required' },
+    { value: 'icu', label: 'ICU Admission' },
 ] as const;
 
 // ============================================
@@ -223,7 +291,7 @@ export const MEDICATION_HARM_LEVELS = [
  */
 export const GENERAL_HARM_LEVELS = [
     { value: 'near_miss', label: 'Near Miss: An error occurred but did not reach the patient' },
-    { value: 'none', label: 'NONE: Incident occurred with no harm to the patient or person involved' },
+    { value: 'none', label: 'None: Incident occurred with no harm to the patient or person involved' },
     { value: 'minor', label: 'Minor: No change in vital signs. Non-invasive diagnostic test required. Increased observation or monitoring required' },
     { value: 'moderate', label: 'Moderate: Vital signs changes. Decreased level of consciousness. Additional medication/treatment required. Invasive diagnostic procedure required' },
     { value: 'major', label: 'Major: Any unexpected or unintended incident that caused permanent or long-term harm to one or more persons' },
@@ -234,7 +302,9 @@ export const GENERAL_HARM_LEVELS = [
  * Get appropriate harm levels based on category (DRY helper)
  */
 export function getHarmLevelsForCategory(category: string | undefined): typeof MEDICATION_HARM_LEVELS | typeof GENERAL_HARM_LEVELS {
-    return category === 'medication' ? MEDICATION_HARM_LEVELS : GENERAL_HARM_LEVELS;
+    return category === 'CAT019'  // Medication
+        ? MEDICATION_HARM_LEVELS
+        : GENERAL_HARM_LEVELS;
 }
 
 // ============================================

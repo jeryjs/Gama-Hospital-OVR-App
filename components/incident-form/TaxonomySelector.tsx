@@ -138,15 +138,7 @@ function TaxonomySelectorComponent({
     }
 
     return (
-        <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Tooltip title={mode === 'staged' ? 'Switch to search mode' : 'Switch to dropdown mode'}>
-                    <IconButton onClick={handleModeToggle} size="small">
-                        {mode === 'staged' ? <Search /> : <ViewAgenda />}
-                    </IconButton>
-                </Tooltip>
-            </Box>
-
+        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'row', gap: 2, width: '100%' }}>
             {mode === 'search' ? (
                 <Autocomplete
                     value={selectedTaxonomyItem}
@@ -157,6 +149,7 @@ function TaxonomySelectorComponent({
                     }}
                     options={[]}
                     freeSolo
+                    fullWidth
                     filterOptions={filterOptions}
                     getOptionLabel={getOptionLabel}
                     isOptionEqualToValue={(option, value) =>
@@ -194,8 +187,8 @@ function TaxonomySelectorComponent({
                     }}
                 />
             ) : (
-                <Grid container spacing={2} columns={{ xs: 1, sm: 2, md: 3 }}>
-                    <Grid size={{ xs: 1, sm: 1, md: 1 }} key='category-input'>
+                <Grid container spacing={2} columns={{ xs: 1, sm: 2, md: 3 }} sx={{ flexFlow: 'row !important', width: '-webkit-fill-available !important' }}>
+                    <Grid width='100%' key='category-input'>
                         <FormControl fullWidth required={required}>
                             <InputLabel>Category</InputLabel>
                             <Select
@@ -215,7 +208,7 @@ function TaxonomySelectorComponent({
                         </FormControl>
                     </Grid>
 
-                    <Grid size={{ xs: 1, sm: 1, md: 1 }} key='subcategory-input'>
+                    <Grid width='100%' key='subcategory-input'>
                         <FormControl fullWidth required={required} disabled={!categoryValue}>
                             <InputLabel>Subcategory</InputLabel>
                             <Select
@@ -235,7 +228,7 @@ function TaxonomySelectorComponent({
                         </FormControl>
                     </Grid>
 
-                    <Grid size={{ xs: 1, sm: 2, md: 1 }} key='details-input'>
+                    <Grid width='100%' key='details-input'>
                         <FormControl fullWidth disabled={!subcategoryValue || details.length === 0}>
                             <InputLabel>Detail</InputLabel>
                             <Select
@@ -256,6 +249,13 @@ function TaxonomySelectorComponent({
                     </Grid>
                 </Grid>
             )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Tooltip title={mode === 'staged' ? 'Switch to search mode' : 'Switch to dropdown mode'}>
+                    <IconButton onClick={handleModeToggle} size="small">
+                        {mode === 'staged' ? <Search /> : <ViewAgenda />}
+                    </IconButton>
+                </Tooltip>
+            </Box>
         </Box>
     );
 }
