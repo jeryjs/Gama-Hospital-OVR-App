@@ -8,6 +8,7 @@ import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceD
 import { PatientInfoSection } from '@/components/incident-form/PatientInfoSection';
 import { QIAssignHODSection } from '@/components/incident-form/QIAssignHODSection';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
+import { RiskClassificationSection } from '@/components/incident-form/RiskClassificationSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { WitnessSection } from '@/components/incident-form/WitnessSection';
 import { useIncident } from '@/lib/hooks';
@@ -62,6 +63,9 @@ function IncidentDetails() {
         {(incident.supervisorId || incident.supervisorAction) && (
           <SupervisorSection incident={incident} onUpdate={mutate} />
         )}
+
+        {/* Risk Classification Section */}
+        {incident.riskScore && <RiskClassificationSection incident={incident} />}
 
         {/* QI Assign HOD Section - Can assign directly after submission */}
         {incident.status === 'hod_assigned' && !incident.departmentHeadId && (

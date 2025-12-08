@@ -236,7 +236,7 @@ function TaxonomySelectorComponent({
                     </Grid>
 
                     <Grid size={{ xs: 1, sm: 2, md: 1 }} key='details-input'>
-                        <FormControl fullWidth disabled={!subcategoryValue}>
+                        <FormControl fullWidth disabled={!subcategoryValue || details.length === 0}>
                             <InputLabel>Detail</InputLabel>
                             <Select
                                 value={detailValue}

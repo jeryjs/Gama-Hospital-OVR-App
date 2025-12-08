@@ -1,5 +1,6 @@
 'use client';
 
+import { ovrReports } from '@/db/schema';
 import { useComments } from '@/lib/hooks';
 import { Comment as CommentIcon, Delete, Send } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -8,21 +9,20 @@ import {
   Avatar,
   Box,
   Button,
-  CircularProgress,
   IconButton,
   Menu,
   MenuItem,
   Paper,
   Stack,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 interface Props {
-  incidentId: number;
+  incidentId: typeof ovrReports.$inferSelect['id'];
 }
 
 export function CommentsSection({ incidentId }: Props) {

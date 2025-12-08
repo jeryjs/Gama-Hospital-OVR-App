@@ -130,7 +130,6 @@ export const SEVERITY_LEVEL_VALUES = severityLevelEnum.enumValues;
  * Values derived from database schema enum
  */
 export const INJURY_OUTCOMES = [
-    { value: '', label: 'Not Specified' },
     { value: 'no_injury', label: 'No Injury' },
     { value: 'minor', label: 'Minor' },
     { value: 'serious', label: 'Serious' },
@@ -153,10 +152,10 @@ export const PERSON_INVOLVED_OPTIONS = [
  */
 export const SEVERITY_LEVELS = [
     { value: "", label: "Not Specified", color: "#6B7280" },
-    { value: 'near_miss_level_1', label: 'Near Miss (Level 1)', color: '#10B981' },
-    { value: 'no_apparent_injury_level_2', label: 'No Apparent injury (Level 2)', color: '#3B82F6' },
-    { value: 'minor_level_3', label: 'Minor (Level 3)', color: '#F59E0B' },
-    { value: 'major_level_4', label: 'Major (Level 4)', color: '#EF4444' },
+    { value: 'near_miss', label: 'Near Miss (Level 1)', color: '#10B981' },
+    { value: 'no_apparent_injury', label: 'No Apparent injury (Level 2)', color: '#3B82F6' },
+    { value: 'minor', label: 'Minor (Level 3)', color: '#F59E0B' },
+    { value: 'major', label: 'Major (Level 4)', color: '#EF4444' },
 ] as const satisfies ReadonlyArray<{ value: typeof SEVERITY_LEVEL_VALUES[number]; label: string; color: string }>;
 
 /**
@@ -184,3 +183,145 @@ export const CAUSE_CLASSIFICATIONS: CauseClassification[] = [
     { id: '9', label: 'Equipment Malfunction' },
     { id: '10', label: 'Others (Specify)' },
 ];
+
+// ============================================
+// PHYSICIAN FOLLOW-UP / TREATMENT
+// ============================================
+
+export const TREATMENT_TYPES = [
+    { value: 'first_aid', label: 'First Aid' },
+    { value: 'sutures', label: 'Sutures' },
+    { value: 'observation', label: 'Observation' },
+    { value: 'bloodwork', label: 'Bloodwork' },
+    { value: 'radiology', label: 'Radiology Test' },
+    { value: 'hospitalized', label: 'Hospitalized' },
+    { value: 'transferred', label: 'Transferred' },
+] as const;
+
+// ============================================
+// LEVEL OF HARM (Conditional based on category)
+// ============================================
+
+/**
+ * Level of Harm - Medication-specific (NCC MERP Index A-I)
+ * Used when occurrenceCategory === 'medication'
+ */
+export const MEDICATION_HARM_LEVELS = [
+    { value: 'med_a', label: 'A: Circumstances or events that have the capacity to cause error' },
+    { value: 'med_b', label: 'B: An error occurred but the error did not reach the patient' },
+    { value: 'med_c', label: 'C: An error occurred that reached the patient but did not cause patient harm' },
+    { value: 'med_d', label: 'D: An error occurred that reached the patient and required monitoring to confirm that it resulted in no harm to the patient and/or required intervention to preclude harm' },
+    { value: 'med_e', label: 'E: An error occurred that may have contributed to, or resulted in temporary harm (minor injury) to the individual and required intervention' },
+    { value: 'med_f', label: 'F: An error occurred that may have contributed to, or resulted in temporary harm (minor injury) to the individual and required intervention and initial or prolonged hospitalization' },
+    { value: 'med_g', label: 'G: An error occurred that may have contributed to, or resulted in individual harm (serious injury - prolonged the stay or extensive follow up)' },
+    { value: 'med_h', label: 'H: An error occurred that resulted in life-threatening injury or multiple serious injuries causing hospitalization and required intervention necessary to sustain life' },
+    { value: 'med_i', label: 'I: An error occurred that may have contributed to or resulted in the patient\'s death' },
+] as const;
+
+/**
+ * Level of Harm - General (for all non-medication incidents)
+ */
+export const GENERAL_HARM_LEVELS = [
+    { value: 'near_miss', label: 'Near Miss: An error occurred but did not reach the patient' },
+    { value: 'none', label: 'NONE: Incident occurred with no harm to the patient or person involved' },
+    { value: 'minor', label: 'Minor: No change in vital signs. Non-invasive diagnostic test required. Increased observation or monitoring required' },
+    { value: 'moderate', label: 'Moderate: Vital signs changes. Decreased level of consciousness. Additional medication/treatment required. Invasive diagnostic procedure required' },
+    { value: 'major', label: 'Major: Any unexpected or unintended incident that caused permanent or long-term harm to one or more persons' },
+    { value: 'catastrophic', label: 'Catastrophic: Incident resulting in death' },
+] as const;
+
+/**
+ * Get appropriate harm levels based on category (DRY helper)
+ */
+export function getHarmLevelsForCategory(category: string | undefined): typeof MEDICATION_HARM_LEVELS | typeof GENERAL_HARM_LEVELS {
+    return category === 'medication' ? MEDICATION_HARM_LEVELS : GENERAL_HARM_LEVELS;
+}
+
+// ============================================
+// RISK CLASSIFICATION MATRIX (DRY)
+// ============================================
+
+/**
+ * Risk Impact Levels (1-5) - Severity of consequences
+ */
+export const RISK_IMPACT_LEVELS = [
+    { value: 1, label: 'Negligible', color: '#4CAF50' },
+    { value: 2, label: 'Minor', color: '#8BC34A' },
+    { value: 3, label: 'Moderate', color: '#FFC107' },
+    { value: 4, label: 'Major', color: '#FF9800' },
+    { value: 5, label: 'Catastrophic', color: '#F44336' },
+] as const;
+
+/**
+ * Risk Likelihood Levels (1-5) - Probability of occurrence
+ */
+export const RISK_LIKELIHOOD_LEVELS = [
+    { value: 1, label: 'Rare' },
+    { value: 2, label: 'Unlikely' },
+    { value: 3, label: 'Possible' },
+    { value: 4, label: 'Likely' },
+    { value: 5, label: 'Almost Certain' },
+] as const;
+
+/**
+ * Risk Matrix - Programmatically generated (DRY)
+ * Returns 5x5 matrix of risk scores (impact × likelihood)
+ */
+export const RISK_MATRIX = Array.from({ length: 5 }, (_, impactIdx) =>
+    Array.from({ length: 5 }, (_, likelihoodIdx) => {
+        const impact = 5 - impactIdx; // Reverse for display (5 at top)
+        const likelihood = likelihoodIdx + 1; // 1-5 left to right
+        return impact * likelihood;
+    })
+);
+
+/**
+ * Risk Levels - Color-coded zones based on score
+ * DRY: Single source of truth for risk level logic
+ */
+export const RISK_LEVELS = [
+    {
+        level: 'green',
+        label: 'Low Risk',
+        range: [1, 3] as const,
+        color: '#4CAF50',
+        bgColor: '#E8F5E9'
+    },
+    {
+        level: 'yellow',
+        label: 'Moderate Risk',
+        range: [4, 6] as const,
+        color: '#FFC107',
+        bgColor: '#FFF9C4'
+    },
+    {
+        level: 'amber',
+        label: 'High Risk',
+        range: [8, 12] as const,
+        color: '#FF9800',
+        bgColor: '#FFE0B2'
+    },
+    {
+        level: 'red',
+        label: 'Extreme Risk',
+        range: [15, 25] as const,
+        color: '#F44336',
+        bgColor: '#FFCDD2'
+    },
+] as const;
+
+/**
+ * Calculate risk level from score (DRY helper)
+ */
+export function getRiskLevel(score: number): typeof RISK_LEVELS[number] {
+    return RISK_LEVELS.find(level =>
+        score >= level.range[0] && score <= level.range[1]
+    ) || RISK_LEVELS[0];
+}
+
+/**
+ * Calculate risk score from impact and likelihood (DRY helper)
+ */
+export function calculateRiskScore(impact: number, likelihood: number): number {
+    return impact * likelihood;
+}

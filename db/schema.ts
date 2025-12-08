@@ -13,12 +13,31 @@ export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff',
 
 export const injuryOutcomeEnum = pgEnum('injury_outcome', ['', 'no_injury', 'minor', 'serious', 'death']);
 
+// Level of Harm - Medication-specific (A-I) or General (Near Miss to Catastrophic)
+export const levelOfHarmEnum = pgEnum('level_of_harm', [
+  // Medication-specific levels (A-I)
+  'med_a', 'med_b', 'med_c', 'med_d', 'med_e', 'med_f', 'med_g', 'med_h', 'med_i',
+  // General levels (for non-medication incidents)
+  'near_miss', 'none', 'minor', 'moderate', 'major', 'catastrophic'
+]);
+
+// Treatment/Examination types for Part 4
+export const treatmentTypeEnum = pgEnum('treatment_type', [
+  'first_aid',
+  'sutures',
+  'observation',
+  'bloodwork',
+  'radiology',
+  'hospitalized',
+  'transferred'
+]);
+
 export const severityLevelEnum = pgEnum('severity_level', [
   '',
-  'near_miss_level_1',
-  'no_apparent_injury_level_2',
-  'minor_level_3',
-  'major_level_4'
+  'near_miss',
+  'no_apparent_injury',
+  'minor',
+  'major'
 ]);
 
 // OVR Form Status Workflow - Matches actual hospital process
@@ -130,6 +149,7 @@ export const ovrReports = pgTable('ovr_reports', {
 
   // Description
   description: text('description').notNull(),
+  levelOfHarm: levelOfHarmEnum('level_of_harm'), // Added after description
 
   // Reporter Information
   reporterId: integer('reporter_id').notNull().references(() => users.id),
@@ -143,15 +163,12 @@ export const ovrReports = pgTable('ovr_reports', {
   witnessPosition: varchar('witness_position', { length: 100 }),
   witnessEmployeeId: varchar('witness_employee_id', { length: 50 }),
 
-  // Medical Assessment
+  // Medical Assessment / Physician Follow-up
   physicianNotified: boolean('physician_notified').default(false),
   physicianSawPatient: boolean('physician_saw_patient').default(false),
   assessment: text('assessment'),
   diagnosis: text('diagnosis'),
   injuryOutcome: injuryOutcomeEnum('injury_outcome'),
-  treatmentProvided: text('treatment_provided'),
-  physicianName: varchar('physician_name', { length: 255 }),
-  physicianId: varchar('physician_id', { length: 50 }),
 
   // Supervisor/Manager Action
   supervisorNotified: boolean('supervisor_notified').default(false),
@@ -160,6 +177,20 @@ export const ovrReports = pgTable('ovr_reports', {
   supervisorAction: text('supervisor_action'),
   supervisorActionDate: timestamp('supervisor_action_date'),
   supervisorApprovedAt: timestamp('supervisor_approved_at'),
+
+  // Treatment details
+  treatmentTypes: text('treatment_types').array(),
+  hospitalizedDetails: varchar('hospitalized_details', { length: 255 }),
+  treatmentProvided: text('treatment_provided'),
+  physicianName: varchar('physician_name', { length: 255 }),
+  physicianId: varchar('physician_id', { length: 50 }),
+  physicianSignatureDate: timestamp('physician_signature_date'),
+
+  // Risk Assessment
+  riskImpact: integer('risk_impact'), // 1-5 (Negligible to Catastrophic)
+  riskLikelihood: integer('risk_likelihood'), // 1-5 (Rare to Almost Certain)
+  riskScore: integer('risk_score'), // Calculated: impact * likelihood
+  riskLevel: varchar('risk_level', { length: 20 }), // green/yellow/amber/red
 
   // QI Department Assignment
   qiAssignedBy: integer('qi_assigned_by').references(() => users.id),

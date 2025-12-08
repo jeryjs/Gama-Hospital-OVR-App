@@ -2,10 +2,24 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
-import { INJURY_OUTCOMES, PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
+import {
+  INJURY_OUTCOMES,
+  PERSON_INVOLVED_OPTIONS,
+  TREATMENT_TYPES,
+  MEDICATION_HARM_LEVELS,
+  GENERAL_HARM_LEVELS,
+  getHarmLevelsForCategory,
+  RISK_IMPACT_LEVELS,
+  RISK_LIKELIHOOD_LEVELS,
+  RISK_MATRIX,
+  RISK_LEVELS,
+  calculateRiskScore,
+  getRiskLevel,
+} from '@/lib/constants';
 import { CreateIncidentInput } from '@/lib/api/schemas';
 import { useUsers } from '@/lib/hooks';
-import { ArrowBack, Save, Send } from '@mui/icons-material';
+import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
+import { useSession } from 'next-auth/react';
 import {
   Alert,
   alpha,
@@ -13,6 +27,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   Divider,
   FormControl,
   FormControlLabel,
@@ -297,7 +312,7 @@ function PersonInvolvedSection({
           </FormControl>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <FormControl component="fieldset">
+          <FormControl component="fieldset" sx={{ width: '100%' }}>
             <FormLabel component="legend">SENTINEL EVENT</FormLabel>
             <FormControlLabel
               control={
@@ -312,7 +327,7 @@ function PersonInvolvedSection({
               <TextField
                 fullWidth
                 multiline
-                rows={2}
+                rows={3}
                 label="Please specify"
                 value={formData.sentinelEventDetails}
                 onChange={(e) => onChange('sentinelEventDetails', e.target.value)}
@@ -435,31 +450,27 @@ function PersonDetailsFields({
 
         {/* Age & Sex - All except Staff */}
         {isNotStaff && (
-          <>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="Age"
-                type="number"
-                value={formData.involvedPersonAge || ''}
-                onChange={(e) => onChange('involvedPersonAge', Number(e.target.value) || 0)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="Sex"
-                select
-                SelectProps={{ native: true }}
-                value={formData.involvedPersonSex}
-                onChange={(e) => onChange('involvedPersonSex', e.target.value)}
-              >
-                <option value=""></option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </TextField>
-            </Grid>
-          </>
+          <Box sx={{ display: 'flex', gap: 2, flex: '1' }}>
+            <TextField
+              fullWidth
+              label="Age"
+              type="number"
+              value={formData.involvedPersonAge || ''}
+              onChange={(e) => onChange('involvedPersonAge', Number(e.target.value) || 0)}
+            />
+            <TextField
+              fullWidth
+              label="Sex"
+              select
+              SelectProps={{ native: true }}
+              value={formData.involvedPersonSex}
+              onChange={(e) => onChange('involvedPersonSex', e.target.value)}
+            >
+              <option value=""></option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </TextField>
+          </Box>
         )}
 
         {/* Unit/Department - Patient and Staff only */}
@@ -683,10 +694,12 @@ function ImmediateActionsSection({
                 multiline
                 rows={2}
                 label="Assessment / Diagnosis"
+                placeholder="Describe the medical assessment and diagnosis..."
                 value={formData.assessment}
                 onChange={(e) => onChange('assessment', e.target.value)}
               />
             </Grid>
+
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
@@ -702,6 +715,65 @@ function ImmediateActionsSection({
                 ))}
               </TextField>
             </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Autocomplete
+                multiple
+                options={TREATMENT_TYPES.map(t => t.value)}
+                getOptionLabel={(option) => TREATMENT_TYPES.find(t => t.value === option)?.label || option}
+                value={(formData.treatmentTypes as string[]) || []}
+                onChange={(_, newValue) => {
+                  onChange('treatmentTypes', newValue);
+                  // Clear hospitalized details if not selected
+                  if (!newValue.includes('hospitalized') && !newValue.includes('transferred')) {
+                    onChange('hospitalizedDetails', '');
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Nature of Treatment/Exam *"
+                    placeholder="Select all that apply..."
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={TREATMENT_TYPES.find(t => t.value === option)?.label}
+                      size="small"
+                      {...getTagProps({ index })}
+                    />
+                  ))
+                }
+              />
+            </Grid>
+
+            {/* Show transfer/hospitalized details if selected */}
+            {((formData.treatmentTypes as string[])?.includes('hospitalized') ||
+              (formData.treatmentTypes as string[])?.includes('transferred')) && (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Hospitalized / Transferred To"
+                    placeholder="Specify facility or department..."
+                    value={formData.hospitalizedDetails}
+                    onChange={(e) => onChange('hospitalizedDetails', e.target.value)}
+                  />
+                </Grid>
+              )}
+
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Physician's Notes"
+                placeholder="Additional treatment notes or observations..."
+                value={formData.treatmentProvided}
+                onChange={(e) => onChange('treatmentProvided', e.target.value)}
+              />
+            </Grid>
+
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
@@ -710,16 +782,7 @@ function ImmediateActionsSection({
                 onChange={(e) => onChange('physicianName', e.target.value)}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                label="Treatment Provided"
-                value={formData.treatmentProvided}
-                onChange={(e) => onChange('treatmentProvided', e.target.value)}
-              />
-            </Grid>
+
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
@@ -816,6 +879,270 @@ function SupervisorSelector({
       )}
       isOptionEqualToValue={(option, value) => option.id === value?.id}
     />
+  );
+}
+
+/**
+ * Risk Classification Section
+ * Interactive risk matrix for reporter assessment
+ */
+function RiskClassificationSection({
+  formData,
+  onChange,
+}: {
+  formData: FormData;
+  onChange: (key: keyof FormData, value: unknown) => void;
+}) {
+  const impact = (formData.riskImpact as number) || 0;
+  const likelihood = (formData.riskLikelihood as number) || 0;
+  const score = impact && likelihood ? calculateRiskScore(impact, likelihood) : 0;
+  const riskLevel = score ? getRiskLevel(score) : null;
+
+  useEffect(() => {
+    if (impact && likelihood) {
+      const newScore = calculateRiskScore(impact, likelihood);
+      const newLevel = getRiskLevel(newScore);
+      onChange('riskScore', newScore);
+      onChange('riskLevel', newLevel.level);
+    }
+  }, [impact, likelihood, onChange]);
+
+  return (
+    <Box sx={{ mb: 4 }}>
+      <Typography
+        variant="subtitle1"
+        fontWeight={700}
+        gutterBottom
+        sx={{ bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.12 : 0.08), p: 1, borderRadius: 1 }}
+      >
+        Incident Risk Classification
+      </Typography>
+
+      <Alert severity="info" sx={{ mt: 2, mb: 3 }}>
+        Please assess the risk level of this incident by selecting the impact and likelihood below.
+      </Alert>
+
+      <Grid container spacing={3}>
+        {/* Risk Matrix Reference */}
+        <Grid size={{ xs: 12 }}>
+          <Paper sx={(theme) => ({ p: 2, bgcolor: alpha(theme.palette.background.paper, theme.palette.mode === 'dark' ? 0.6 : 1) })}>
+            <Typography variant="body2" fontWeight={600} gutterBottom>
+              Risk Assessment Matrix (Reference)
+            </Typography>
+
+            <Box sx={{ overflowX: 'auto', mt: 2 }}>
+              <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+                <Box component="thead">
+                  <Box component="tr">
+                    <Box
+                      component="th"
+                      sx={(theme) => ({
+                        border: `1px solid ${theme.palette.divider}`,
+                        padding: 1,
+                        background: theme.palette.mode === 'dark' ? alpha(theme.palette.background.paper, 0.06) : '#f5f5f5',
+                        textAlign: 'left',
+                      })}
+                    >
+                      Impact / Likelihood
+                    </Box>
+                    {RISK_LIKELIHOOD_LEVELS.map(level => (
+                      <Box
+                        key={level.value}
+                        component="th"
+                        sx={(theme) => ({
+                          border: `1px solid ${theme.palette.divider}`,
+                          padding: 1,
+                          background: theme.palette.mode === 'dark' ? alpha(theme.palette.background.paper, 0.06) : '#f5f5f5',
+                          textAlign: 'center',
+                        })}
+                      >
+                        {level.value}<br />{level.label}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+
+                <Box component="tbody">
+                  {RISK_MATRIX.map((row, impactIdx) => {
+                    const impactValue = 5 - impactIdx;
+                    const impactLabel = RISK_IMPACT_LEVELS.find(l => l.value === impactValue)?.label;
+                    return (
+                      <Box key={impactIdx} component="tr">
+                        <Box
+                          component="td"
+                          sx={(theme) => ({
+                            border: `1px solid ${theme.palette.divider}`,
+                            padding: 1,
+                            background: theme.palette.mode === 'dark' ? alpha(theme.palette.background.paper, 0.06) : '#f5f5f5',
+                            fontWeight: 600,
+                            verticalAlign: 'middle',
+                            width: 220,
+                          })}
+                        >
+                          {impactValue}. {impactLabel}
+                        </Box>
+                        {row.map((cellScore, likelihoodIdx) => {
+                          const cellLevel = getRiskLevel(cellScore);
+                          const isSelected = impact === (5 - impactIdx) && likelihood === (likelihoodIdx + 1);
+                          return (
+                            <Box
+                              key={likelihoodIdx}
+                              component="td"
+                              sx={(theme) => ({
+                                border: `2px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
+                                padding: 2,
+                                textAlign: 'center',
+                                background: alpha(cellLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.06),
+                                fontWeight: isSelected ? 700 : 600,
+                                fontSize: isSelected ? '18px' : '14px',
+                                color: theme.palette.text.secondary,
+                              })}
+                            >
+                              {cellScore}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Risk Level Legend */}
+            <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {RISK_LEVELS.map(level => (
+                <Box key={level.level} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={(theme) => ({
+                      width: 40,
+                      height: 20,
+                      bgcolor: alpha(level.color, theme.palette.mode === 'dark' ? 0.22 : 0.90),
+                      border: `1px solid ${theme.palette.divider}`,
+                    })}
+                  />
+                  <Typography variant="caption">
+                    {level.range[0]}-{level.range[1]}: {level.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Impact Selection */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FormControl fullWidth>
+            <FormLabel sx={{ fontWeight: 600, mb: 1 }}>
+              Impact Score (Severity of Consequences)
+            </FormLabel>
+            <RadioGroup
+              value={impact || ''}
+              onChange={(e) => onChange('riskImpact', Number(e.target.value))}
+            >
+              {RISK_IMPACT_LEVELS.map((level) => (
+                <FormControlLabel
+                  key={level.value}
+                  value={level.value}
+                  control={<Radio />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={(theme) => ({
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          bgcolor: alpha(level.color, theme.palette.mode === 'dark' ? 0.25 : 0.8),
+                          border: `1px solid ${alpha(level.color, theme.palette.mode === 'dark' ? 0.6 : 0.9)}`,
+                        })}
+                      />
+                      <Typography variant="body2">
+                        {level.value}. {level.label}
+                      </Typography>
+                    </Box>
+                  }
+                  sx={(theme) => ({
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 1,
+                    mb: 1,
+                    px: 2,
+                    mx: 0,
+                    bgcolor: impact === level.value ? alpha(level.color, theme.palette.mode === 'dark' ? 0.20 : 0.08) : 'transparent',
+                  })}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </Grid>
+
+        {/* Likelihood Selection */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FormControl fullWidth>
+            <FormLabel sx={{ fontWeight: 600, mb: 1 }}>
+              Likelihood Score (Probability of Occurrence)
+            </FormLabel>
+            <RadioGroup
+              value={likelihood || ''}
+              onChange={(e) => onChange('riskLikelihood', Number(e.target.value))}
+            >
+              {RISK_LIKELIHOOD_LEVELS.map((level) => (
+                <FormControlLabel
+                  key={level.value}
+                  value={level.value}
+                  control={<Radio />}
+                  label={
+                    <Typography variant="body2">
+                      {level.value}. {level.label}
+                    </Typography>
+                  }
+                  sx={(theme) => ({
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 1,
+                    mb: 1,
+                    px: 2,
+                    mx: 0,
+                    bgcolor: likelihood === level.value ? alpha('#2196F3', theme.palette.mode === 'dark' ? 0.18 : 0.08) : 'transparent',
+                  })}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </Grid>
+
+        {/* Calculated Risk Result */}
+        {score > 0 && riskLevel && (
+          <Grid size={{ xs: 12 }}>
+            <Paper
+              sx={(theme) => ({
+                p: 3,
+                bgcolor: alpha(riskLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.08),
+                border: `2px solid ${riskLevel.color}`,
+              })}
+            >
+              <Stack direction="row" spacing={3} alignItems="center">
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Risk Score
+                  </Typography>
+                  <Typography variant="h3" fontWeight={700} sx={{ color: riskLevel.color }}>
+                    {score}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" fontWeight={600} sx={{ color: riskLevel.color }}>
+                    {riskLevel.label}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Impact: {RISK_IMPACT_LEVELS.find(l => l.value === impact)?.label} ×
+                    Likelihood: {RISK_LIKELIHOOD_LEVELS.find(l => l.value === likelihood)?.label}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
+    </Box>
   );
 }
 
@@ -971,6 +1298,7 @@ export default function NewIncidentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftId = searchParams.get('draft');
+  const { data: session } = useSession();
 
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
@@ -1075,13 +1403,40 @@ export default function NewIncidentPage() {
 
               <ImmediateActionsSection formData={formData} onChange={handleChange} />
 
+              <RiskClassificationSection formData={formData} onChange={handleChange} />
+
               <Divider sx={{ my: 3 }} />
 
-              <FormActions
-                loading={loading}
-                onSaveDraft={() => handleSubmit(true)}
-                onSubmit={() => handleSubmit(false)}
-              />
+              {/* Reporter Information Display */}
+              {session?.user && (
+                <Paper sx={{ p: 2, mb: 3, bgcolor: (theme) => alpha(theme.palette.info.main, 0.05), border: (theme) => `1px solid ${theme.palette.info.main}` }}>
+                  <Stack
+                    direction={{ sm: 'column', md: 'row' }}
+                    spacing={2}
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Person color="info" />
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Report will be filed as:
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {session.user.name} ({formData.reporterPosition || 'Position not specified'})
+                          {formData.reporterDepartment && `, ${formData.reporterDepartment}`}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <FormActions
+                      loading={loading}
+                      onSaveDraft={() => handleSubmit(true)}
+                      onSubmit={() => handleSubmit(false)}
+                    />
+                  </Stack>
+                </Paper>
+              )}
 
               <Box sx={{ mb: 4 }}>
                 <Alert severity="warning" sx={{ mt: 2 }}>

@@ -274,15 +274,12 @@ export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 export const createIncidentSchema = ovrReportInsertSchema
   .omit({
     id: true, // Auto-generated as OVR-YYYY-NNN
-    // refNo removed - id IS the refNo
     reporterId: true,
     createdAt: true,
     updatedAt: true,
     submittedAt: true,
     resolvedAt: true,
     closedAt: true,
-    // supervisorId: true,         // KEEP: Allow reporter to specify supervisor
-    // supervisorAction: true,     // KEEP: Allow reporter to record supervisor action
     supervisorActionDate: true,
     supervisorApprovedAt: true,
     qiReceivedBy: true,

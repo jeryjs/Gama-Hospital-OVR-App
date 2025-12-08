@@ -1,4 +1,4 @@
-import { INJURY_OUTCOMES } from '@/lib/constants';
+import { INJURY_OUTCOMES, TREATMENT_TYPES } from '@/lib/constants';
 import { Cancel, CheckCircle, LocalHospital } from '@mui/icons-material';
 import { alpha, Box, Chip, Grid, Paper, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
@@ -19,6 +19,11 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 export function MedicalAssessmentSection({ incident }: Props) {
   const injuryOutcomeLabel = INJURY_OUTCOMES.find(i => i.value === incident.injuryOutcome)?.label;
 
+  // Get treatment type labels
+  const treatmentLabels = incident.treatmentTypes?.map(type =>
+    TREATMENT_TYPES.find(t => t.value === type)?.label || type
+  );
+
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
@@ -33,7 +38,7 @@ export function MedicalAssessmentSection({ incident }: Props) {
           borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
         }}
       >
-        <LocalHospital /> Immediate Actions
+        <LocalHospital /> Part 4: Physician Follow-up
       </Typography>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -92,6 +97,30 @@ export function MedicalAssessmentSection({ incident }: Props) {
         <Grid size={{ xs: 12, md: 6 }}>
           <InfoRow label="Injury Outcome" value={injuryOutcomeLabel} />
         </Grid>
+
+        {/* Treatment Types */}
+        {treatmentLabels && treatmentLabels.length > 0 && (
+          <Grid size={{ xs: 12 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Nature of Treatment/Exam
+              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {treatmentLabels.map((label, idx) => (
+                  <Chip key={idx} label={label} color="primary" size="small" variant="outlined" />
+                ))}
+              </Box>
+            </Box>
+          </Grid>
+        )}
+
+        {/* Hospitalized/Transferred Details */}
+        {incident.hospitalizedDetails && (
+          <Grid size={{ xs: 12 }}>
+            <InfoRow label="Hospitalized / Transferred To" value={incident.hospitalizedDetails} />
+          </Grid>
+        )}
+
         <Grid size={{ xs: 12, md: 6 }}>
           <InfoRow label="Physician Name" value={incident.physicianName} />
         </Grid>
@@ -103,7 +132,7 @@ export function MedicalAssessmentSection({ incident }: Props) {
       {incident.treatmentProvided && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="caption" color="text.secondary" fontWeight={600}>
-            Treatment Provided
+            Physician's Notes
           </Typography>
           <Box
             sx={{
