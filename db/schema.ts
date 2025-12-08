@@ -33,7 +33,6 @@ export const treatmentTypeEnum = pgEnum('treatment_type', [
 ]);
 
 export const severityLevelEnum = pgEnum('severity_level', [
-  '',
   'near_miss',
   'no_apparent_injury',
   'minor',
@@ -43,12 +42,12 @@ export const severityLevelEnum = pgEnum('severity_level', [
 // OVR Form Status Workflow - Matches actual hospital process
 export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
-  // 'submitted',                // REMOVED: No longer waiting for supervisor approval
+  'submitted',                // Step 1: Waiting for QI Dept approval
   // 'supervisor_approved',      // REMOVED: Supervisor approval step eliminated - goes directly to QI
-  // 'qi_review',                // Step 3: QI reviewing and assigning to HOD  // This status is never set by us and is skipped as 
-  'hod_assigned',             // Step 1: After submission, directly assigned to QI who assigns to HOD
-  'qi_final_review',          // Step 2: QI final review and feedback
-  'closed'                    // Step 3: Case closed
+  'qi_review',                // Step 2: QI dept reviews and approves/rejects the report
+  'hod_assigned',             // Step 3: After submission, directly assigned to QI who assigns to HOD
+  'qi_final_review',          // Step 4: QI final review and feedback
+  'closed'                    // Step 5: Case closed
 ]);
 
 // ============================================
@@ -57,7 +56,6 @@ export const ovrStatusEnum = pgEnum('ovr_status', [
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  googleId: varchar('google_id', { length: 255 }).unique(),
   azureId: varchar('azure_id', { length: 255 }).unique(),
   employeeId: varchar('employee_id', { length: 50 }).unique(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
@@ -184,7 +182,6 @@ export const ovrReports = pgTable('ovr_reports', {
   riskImpact: integer('risk_impact'), // 1-5 (Negligible to Catastrophic)
   riskLikelihood: integer('risk_likelihood'), // 1-5 (Rare to Almost Certain)
   riskScore: integer('risk_score'), // Calculated: impact * likelihood
-  riskLevel: varchar('risk_level', { length: 20 }), // green/yellow/amber/red
 
   // QI Department Assignment
   qiAssignedBy: integer('qi_assigned_by').references(() => users.id),

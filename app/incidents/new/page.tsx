@@ -929,9 +929,8 @@ function RiskIdentificationSection({
   useEffect(() => {
     if (impact && likelihood) {
       const newScore = calculateRiskScore(impact, likelihood);
-      const newLevel = getRiskLevel(newScore);
       onChange('riskScore', newScore);
-      onChange('riskLevel', newLevel.level);
+      // onChange('riskLevel', newLevel.level);
     }
   }, [impact, likelihood, onChange]);
 

@@ -213,7 +213,6 @@ export const SENTINEL_EVENTS: SentinelEvent[] = [
  * Values derived from database schema enum
  */
 export const SEVERITY_LEVELS = [
-    { value: "", label: "Not Specified", color: "#6B7280" },
     { value: 'near_miss', label: 'Near Miss (Level 1)', color: '#10B981' },
     { value: 'no_apparent_injury', label: 'No Apparent injury (Level 2)', color: '#3B82F6' },
     { value: 'minor', label: 'Minor (Level 3)', color: '#F59E0B' },

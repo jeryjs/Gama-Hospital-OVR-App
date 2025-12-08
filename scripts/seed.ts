@@ -19,7 +19,7 @@ async function seed() {
       .values([
         {
           email: 'admin@gamahospital.com',
-          googleId: 'demo-admin-id',
+          azureId: 'demo-admin-id',
           firstName: 'Admin',
           lastName: 'User',
           roles: ['super_admin', 'developer'],
@@ -28,7 +28,7 @@ async function seed() {
         },
         {
           email: 'manager@gamahospital.com',
-          googleId: 'demo-manager-id',
+          azureId: 'demo-manager-id',
           firstName: 'Quality',
           lastName: 'Manager',
           roles: ['quality_manager'],
@@ -37,7 +37,7 @@ async function seed() {
         },
         {
           email: 'employee@gamahospital.com',
-          googleId: 'demo-employee-id',
+          azureId: 'demo-employee-id',
           firstName: 'John',
           lastName: 'Doe',
           roles: ['employee'],
@@ -94,7 +94,7 @@ async function seed() {
     // Create sample OVR reports using ID format generator (DRY)
     await db.insert(schema.ovrReports).values([
       {
-        id: formatOVRId(2025, 1), // OVR-2025-001
+        id: formatOVRId(2025, 1, 1), // OVR-2025-01-001
         occurrenceDate: '2025-01-15',
         occurrenceTime: '14:30:00',
         locationId: location1.id,
@@ -111,7 +111,7 @@ async function seed() {
         submittedAt: new Date('2025-01-15T15:00:00'),
       },
       {
-        id: formatOVRId(2025, 2), // OVR-2025-002
+        id: formatOVRId(2025, 1, 2), // OVR-2025-01-002
         occurrenceDate: '2025-01-18',
         occurrenceTime: '22:15:00',
         locationId: location2.id,
@@ -135,7 +135,7 @@ async function seed() {
 
     console.log('✅ Created sample OVR reports');
     console.log('\\n🎉 Seeding completed successfully!');
-    console.log('\\n📝 Test with these Google accounts (must be @gamahospital.com):');
+    console.log('\\n📝 Test with these Azure accounts (must be @gamahospital.com):');
     console.log('- admin@gamahospital.com');
     console.log('- manager@gamahospital.com');
     console.log('- employee@gamahospital.com');
