@@ -35,13 +35,6 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   isSentinelEvent: 'Sentinel Event',
   sentinelEventDetails: 'Sentinel Event Details',
 
-  // Witness
-  witnessName: 'Witness Name',
-  witnessAccount: 'Witness Account',
-  witnessDepartment: 'Witness Department',
-  witnessPosition: 'Witness Position',
-  witnessEmployeeId: 'Witness Employee ID',
-
   // Medical
   assessment: 'Medical Assessment',
   diagnosis: 'Diagnosis',

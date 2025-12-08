@@ -10,7 +10,6 @@ import { QIAssignHODSection } from '@/components/incident-form/QIAssignHODSectio
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
 import { RiskClassificationSection } from '@/components/incident-form/RiskClassificationSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
-import { WitnessSection } from '@/components/incident-form/WitnessSection';
 import { useIncident } from '@/lib/hooks';
 import { Box, Typography } from '@mui/material';
 import { useParams } from 'next/navigation';
@@ -52,9 +51,6 @@ function IncidentDetails() {
         {/* Patient & Occurrence Information */}
         <PatientInfoSection incident={incident} />
         <OccurrenceDetailsSection incident={incident} />
-
-        {/* Witness Information */}
-        {incident.witnessName && <WitnessSection incident={incident} />}
 
         {/* Medical Assessment */}
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}

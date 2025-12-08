@@ -206,13 +206,7 @@ export async function POST(request: NextRequest) {
         occurrenceSubcategory: body.occurrenceSubcategory,
         occurrenceDetail: body.occurrenceDetail,
         description: body.description,
-
-        // Witness
-        witnessName: body.witnessName,
-        witnessAccount: body.witnessAccount,
-        witnessDepartment: body.witnessDepartment,
-        witnessPosition: body.witnessPosition,
-        witnessEmployeeId: body.witnessEmployeeId,
+        levelOfHarm: body.levelOfHarm,
 
         // Medical
         physicianNotified: body.physicianNotified,

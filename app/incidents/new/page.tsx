@@ -608,79 +608,7 @@ function ClassificationSection({
 }
 
 /**
- * Witness Information Section
- */
-function WitnessSection({
-  formData,
-  onChange,
-}: {
-  formData: FormData;
-  onChange: (key: keyof FormData, value: unknown) => void;
-}) {
-  const MAX_CHARS = 999;
-  const witnessFields = [
-    { key: 'witnessName', label: 'Witness Name' },
-    { key: 'witnessDepartment', label: 'Department / Position' },
-    { key: 'witnessEmployeeId', label: 'Employee ID #' },
-  ] as const;
-
-  const isAccountValid = formData.witnessAccount && formData.witnessAccount.length >= 10;
-
-  return (
-    <Box sx={{ mb: 4 }}>
-      <Typography
-        variant="subtitle1"
-        fontWeight={700}
-        gutterBottom
-        sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, 0.1), p: 1, borderRadius: 1 }}
-      >
-        Witness Information (Optional)
-      </Typography>
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid size={{ xs: 12 }}>
-          <Box sx={{ position: 'relative' }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Witness Account"
-              placeholder='Information from anyone else who witnessed the incident'
-              value={formData.witnessAccount?.slice(0, MAX_CHARS) || ''}
-              helperText={(isAccountValid || (formData.witnessAccount || '')?.length == 0) ? '' : 'Please provide at least 10 characters for the witness account.'}
-              onChange={(e) => onChange('witnessAccount', e.target.value)}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                position: 'absolute',
-                bottom: 8,
-                right: 8,
-                color: 'text.secondary',
-                fontSize: '0.75rem',
-              }}
-            >
-              {MAX_CHARS - (formData.witnessAccount?.length || 0)}
-            </Typography>
-          </Box>
-        </Grid>
-        {witnessFields.map((field) => (
-          <Grid key={field.key} size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              label={field.label}
-              value={formData[field.key]}
-              onChange={(e) => onChange(field.key, e.target.value)}
-              disabled={!isAccountValid}
-            />
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
-}
-
-/**
- * Immediate Actions Section - Physician Follow-up
+ * Immediate Actions Section
  * Layout matches PDF - all fields visible (not hidden behind checkboxes)
  */
 function ImmediateActionsSection({
@@ -690,6 +618,44 @@ function ImmediateActionsSection({
   formData: FormData;
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
+  // Wrap onChange to handle confirm logic for clearing fields
+  const handleChange = (key: keyof FormData, value: unknown) => {
+    // Confirm before clearing physician details
+    if (
+      key === 'physicianNotified' &&
+      value === false &&
+      (formData.physicianName || formData.physicianId)
+    ) {
+      if (!window.confirm('Changing this will clear entered physician details. Continue?')) return;
+      onChange('physicianName', '');
+      onChange('physicianId', '');
+    }
+    // Confirm before clearing assessment/treatment details
+    if (
+      key === 'physicianSawPatient' &&
+      value === false &&
+      (formData.assessment ||
+        formData.treatmentProvided ||
+        formData.hospitalizedDetails ||
+        (formData.treatmentTypes && (formData.treatmentTypes as string[]).length))
+    ) {
+      if (!window.confirm('Changing this will clear entered assessment/treatment details. Continue?')) return;
+      onChange('assessment', '');
+      onChange('treatmentProvided', '');
+      onChange('hospitalizedDetails', '');
+      onChange('treatmentTypes', []);
+    }
+    // Always update the field
+    onChange(key, value);
+    // Reset dependent fields if toggling off
+    if (key === 'physicianNotified' && value === false) {
+      onChange('physicianSawPatient', false);
+    }
+    if (key === 'physicianSawPatient' && value === false) {
+      // Already cleared above
+    }
+  };
+
   return (
     <Box sx={{ mb: 4 }}>
       <Typography
@@ -698,12 +664,12 @@ function ImmediateActionsSection({
         gutterBottom
         sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.1), p: 1, borderRadius: 1 }}
       >
-        Physician Follow-up (If Medical Intervention Required)
+        Immediate Actions Taken
       </Typography>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        {/* Physician Informed & Seen - Side by side like PDF */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        {/* Physician Informed, Seen & Injury Outcome - Side by side */}
+        <Grid size={{ xs: 12, md: 3 }}>
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
               Physician Informed:
@@ -711,7 +677,7 @@ function ImmediateActionsSection({
             <RadioGroup
               row
               value={formData.physicianNotified ? 'yes' : 'no'}
-              onChange={(e) => onChange('physicianNotified', e.target.value === 'yes')}
+              onChange={(e) => handleChange('physicianNotified', e.target.value === 'yes')}
             >
               <FormControlLabel value="yes" control={<Radio />} label="Yes" />
               <FormControlLabel value="no" control={<Radio />} label="No" />
@@ -719,15 +685,15 @@ function ImmediateActionsSection({
           </FormControl>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <FormControl component="fieldset">
+        <Grid size={{ xs: 12, md: 3 }}>
+          <FormControl component="fieldset" disabled={!formData.physicianNotified}>
             <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
               Seen by Physician:
             </FormLabel>
             <RadioGroup
               row
               value={formData.physicianSawPatient ? 'yes' : 'no'}
-              onChange={(e) => onChange('physicianSawPatient', e.target.value === 'yes')}
+              onChange={(e) => handleChange('physicianSawPatient', e.target.value === 'yes')}
             >
               <FormControlLabel value="yes" control={<Radio />} label="Yes" />
               <FormControlLabel value="no" control={<Radio />} label="No" />
@@ -735,118 +701,122 @@ function ImmediateActionsSection({
           </FormControl>
         </Grid>
 
+        {/* Injury Outcome */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FormControl component="fieldset" sx={{ width: '100%' }}>
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
+              Injury Outcome:
+            </FormLabel>
+            <RadioGroup row value={formData.injuryOutcome || ''} onChange={(e) => handleChange('injuryOutcome', e.target.value)}>
+              {INJURY_OUTCOMES.map(outcome => (
+                <FormControlLabel value={outcome.value} control={<Radio />} label={outcome.label} key={outcome.value} />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </Grid>
+
         {/* Physician Details - Name, ID, Signature & Date */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TextField
-            fullWidth
-            label="Physician's Name"
-            required={!!(formData.physicianSawPatient)}
-            value={formData.physicianName || ''}
-            onChange={(e) => onChange('physicianName', e.target.value)}
-          />
-        </Grid>
+        {formData.physicianNotified && (
+          <>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Physician's Name"
+                required={!!formData.physicianSawPatient}
+                value={formData.physicianName || ''}
+                onChange={(e) => handleChange('physicianName', e.target.value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Physician ID #"
+                required={!!formData.physicianSawPatient}
+                value={formData.physicianId || ''}
+                onChange={(e) => handleChange('physicianId', e.target.value)}
+              />
+            </Grid>
+          </>
+        )}
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TextField
-            fullWidth
-            label="Physician ID #"
-            required={!!(formData.physicianSawPatient)}
-            value={formData.physicianId || ''}
-            onChange={(e) => onChange('physicianId', e.target.value)}
-          />
-        </Grid>
-
-        {/* Assessment / Diagnosis - Always visible */}
-        <Grid size={{ xs: 12 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={2}
-            label="Assessment / Diagnosis"
-            placeholder="Describe the medical assessment and diagnosis..."
-            value={formData.assessment || ''}
-            onChange={(e) => onChange('assessment', e.target.value)}
-          />
-        </Grid>
-
-        {/* Hospitalized / Transferred To - Show if selected */}
-        {((formData.treatmentTypes as string[])?.includes('hospitalized') ||
-          (formData.treatmentTypes as string[])?.includes('transferred')) && (
+        {formData.physicianSawPatient && (
+          <>
+            {/* Assessment / Diagnosis */}
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                label="Hospitalized / Transferred To"
-                placeholder="Specify facility or department..."
-                value={formData.hospitalizedDetails || ''}
-                onChange={(e) => onChange('hospitalizedDetails', e.target.value)}
+                multiline
+                rows={2}
+                label="Assessment / Diagnosis"
+                placeholder="Describe the medical assessment and diagnosis..."
+                value={formData.assessment || ''}
+                onChange={(e) => handleChange('assessment', e.target.value)}
               />
             </Grid>
-          )}
 
-        {/* Physician's Notes */}
-        <Grid size={{ xs: 12 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            required={!!(formData.physicianSawPatient)}
-            label="Physician's Response"
-            placeholder="Additional treatment notes or observations..."
-            value={formData.treatmentProvided || ''}
-            onChange={(e) => onChange('treatmentProvided', e.target.value)}
-          />
-        </Grid>
+            {/* Hospitalized / Transferred To */}
+            {((formData.treatmentTypes as string[])?.includes('hospitalized') ||
+              (formData.treatmentTypes as string[])?.includes('transferred')) && (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Hospitalized / Transferred To"
+                    placeholder="Specify facility or department..."
+                    value={formData.hospitalizedDetails || ''}
+                    onChange={(e) => handleChange('hospitalizedDetails', e.target.value)}
+                  />
+                </Grid>
+              )}
 
-        {/* Injury Outcome */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField
-            fullWidth
-            select
-            SelectProps={{ native: true }}
-            label="Injury Outcome"
-            value={formData.injuryOutcome || ''}
-            onChange={(e) => onChange('injuryOutcome', e.target.value)}
-          >
-            {INJURY_OUTCOMES.map(outcome => (
-              <option key={outcome.value} value={outcome.value}>{outcome.label}</option>
-            ))}
-          </TextField>
-        </Grid>
-
-        {/* Nature of Treatment/Exam */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Autocomplete
-            multiple
-            options={TREATMENT_TYPES.map(t => t.value)}
-            getOptionLabel={(option) => TREATMENT_TYPES.find(t => t.value === option)?.label || option}
-            value={(formData.treatmentTypes as string[]) || []}
-            onChange={(_, newValue) => {
-              onChange('treatmentTypes', newValue);
-              // Clear hospitalized details if not selected
-              if (!newValue.includes('hospitalized') && !newValue.includes('transferred')) {
-                onChange('hospitalizedDetails', '');
-              }
-            }}
-            renderInput={(params) => (
+            {/* Physician's Notes */}
+            <Grid size={{ xs: 12 }}>
               <TextField
-                {...params}
-                label="Nature of Treatment/Exam"
-                placeholder="Select all that apply..."
+                fullWidth
+                multiline
+                rows={3}
+                required={!!(formData.physicianSawPatient)}
+                label="Physician's Response"
+                placeholder="Additional treatment notes or observations..."
+                value={formData.treatmentProvided || ''}
+                onChange={(e) => handleChange('treatmentProvided', e.target.value)}
               />
-            )}
-            renderValue={(selected) =>
-              selected.map((option, index) => (
-                <Chip
-                  label={TREATMENT_TYPES.find(t => t.value === option)?.label}
-                  size="small"
-                  sx={{ mr: 0.5 }}
-                  // MUI Autocomplete provides key via getTagProps, so no explicit key needed
-                  {...(typeof option === 'string' ? { key: option } : {})}
-                />
-              ))
-            }
-          />
-        </Grid>
+            </Grid>
+
+            {/* Nature of Treatment/Exam */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Autocomplete
+                multiple
+                options={TREATMENT_TYPES.map(t => t.value)}
+                getOptionLabel={(option) => TREATMENT_TYPES.find(t => t.value === option)?.label || option}
+                value={(formData.treatmentTypes as string[]) || []}
+                onChange={(_, newValue) => {
+                  handleChange('treatmentTypes', newValue);
+                  // Clear hospitalized details if not selected
+                  if (!newValue.includes('hospitalized') && !newValue.includes('transferred')) {
+                    handleChange('hospitalizedDetails', '');
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Nature of Treatment/Exam"
+                    placeholder="Select all that apply..."
+                  />
+                )}
+                renderValue={(selected) =>
+                  selected.map((option, index) => (
+                    <Chip
+                      label={TREATMENT_TYPES.find(t => t.value === option)?.label}
+                      size="small"
+                      sx={{ mr: 0.5 }}
+                      {...(typeof option === 'string' ? { key: option } : {})}
+                    />
+                  ))
+                }
+              />
+            </Grid>
+          </>
+        )}
 
         {/* Supervisor Notification Subsection */}
         <Grid size={{ xs: 12 }}>
@@ -856,15 +826,19 @@ function ImmediateActionsSection({
           </Typography>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.supervisorNotified || undefined}
-                onChange={(e) => onChange('supervisorNotified', e.target.checked)}
-              />
-            }
-            label="Was Supervisor Notified?"
-          />
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
+              Was Supervisor Notified?
+            </FormLabel>
+            <RadioGroup
+              row
+              value={formData.supervisorNotified ? 'yes' : 'no'}
+              onChange={(e) => handleChange('supervisorNotified', e.target.value === 'yes')}
+            >
+              <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+              <FormControlLabel value="no" control={<Radio />} label="No" />
+            </RadioGroup>
+          </FormControl>
         </Grid>
 
         {formData.supervisorNotified && (
@@ -872,7 +846,7 @@ function ImmediateActionsSection({
             <Grid size={{ xs: 12, md: 6 }}>
               <SupervisorSelector
                 value={formData.supervisorId || undefined}
-                onChange={(value) => onChange('supervisorId', value)}
+                onChange={(value) => handleChange('supervisorId', value)}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -883,7 +857,7 @@ function ImmediateActionsSection({
                 label="Supervisor Action Taken"
                 placeholder="Describe what action the supervisor took..."
                 value={formData.supervisorAction || ''}
-                onChange={(e) => onChange('supervisorAction', e.target.value)}
+                onChange={(e) => handleChange('supervisorAction', e.target.value)}
               />
             </Grid>
           </>
@@ -940,7 +914,7 @@ function SupervisorSelector({
  * Risk Classification Section
  * Interactive risk matrix for reporter assessment
  */
-function RiskClassificationSection({
+function RiskIdentificationSection({
   formData,
   onChange,
 }: {
@@ -1453,11 +1427,9 @@ export default function NewIncidentPage() {
 
               <ClassificationSection formData={formData} onChange={handleChange} />
 
-              <WitnessSection formData={formData} onChange={handleChange} />
-
               <ImmediateActionsSection formData={formData} onChange={handleChange} />
 
-              <RiskClassificationSection formData={formData} onChange={handleChange} />
+              <RiskIdentificationSection formData={formData} onChange={handleChange} />
 
               <Divider sx={{ my: 3 }} />
 

@@ -156,12 +156,6 @@ export const ovrReports = pgTable('ovr_reports', {
   reporterDepartment: varchar('reporter_department', { length: 100 }),
   reporterPosition: varchar('reporter_position', { length: 100 }),
 
-  // Witness Information
-  witnessName: varchar('witness_name', { length: 255 }),
-  witnessAccount: text('witness_account'),
-  witnessDepartment: varchar('witness_department', { length: 100 }),
-  witnessPosition: varchar('witness_position', { length: 100 }),
-  witnessEmployeeId: varchar('witness_employee_id', { length: 50 }),
 
   // Medical Assessment / Physician Follow-up
   physicianNotified: boolean('physician_notified').default(false),
