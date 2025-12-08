@@ -1,4 +1,4 @@
-import { apiCall } from '@/lib/client/error-handler';
+import { apiCall, ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 
 export interface DashboardStats {
@@ -83,8 +83,8 @@ export interface DashboardStats {
 
 export interface UseDashboardStatsReturn {
     stats: DashboardStats;
-    isError: boolean;
-    error: any;
+    isLoading: boolean;
+    error?: ParsedError;
     mutate: () => void;
 }
 
@@ -108,16 +108,16 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         return data!;
     };
 
-    const { data, error, mutate } = useSWR(url, fetcher, {
+    const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
         revalidateOnFocus: false,
         revalidateOnReconnect: false,
         dedupingInterval: 30000, // 30 seconds - stats don't change often
-        suspense: true
+        suspense: false
     });
 
     return {
-        stats: data,
-        isError: !!error,
+        stats: data || {} as DashboardStats,
+        isLoading,
         error,
         mutate,
     };

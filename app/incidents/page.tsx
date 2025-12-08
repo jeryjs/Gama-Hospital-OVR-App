@@ -2,6 +2,7 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
+import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncidents } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
 import {
@@ -100,7 +101,7 @@ export default function IncidentsPage() {
     return (
       <AppLayout>
         <Alert severity="error" sx={{ mt: 4 }}>
-          Failed to load incidents. ${error}
+          Failed to load incidents. {formatErrorForAlert(error)}
         </Alert>
       </AppLayout>
     );
