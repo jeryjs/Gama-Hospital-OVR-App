@@ -29,6 +29,7 @@ export async function GET(
             firstName: true,
             lastName: true,
             email: true,
+            department: true,
           },
         },
         location: {

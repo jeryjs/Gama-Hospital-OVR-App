@@ -33,29 +33,27 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 interface FormData {
-  // Patient Information
-  patientName: string;
-  patientMRN: string;
-  patientAge: number;
-  patientSex: string;
-  patientUnit: string;
-
   // Occurrence Details
   occurrenceDate: Dayjs | null;
   occurrenceTime: Dayjs | null;
   locationId: number | null;
   specificLocation: string;
 
-  // Person Involved
-  personInvolved: string;
+  // Person Involved (unified for all 4 types)
+  personInvolved: 'patient' | 'staff' | 'visitor_watcher' | 'others';
+  involvedPersonName: string;
+  involvedPersonAge: number;
+  involvedPersonSex: string;
+  involvedPersonUnit: string;          // Ward (patient) or Department (staff)
+  involvedPersonMRN: string;           // Patient only
+  involvedPersonEmployeeId: string;    // Staff only
+  involvedPersonPosition: string;      // Staff only
+  involvedPersonRelation: string;      // Visitor/Others: relation to patient
+  involvedPersonContact: string;       // Visitor/Others: contact info
+
+  // Sentinel Event
   isSentinelEvent: boolean;
   sentinelEventDetails: string;
-
-  // Staff Involved (if applicable)
-  staffInvolvedName: string;
-  staffInvolvedPosition: string;
-  staffInvolvedEmployeeId: string;
-  staffInvolvedDepartment: string;
 
   // Incident Classification
   occurrenceCategory: string;
@@ -97,22 +95,22 @@ export default function NewIncidentPage() {
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    patientName: '',
-    patientMRN: '',
-    patientAge: 0,
-    patientSex: '',
-    patientUnit: '',
     occurrenceDate: null,
     occurrenceTime: null,
     locationId: null,
     specificLocation: '',
     personInvolved: 'patient',
+    involvedPersonName: '',
+    involvedPersonAge: 0,
+    involvedPersonSex: '',
+    involvedPersonUnit: '',
+    involvedPersonMRN: '',
+    involvedPersonEmployeeId: '',
+    involvedPersonPosition: '',
+    involvedPersonRelation: '',
+    involvedPersonContact: '',
     isSentinelEvent: false,
     sentinelEventDetails: '',
-    staffInvolvedName: '',
-    staffInvolvedPosition: '',
-    staffInvolvedEmployeeId: '',
-    staffInvolvedDepartment: '',
     occurrenceCategory: '',
     occurrenceSubcategory: '',
     occurrenceDetail: '',
@@ -164,22 +162,22 @@ export default function NewIncidentPage() {
       if (res.ok) {
         const data = await res.json();
         setFormData({
-          patientName: data.patientName || '',
-          patientMRN: data.patientMRN || '',
-          patientAge: data.patientAge || 0,
-          patientSex: data.patientSex || '',
-          patientUnit: data.patientUnit || '',
           occurrenceDate: data.occurrenceDate ? dayjs(data.occurrenceDate) : null,
           occurrenceTime: data.occurrenceTime ? dayjs(data.occurrenceTime, 'HH:mm:ss') : null,
           locationId: data.locationId,
           specificLocation: data.specificLocation || '',
           personInvolved: data.personInvolved || 'patient',
+          involvedPersonName: data.involvedPersonName || '',
+          involvedPersonAge: data.involvedPersonAge || 0,
+          involvedPersonSex: data.involvedPersonSex || '',
+          involvedPersonUnit: data.involvedPersonUnit || '',
+          involvedPersonMRN: data.involvedPersonMRN || '',
+          involvedPersonEmployeeId: data.involvedPersonEmployeeId || '',
+          involvedPersonPosition: data.involvedPersonPosition || '',
+          involvedPersonRelation: data.involvedPersonRelation || '',
+          involvedPersonContact: data.involvedPersonContact || '',
           isSentinelEvent: data.isSentinelEvent || false,
           sentinelEventDetails: data.sentinelEventDetails || '',
-          staffInvolvedName: data.staffInvolvedName || '',
-          staffInvolvedPosition: data.staffInvolvedPosition || '',
-          staffInvolvedEmployeeId: data.staffInvolvedEmployeeId || '',
-          staffInvolvedDepartment: data.staffInvolvedDepartment || '',
           occurrenceCategory: data.occurrenceCategory || '',
           occurrenceSubcategory: data.occurrenceSubcategory || '',
           occurrenceDetail: data.occurrenceDetail || '',
@@ -232,22 +230,22 @@ export default function NewIncidentPage() {
   const handleClearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
     setFormData({
-      patientName: '',
-      patientMRN: '',
-      patientAge: 0,
-      patientSex: '',
-      patientUnit: '',
       occurrenceDate: null,
       occurrenceTime: null,
       locationId: null,
       specificLocation: '',
       personInvolved: 'patient',
+      involvedPersonName: '',
+      involvedPersonAge: 0,
+      involvedPersonSex: '',
+      involvedPersonUnit: '',
+      involvedPersonMRN: '',
+      involvedPersonEmployeeId: '',
+      involvedPersonPosition: '',
+      involvedPersonRelation: '',
+      involvedPersonContact: '',
       isSentinelEvent: false,
       sentinelEventDetails: '',
-      staffInvolvedName: '',
-      staffInvolvedPosition: '',
-      staffInvolvedEmployeeId: '',
-      staffInvolvedDepartment: '',
       occurrenceCategory: '',
       occurrenceSubcategory: '',
       occurrenceDetail: '',
@@ -450,7 +448,7 @@ export default function NewIncidentPage() {
                       <FormLabel component="legend">Person Involved *</FormLabel>
                       <RadioGroup
                         value={formData.personInvolved}
-                        onChange={(e) => setFormData({ ...formData, personInvolved: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, personInvolved: e.target.value as FormData['personInvolved'] })}
                       >
                         {PERSON_INVOLVED_OPTIONS.map(option => (
                           <FormControlLabel
@@ -491,116 +489,141 @@ export default function NewIncidentPage() {
                 </Grid>
               </Box>
 
-              {/* Patient Information */}
+              {/* Person Involved Details - Dynamic based on type */}
               <Box sx={{ mb: 4 }}>
                 <Typography
                   variant="subtitle1"
                   fontWeight={700}
                   gutterBottom
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
+                  sx={{
+                    bgcolor: (theme) => alpha(
+                      formData.personInvolved === 'staff'
+                        ? theme.palette.warning.main
+                        : theme.palette.primary.main,
+                      0.1
+                    ),
+                    p: 1,
+                    borderRadius: 1
+                  }}
                 >
-                  Patient Information
+                  {formData.personInvolved === 'patient' && 'Patient Information'}
+                  {formData.personInvolved === 'staff' && 'Staff Involved Details'}
+                  {formData.personInvolved === 'visitor_watcher' && 'Visitor/Watcher Information'}
+                  {formData.personInvolved === 'others' && 'Person Involved Details'}
                 </Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
+                  {/* Name - All types */}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       fullWidth
-                      label="Patient Name *"
-                      value={formData.patientName}
-                      onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                      label={`${formData.personInvolved === 'patient' ? 'Patient' : formData.personInvolved === 'staff' ? 'Staff' : 'Person'} Name *`}
+                      value={formData.involvedPersonName}
+                      onChange={(e) => setFormData({ ...formData, involvedPersonName: e.target.value })}
                       required
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="MR # *"
-                      value={formData.patientMRN}
-                      onChange={(e) => setFormData({ ...formData, patientMRN: e.target.value })}
-                      required
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Age"
-                      type="number"
-                      value={formData.patientAge}
-                      onChange={(e) => setFormData({ ...formData, patientAge: Number(e.target.value) })}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Sex"
-                      select
-                      SelectProps={{ native: true }}
-                      value={formData.patientSex}
-                      onChange={(e) => setFormData({ ...formData, patientSex: e.target.value })}
-                    >
-                      <option value=""></option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Unit / Ward"
-                      value={formData.patientUnit}
-                      onChange={(e) => setFormData({ ...formData, patientUnit: e.target.value })}
-                    />
-                  </Grid>
+
+                  {/* MRN - Patient only */}
+                  {formData.personInvolved === 'patient' && (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="MR # *"
+                        value={formData.involvedPersonMRN}
+                        onChange={(e) => setFormData({ ...formData, involvedPersonMRN: e.target.value })}
+                        required
+                      />
+                    </Grid>
+                  )}
+
+                  {/* Employee ID & Position - Staff only */}
+                  {formData.personInvolved === 'staff' && (
+                    <>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Employee ID #"
+                          value={formData.involvedPersonEmployeeId}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonEmployeeId: e.target.value })}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Position"
+                          value={formData.involvedPersonPosition}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonPosition: e.target.value })}
+                        />
+                      </Grid>
+                    </>
+                  )}
+
+                  {/* Relation & Contact - Visitor/Others only */}
+                  {(formData.personInvolved === 'visitor_watcher' || formData.personInvolved === 'others') && (
+                    <>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Relation to Patient"
+                          value={formData.involvedPersonRelation}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonRelation: e.target.value })}
+                          placeholder={formData.personInvolved === 'visitor_watcher' ? 'e.g., Family member, Friend' : 'e.g., Contractor, Vendor'}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Contact Information"
+                          value={formData.involvedPersonContact}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonContact: e.target.value })}
+                          placeholder="Phone number or email"
+                        />
+                      </Grid>
+                    </>
+                  )}
+
+                  {/* Age & Sex - Patient, Visitor, Others (NOT Staff) */}
+                  {formData.personInvolved !== 'staff' && (
+                    <>
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                          fullWidth
+                          label="Age"
+                          type="number"
+                          value={formData.involvedPersonAge || ''}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonAge: Number(e.target.value) || 0 })}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                          fullWidth
+                          label="Sex"
+                          select
+                          SelectProps={{ native: true }}
+                          value={formData.involvedPersonSex}
+                          onChange={(e) => setFormData({ ...formData, involvedPersonSex: e.target.value })}
+                        >
+                          <option value=""></option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </TextField>
+                      </Grid>
+                    </>
+                  )}
+
+                  {/* Unit/Department - Patient (Ward) and Staff (Dept) only */}
+                  {(formData.personInvolved === 'patient' || formData.personInvolved === 'staff') && (
+                    <Grid size={{ xs: 12, md: formData.personInvolved === 'staff' ? 6 : 4 }}>
+                      <TextField
+                        fullWidth
+                        label={formData.personInvolved === 'patient' ? 'Unit / Ward' : 'Department / Unit'}
+                        value={formData.involvedPersonUnit}
+                        onChange={(e) => setFormData({ ...formData, involvedPersonUnit: e.target.value })}
+                      />
+                    </Grid>
+                  )}
                 </Grid>
               </Box>
-
-              {/* Staff Involved (conditional) */}
-              {formData.personInvolved === 'staff' && (
-                <Box sx={{ mb: 4 }}>
-                  <Typography
-                    variant="subtitle1"
-                    fontWeight={700}
-                    gutterBottom
-                    sx={{ bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1), p: 1, borderRadius: 1 }}
-                  >
-                    Staff Involved Details
-                  </Typography>
-                  <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        label="Name of Staff Involved"
-                        value={formData.staffInvolvedName}
-                        onChange={(e) => setFormData({ ...formData, staffInvolvedName: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        label="Position"
-                        value={formData.staffInvolvedPosition}
-                        onChange={(e) => setFormData({ ...formData, staffInvolvedPosition: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        label="ID #"
-                        value={formData.staffInvolvedEmployeeId}
-                        onChange={(e) => setFormData({ ...formData, staffInvolvedEmployeeId: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        label="Dept / Unit"
-                        value={formData.staffInvolvedDepartment}
-                        onChange={(e) => setFormData({ ...formData, staffInvolvedDepartment: e.target.value })}
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
 
               {/* Classification & Description */}
               <Box sx={{ mb: 4 }}>

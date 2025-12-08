@@ -36,6 +36,13 @@
       "when": 1764546225730,
       "tag": "0004_add_multi_role_support.sql",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1765056390252,
+      "tag": "0005_unify_person_involved",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,7 @@ import { boolean, date, integer, pgEnum, pgTable, serial, text, time, timestamp,
 // Note: roleEnum removed - now using TEXT[] for multi-role support
 // Migration: roles column uses TEXT[] to support multiple roles per user
 
+// Person involved in the incident (one of 4 types)
 export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'visitor_watcher', 'others']);
 
 export const injuryOutcomeEnum = pgEnum('injury_outcome', ['', 'no_injury', 'minor', 'serious', 'death']);
@@ -90,24 +91,37 @@ export const ovrReports = pgTable('ovr_reports', {
   locationId: integer('location_id').references(() => locations.id),
   specificLocation: text('specific_location'),
 
-  // Patient Information (if applicable)
-  patientName: varchar('patient_name', { length: 255 }),
-  patientMRN: varchar('patient_mrn', { length: 100 }),
-  patientAge: integer('patient_age'),
-  patientSex: varchar('patient_sex', { length: 20 }),
-  patientUnit: varchar('patient_unit', { length: 100 }),
-
-  // Person Involved
+  // ============================================
+  // PERSON INVOLVED (unified for all 4 types)
+  // ============================================
+  // Type: patient | staff | visitor_watcher | others
   personInvolved: personInvolvedEnum('person_involved').notNull(),
+
+  // Common fields (all types)
+  involvedPersonName: varchar('involved_person_name', { length: 255 }),
+
+  // Demographics (patient, visitor_watcher, others - NOT staff)
+  involvedPersonAge: integer('involved_person_age'),
+  involvedPersonSex: varchar('involved_person_sex', { length: 20 }),
+
+  // Unit/Department (patient = ward, staff = department)
+  involvedPersonUnit: varchar('involved_person_unit', { length: 100 }),
+
+  // Patient-specific
+  involvedPersonMRN: varchar('involved_person_mrn', { length: 100 }),
+
+  // Staff-specific
+  involvedStaffId: integer('involved_staff_id').references(() => users.id),
+  involvedPersonEmployeeId: varchar('involved_person_employee_id', { length: 50 }),
+  involvedPersonPosition: varchar('involved_person_position', { length: 100 }),
+
+  // Visitor/Others-specific
+  involvedPersonRelation: varchar('involved_person_relation', { length: 100 }), // Relation to patient
+  involvedPersonContact: varchar('involved_person_contact', { length: 100 }),
+
+  // Sentinel Event
   isSentinelEvent: boolean('is_sentinel_event').default(false),
   sentinelEventDetails: text('sentinel_event_details'),
-
-  // Staff Involved
-  staffInvolvedId: integer('staff_involved_id').references(() => users.id),
-  staffInvolvedName: varchar('staff_involved_name', { length: 255 }),
-  staffInvolvedPosition: varchar('staff_involved_position', { length: 100 }),
-  staffInvolvedEmployeeId: varchar('staff_involved_employee_id', { length: 50 }),
-  staffInvolvedDepartment: varchar('staff_involved_department', { length: 100 }),
 
   // Incident Classification (from the 18 categories for now. Will later change to Saudi Patient Safety Taxonomy)
   occurrenceCategory: varchar('occurrence_category', { length: 50 }).notNull(), // e.g., 'medication', 'falls_injury'
@@ -263,9 +277,10 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     references: [users.id],
     relationName: 'reporter',
   }),
-  staffInvolved: one(users, {
-    fields: [ovrReports.staffInvolvedId],
+  involvedStaff: one(users, {
+    fields: [ovrReports.involvedStaffId],
     references: [users.id],
+    relationName: 'involvedStaff',
   }),
   supervisor: one(users, {
     fields: [ovrReports.supervisorId],

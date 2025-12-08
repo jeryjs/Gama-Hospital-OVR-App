@@ -216,13 +216,19 @@ export const createIncidentSchema = ovrReportInsertSchema
     hodActionDate: true,
     hodSubmittedAt: true,
   })
-  .refine((data) => data.patientName && data.patientName.trim().length > 0, {
-    message: 'Patient name is required',
-    path: ['patientName'],
+  .refine((data) => data.involvedPersonName && data.involvedPersonName.trim().length > 0, {
+    message: 'Person involved name is required',
+    path: ['involvedPersonName'],
   })
-  .refine((data) => data.patientMRN && data.patientMRN.trim().length > 0, {
+  .refine((data) => {
+    // MRN is required only for patients
+    if (data.personInvolved === 'patient') {
+      return data.involvedPersonMRN && data.involvedPersonMRN.trim().length > 0;
+    }
+    return true;
+  }, {
     message: 'Patient MRN is required',
-    path: ['patientMRN'],
+    path: ['involvedPersonMRN'],
   })
   .refine((data) => data.description && data.description.trim().length >= 10, {
     message: 'Description must be at least 10 characters',

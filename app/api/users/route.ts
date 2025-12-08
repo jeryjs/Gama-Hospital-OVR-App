@@ -135,13 +135,11 @@ export async function GET(request: NextRequest) {
         firstName: users.firstName,
         lastName: users.lastName,
         roles: users.roles,
-        adGroups: users.adGroups,
         department: users.department,
         position: users.position,
         isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
-        lastAdSync: users.lastAdSync,
       })
       .from(users)
       .where(whereClause)

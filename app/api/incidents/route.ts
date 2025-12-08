@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
         or(
           like(ovrReports.refNo, `%${query.search}%`),
           like(ovrReports.description, `%${query.search}%`),
-          like(ovrReports.patientName, `%${query.search}%`),
-          like(ovrReports.patientMRN, `%${query.search}%`)
+          like(ovrReports.involvedPersonName, `%${query.search}%`),
+          like(ovrReports.involvedPersonMRN, `%${query.search}%`)
         )
       );
     }
@@ -210,30 +210,26 @@ export async function POST(request: NextRequest) {
         refNo: `OVR-${year}-${String(count).padStart(4, '0')}`,
         reporterId: userId,
 
-        // Patient Information
-        patientName: body.patientName,
-        patientMRN: body.patientMRN,
-        patientAge: body.patientAge,
-        patientSex: body.patientSex,
-        patientUnit: body.patientUnit,
-
         // Occurrence Details
         occurrenceDate: body.occurrenceDate,
         occurrenceTime: body.occurrenceTime,
         locationId: body.locationId,
         specificLocation: body.specificLocation,
 
-        // Person Involved
+        // Person Involved (unified)
         personInvolved: body.personInvolved,
+        involvedPersonName: body.involvedPersonName,
+        involvedPersonAge: body.involvedPersonAge,
+        involvedPersonSex: body.involvedPersonSex,
+        involvedPersonUnit: body.involvedPersonUnit,
+        involvedPersonMRN: body.involvedPersonMRN,
+        involvedStaffId: body.involvedStaffId,
+        involvedPersonEmployeeId: body.involvedPersonEmployeeId,
+        involvedPersonPosition: body.involvedPersonPosition,
+        involvedPersonRelation: body.involvedPersonRelation,
+        involvedPersonContact: body.involvedPersonContact,
         isSentinelEvent: body.isSentinelEvent,
         sentinelEventDetails: body.sentinelEventDetails,
-
-        // Staff Involved
-        staffInvolvedId: body.staffInvolvedId,
-        staffInvolvedName: body.staffInvolvedName,
-        staffInvolvedPosition: body.staffInvolvedPosition,
-        staffInvolvedEmployeeId: body.staffInvolvedEmployeeId,
-        staffInvolvedDepartment: body.staffInvolvedDepartment,
 
         // Classification
         occurrenceCategory: body.occurrenceCategory,

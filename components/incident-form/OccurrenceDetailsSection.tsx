@@ -123,35 +123,7 @@ export function OccurrenceDetailsSection({ incident }: Props) {
         )}
       </Box>
 
-      {/* Staff Involved */}
-      {incident.personInvolved === 'staff' && incident.staffInvolvedName && (
-        <Box
-          sx={{
-            mt: 3,
-            p: 2,
-            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
-            borderRadius: 1,
-          }}
-        >
-          <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-            Staff Involved
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Name" value={incident.staffInvolvedName} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Position" value={incident.staffInvolvedPosition} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Employee ID" value={incident.staffInvolvedEmployeeId} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <InfoRow label="Department" value={incident.staffInvolvedDepartment} />
-            </Grid>
-          </Grid>
-        </Box>
-      )}
+      {/* Staff Involved - Removed, now handled by PersonInvolvedSection */}
 
       {/* Classification */}
       <Box sx={{ mt: 3 }}>

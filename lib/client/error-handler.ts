@@ -6,12 +6,16 @@ import { ApiError } from '@/lib/types';
  */
 
 const FIELD_DISPLAY_NAMES: Record<string, string> = {
-  // Patient Info
-  patientName: 'Patient Name',
-  patientMRN: 'Patient MRN',
-  patientAge: 'Patient Age',
-  patientSex: 'Patient Sex',
-  patientUnit: 'Patient Unit',
+  // Person Involved (unified)
+  involvedPersonName: 'Person Name',
+  involvedPersonAge: 'Age',
+  involvedPersonSex: 'Sex',
+  involvedPersonUnit: 'Unit / Department',
+  involvedPersonMRN: 'Patient MRN',
+  involvedPersonEmployeeId: 'Employee ID',
+  involvedPersonPosition: 'Position',
+  involvedPersonRelation: 'Relation to Patient',
+  involvedPersonContact: 'Contact Information',
 
   // Occurrence
   occurrenceDate: 'Occurrence Date',
@@ -22,16 +26,10 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   occurrenceSubcategory: 'Subcategory',
   description: 'Description',
 
-  // Person Involved
+  // Person Involved Type
   personInvolved: 'Person Involved',
   isSentinelEvent: 'Sentinel Event',
   sentinelEventDetails: 'Sentinel Event Details',
-
-  // Staff Involved
-  staffInvolvedName: 'Staff Name',
-  staffInvolvedPosition: 'Staff Position',
-  staffInvolvedEmployeeId: 'Staff Employee ID',
-  staffInvolvedDepartment: 'Staff Department',
 
   // Witness
   witnessName: 'Witness Name',
@@ -93,7 +91,7 @@ export function parseApiError(error: ApiError): ParsedError {
     }));
   } else {
     // Generic error without field details
-    result.message = error.error || 'An unexpected error occurred. Please try again.';
+    result.message = error.error;
   }
 
   return result;
