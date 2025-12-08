@@ -4,12 +4,12 @@ import useSWR from 'swr';
 export interface DashboardStats {
     total: number;
     drafts: number;
-    submitted: number;
+    submitted: number; // DEPRECATED: Will be removed (currently unused)
     resolved: number;
     byStatus: {
         draft: number;
-        submitted: number;
-        supervisor_approved: number;
+        // submitted: number; // REMOVED: No longer used
+        // supervisor_approved: number; // REMOVED: Supervisor approval step eliminated
         hod_assigned: number;
         qi_final_review: number;
         closed: number;

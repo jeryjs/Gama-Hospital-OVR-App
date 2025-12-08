@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
 import { INJURY_OUTCOMES, PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
 import { CreateIncidentInput } from '@/lib/api/schemas';
+import { useUsers } from '@/lib/hooks';
 import { ArrowBack, Save, Send } from '@mui/icons-material';
 import {
   Alert,
@@ -611,9 +612,10 @@ function WitnessSection({
 }
 
 /**
- * Medical Assessment Section
+ * Immediate Actions Section (previously Medical Assessment)
+ * Includes physician notification and supervisor notification
  */
-function MedicalAssessmentSection({
+function ImmediateActionsSection({
   formData,
   onChange,
 }: {
@@ -628,21 +630,40 @@ function MedicalAssessmentSection({
         gutterBottom
         sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.1), p: 1, borderRadius: 1 }}
       >
-        Medical Assessment
+        Immediate Actions
       </Typography>
       <Grid container spacing={2} sx={{ mt: 1 }}>
+        {/* Physician Notification Subsection */}
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="body2" fontWeight={600} gutterBottom sx={{ mt: 2 }}>
+            Physician Notification
+          </Typography>
+        </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <FormControlLabel
             control={
               <Checkbox
                 checked={formData.physicianNotified || undefined}
-                onChange={(e) => onChange('physicianNotified', e.target.checked)}
+                onChange={(e) => {
+                  if (!e.target.checked) {
+                    if (formData.assessment !== '' && !confirm('This will clear all entered physician information. Are you sure?')) {
+                      return;
+                    }
+                    onChange('physicianSawPatient', false);
+                    onChange('assessment', '');
+                    onChange('injuryOutcome', '');
+                    onChange('physicianName', '');
+                    onChange('treatmentProvided', '');
+                    onChange('physicianId', '');
+                  }
+                  onChange('physicianNotified', e.target.checked);
+                }}
               />
             }
             label="Physician Notified?"
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }} hidden={!formData.physicianNotified}>
           <FormControlLabel
             control={
               <Checkbox
@@ -709,8 +730,92 @@ function MedicalAssessmentSection({
             </Grid>
           </>
         )}
+
+        {/* Supervisor Notification Subsection */}
+        <Grid size={{ xs: 12 }}>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2" fontWeight={600} gutterBottom>
+            Supervisor Notification
+          </Typography>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.supervisorNotified || undefined}
+                onChange={(e) => onChange('supervisorNotified', e.target.checked)}
+              />
+            }
+            label="Was Supervisor Notified?"
+          />
+        </Grid>
+
+        {formData.supervisorNotified && (
+          <>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <SupervisorSelector
+                value={formData.supervisorId || undefined}
+                onChange={(value) => onChange('supervisorId', value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Supervisor Action Taken"
+                placeholder="Describe what action the supervisor took..."
+                value={formData.supervisorAction}
+                onChange={(e) => onChange('supervisorAction', e.target.value)}
+              />
+            </Grid>
+          </>
+        )}
       </Grid>
     </Box>
+  );
+}
+
+/**
+ * Supervisor Selector Component
+ * Fetches and displays list of supervisors
+ */
+function SupervisorSelector({
+  value,
+  onChange,
+}: {
+  value: string | number | undefined;
+  onChange: (value: number) => void;
+}) {
+  const { users, isError } = useUsers({ role: 'supervisor' });
+
+  if (isError) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Failed to load supervisors. Please try again.
+      </Alert>
+    );
+  }
+
+  return (
+    <Autocomplete
+      options={users}
+      getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+      value={users.find((u: any) => u.id === Number(value)) || null}
+      onChange={(_, newValue) => {
+        if (newValue) {
+          onChange(newValue.id);
+        }
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Select Supervisor *"
+          placeholder="Search by name or employee ID..."
+        />
+      )}
+      isOptionEqualToValue={(option, value) => option.id === value?.id}
+    />
   );
 }
 
@@ -834,7 +939,6 @@ function FormActions({
 }) {
   return (
     <>
-      <Divider sx={{ my: 3 }} />
       <Stack direction="row" spacing={2} justifyContent="flex-end">
         <Button
           variant="outlined"
@@ -969,22 +1073,23 @@ export default function NewIncidentPage() {
 
               <WitnessSection formData={formData} onChange={handleChange} />
 
-              <MedicalAssessmentSection formData={formData} onChange={handleChange} />
+              <ImmediateActionsSection formData={formData} onChange={handleChange} />
 
-              {/* Supervisor Action - Kept as comment per original */}
-              <Box sx={{ mb: 4 }}>
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  <Typography variant="caption">
-                    Thank you for reporting! Kindly send this OVR to QI DEPARTMENT and from there, it will be sent to the concerned Department Head
-                  </Typography>
-                </Alert>
-              </Box>
+              <Divider sx={{ my: 3 }} />
 
               <FormActions
                 loading={loading}
                 onSaveDraft={() => handleSubmit(true)}
                 onSubmit={() => handleSubmit(false)}
               />
+
+              <Box sx={{ mb: 4 }}>
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="caption">
+                    Thank you for reporting! Upon submitting, this OVR will be sent to QI DEPARTMENT and from there, it will be sent to the concerned Department Head
+                  </Typography>
+                </Alert>
+              </Box>
 
               <FooterSection />
             </Paper>

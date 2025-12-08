@@ -58,11 +58,15 @@ function IncidentDetails() {
         {/* Medical Assessment */}
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
 
-        {/* Supervisor Section */}
-        {incident.status !== 'draft' && <SupervisorSection incident={incident} onUpdate={mutate} />}
+        {/* Supervisor Section - Display only, no approval needed */}
+        {(incident.supervisorId || incident.supervisorAction) && (
+          <SupervisorSection incident={incident} onUpdate={mutate} />
+        )}
 
-        {/* QI Assign HOD Section */}
-        {incident.status === 'supervisor_approved' && <QIAssignHODSection incident={incident} onUpdate={mutate} />}
+        {/* QI Assign HOD Section - Can assign directly after submission */}
+        {incident.status === 'hod_assigned' && !incident.departmentHeadId && (
+          <QIAssignHODSection incident={incident} onUpdate={mutate} />
+        )}
 
         {/* Investigation Section (for HOD and investigators) */}
         {(incident.status === 'hod_assigned' || incident.status === 'qi_final_review' || incident.status === 'closed') && (

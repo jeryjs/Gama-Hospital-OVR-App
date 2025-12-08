@@ -19,8 +19,9 @@ type PermissionValidator = (session: Session, incident: OVRReportWithRelations) 
  * Checks if incident is in correct status for the action
  */
 const STATUS_REQUIREMENTS: Record<ActionType, string[]> = {
-    'supervisor-approve': ['submitted'],
-    'qi-assign-hod': ['supervisor_approved'],
+    // 'supervisor-approve': ['submitted'], // REMOVED: Supervisor approval step eliminated
+    'supervisor-approve': [], // Disabled - keeping for backward compatibility
+    'qi-assign-hod': ['hod_assigned'], // Changed: Now accepts hod_assigned (submitted directly)
     'assign-investigator': ['hod_assigned'],
     'submit-findings': ['hod_assigned'],
     'hod-submit': ['hod_assigned'],

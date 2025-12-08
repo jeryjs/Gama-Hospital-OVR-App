@@ -16,7 +16,8 @@ type QIFeedbackData = z.infer<typeof qiFeedbackSchema>;
 
 /**
  * Handle QI assigning incident to Department Head
- * Transitions: 'supervisor_approved' -> 'hod_assigned'
+ * Transitions: 'hod_assigned' -> 'hod_assigned' (updates assignment details)
+ * Note: Status is already 'hod_assigned' when incident is submitted (skips supervisor approval)
  */
 export async function handleQIAssignHOD(
     incident: OVRReport,

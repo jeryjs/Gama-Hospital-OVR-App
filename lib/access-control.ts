@@ -90,16 +90,18 @@ export const ACCESS_CONTROL = {
 
         /**
          * /api/incidents/[id]/supervisor-approve permissions
+         * DEPRECATED: Supervisor approval step eliminated
          */
         supervisorApproval: {
             canApprove: (roles: AppRole[]) =>
-                hasAnyRole(roles, [
-                    APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.SUPERVISOR,
-                    APP_ROLES.TEAM_LEAD,
-                    APP_ROLES.DEPARTMENT_HEAD,
-                    APP_ROLES.DEVELOPER,
-                ]),
+                false, // DISABLED: No longer used - incidents go directly to QI
+            // hasAnyRole(roles, [
+            //     APP_ROLES.SUPER_ADMIN,
+            //     APP_ROLES.SUPERVISOR,
+            //     APP_ROLES.TEAM_LEAD,
+            //     APP_ROLES.DEPARTMENT_HEAD,
+            //     APP_ROLES.DEVELOPER,
+            // ]),
         },
 
         /**

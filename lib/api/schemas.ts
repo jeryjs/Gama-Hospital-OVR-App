@@ -280,8 +280,8 @@ export const createIncidentSchema = ovrReportInsertSchema
     submittedAt: true,
     resolvedAt: true,
     closedAt: true,
-    supervisorId: true,
-    supervisorAction: true,
+    // supervisorId: true,         // KEEP: Allow reporter to specify supervisor
+    // supervisorAction: true,     // KEEP: Allow reporter to record supervisor action
     supervisorActionDate: true,
     supervisorApprovedAt: true,
     qiReceivedBy: true,

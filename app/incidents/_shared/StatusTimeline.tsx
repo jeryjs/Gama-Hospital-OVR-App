@@ -7,12 +7,12 @@ interface Props {
   submittedAt: Date | null;
 }
 
+// Updated flow: Removed supervisor approval step - incidents go directly to QI after submission
 const steps = [
-  { key: 'submitted', label: 'Submitted', description: { current: '', final: 'Incident was reported' } },
-  { key: 'supervisor_approved', label: 'Approval', description: { current: 'Awaiting supervisor approval', final: 'Approved by supervisor' } },
-  { key: 'hod_assigned', label: 'QI Review', description: { current: 'Undergoing QI review', final: 'Assigned to Department Head' } },
-  { key: 'qi_final_review', label: 'Investigation', description: { current: 'HOD assigned to investigate', final: 'HOD investigating' } },  // the qi_review status is never used
-  { key: 'qi_review', label: 'Final Review', description: { current: 'Awaiting final review', final: 'QI final feedback' } },
+  // { key: 'submitted', label: 'Submitted', description: { current: '', final: 'Incident was reported' } }, // REMOVED
+  // { key: 'supervisor_approved', label: 'Approval', description: { current: 'Awaiting supervisor approval', final: 'Approved by supervisor' } }, // REMOVED
+  { key: 'hod_assigned', label: 'Submitted to QI', description: { current: 'Submitted to QI Department', final: 'QI reviewing and assigning to HOD' } },
+  { key: 'qi_final_review', label: 'Investigation', description: { current: 'HOD investigating', final: 'Investigation in progress' } },
   { key: 'closed', label: 'Closed', description: { current: 'Case closed', final: 'Case closed' } },
 ];
 

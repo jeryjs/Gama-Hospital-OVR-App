@@ -90,7 +90,8 @@ export async function PATCH(
       updatedAt: new Date(),
     };
 
-    if (body.status === 'submitted' && existingIncident.status === 'draft') {
+    // Skip supervisor approval - go directly to hod_assigned when submitting
+    if (body.status === 'hod_assigned' && existingIncident.status === 'draft') {
       updateData.submittedAt = new Date();
     }
 

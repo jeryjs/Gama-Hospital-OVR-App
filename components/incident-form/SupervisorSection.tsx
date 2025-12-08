@@ -29,9 +29,12 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
   const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
 
   const canEditSection = ACCESS_CONTROL.ui.incidentForm.canEditSupervisorSection(session?.user.roles || []);
-  const canApprove = canEditSection && incident.status === 'submitted';
-  const isApproved = incident.status !== 'draft' && incident.status !== 'submitted';
+  // REMOVED: Supervisor approval functionality - incidents go directly to QI
+  // const canApprove = canEditSection && incident.status === 'submitted';
+  const canApprove = false; // Disabled - no longer used
+  const isApproved = incident.status !== 'draft'; // All submitted incidents are considered "approved"
 
+  // REMOVED: This handler is no longer used
   const handleApprove = async () => {
     if (!action.trim()) {
       alert('Please provide supervisor action notes');
@@ -70,48 +73,28 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
       )}
 
       <Box sx={{ mt: 3 }}>
-        {canApprove ? (
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Supervisor Action *"
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
-              placeholder="Describe the immediate action taken..."
-              required
-            />
-            <Button
-              variant="contained"
-              onClick={handleApprove}
-              disabled={submitting || !action.trim()}
-              startIcon={<CheckCircle />}
-            >
-              {submitting ? 'Approving...' : 'Approve & Send to QI Department'}
-            </Button>
-          </Stack>
-        ) : (
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-              borderRadius: 1,
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-            }}
-          >
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {incident.supervisorAction || 'Awaiting supervisor action...'}
-            </Typography>
-          </Box>
-        )}
+        {/* REMOVED: Supervisor approval UI - no longer used */}
+        {/* {canApprove ? ( ... ) : ( ... )} */}
+        <Box
+          sx={{
+            p: 2,
+            bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+            borderRadius: 1,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+            {incident.supervisorAction || 'No supervisor action recorded yet...'}
+          </Typography>
+        </Box>
       </Box>
 
-      {incident.status === 'submitted' && !canApprove && (
+      {/* REMOVED: Status check for submitted */}
+      {/* {incident.status === 'submitted' && !canApprove && (
         <Alert severity="info" sx={{ mt: 2 }}>
           Awaiting supervisor approval before proceeding to QI Department
         </Alert>
-      )}
+      )} */}
     </Paper>
   );
 }

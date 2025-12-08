@@ -24,12 +24,12 @@ export const severityLevelEnum = pgEnum('severity_level', [
 // OVR Form Status Workflow - Matches actual hospital process
 export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
-  'submitted',                // Step 1: Submitted, awaiting supervisor approval
-  'supervisor_approved',      // Step 2: Supervisor approved, sent to QI
+  // 'submitted',                // REMOVED: No longer waiting for supervisor approval
+  // 'supervisor_approved',      // REMOVED: Supervisor approval step eliminated - goes directly to QI
   // 'qi_review',                // Step 3: QI reviewing and assigning to HOD  // This status is never set by us and is skipped as 
-  'hod_assigned',             // Step 4: HOD investigating
-  'qi_final_review',          // Step 5: QI final review and feedback
-  'closed'                    // Step 6: Case closed
+  'hod_assigned',             // Step 1: After submission, directly assigned to QI who assigns to HOD
+  'qi_final_review',          // Step 2: QI final review and feedback
+  'closed'                    // Step 3: Case closed
 ]);
 
 // ============================================
@@ -154,7 +154,9 @@ export const ovrReports = pgTable('ovr_reports', {
   physicianId: varchar('physician_id', { length: 50 }),
 
   // Supervisor/Manager Action
+  supervisorNotified: boolean('supervisor_notified').default(false),
   supervisorId: integer('supervisor_id').references(() => users.id),
+  supervisorName: varchar('supervisor_name', { length: 255 }),
   supervisorAction: text('supervisor_action'),
   supervisorActionDate: timestamp('supervisor_action_date'),
   supervisorApprovedAt: timestamp('supervisor_approved_at'),

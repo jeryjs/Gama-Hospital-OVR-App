@@ -67,8 +67,8 @@ async function getStatusCounts() {
 
   const byStatus = {
     draft: 0,
-    submitted: 0,
-    supervisor_approved: 0,
+    // submitted: 0, // REMOVED: No longer used
+    // supervisor_approved: 0, // REMOVED: Supervisor approval eliminated
     hod_assigned: 0,
     qi_final_review: 0,
     closed: 0,
@@ -309,7 +309,8 @@ async function getDepartmentHeadStats(userId: number) {
 
 async function getSupervisorStats(userId: number) {
   // OPTIMIZED: Parallel queries where possible
-  const [myReports, myRecentReports, pendingReports, approvedReports, [teamReportsResult]] = await Promise.all([
+  // REMOVED: Pending approval queries - incidents go directly to QI now
+  const [myReports, myRecentReports, [teamReportsResult]] = await Promise.all([
     getUserReportCounts(userId),
 
     db
@@ -325,78 +326,27 @@ async function getSupervisorStats(userId: number) {
       .orderBy(desc(ovrReports.createdAt))
       .limit(5),
 
-    db
-      .select({
-        id: ovrReports.id,
-        refNo: ovrReports.refNo,
-        status: ovrReports.status,
-        createdAt: ovrReports.createdAt,
-        reporterId: ovrReports.reporterId,
-        reporterFirstName: users.firstName,
-        reporterLastName: users.lastName,
-      })
-      .from(ovrReports)
-      .leftJoin(users, eq(ovrReports.reporterId, users.id))
-      .where(eq(ovrReports.status, 'submitted'))
-      .orderBy(desc(ovrReports.createdAt))
-      .limit(10),
-
-    db
-      .select({
-        id: ovrReports.id,
-        refNo: ovrReports.refNo,
-        status: ovrReports.status,
-        createdAt: ovrReports.createdAt,
-        supervisorApprovedAt: ovrReports.supervisorApprovedAt,
-      })
-      .from(ovrReports)
-      .where(and(eq(ovrReports.supervisorId, userId), sql`${ovrReports.supervisorApprovedAt} IS NOT NULL`))
-      .orderBy(desc(ovrReports.supervisorApprovedAt))
-      .limit(5),
-
     db.select({ count: sql<number>`COUNT(*)::int` }).from(ovrReports),
   ]);
-
-  const pendingWithReporters = pendingReports.map((report) => ({
-    id: report.id,
-    refNo: report.refNo,
-    status: report.status,
-    createdAt: report.createdAt,
-    reporterId: report.reporterId,
-    reporter: {
-      firstName: report.reporterFirstName || 'Unknown',
-      lastName: report.reporterLastName || '',
-    },
-  }));
-
-  // Count approved this month using SQL aggregation
-  const [approvedThisMonthResult] = await db
-    .select({ count: sql<number>`COUNT(*)::int` })
-    .from(ovrReports)
-    .where(
-      and(
-        eq(ovrReports.status, 'supervisor_approved'),
-        sql`${ovrReports.supervisorApprovedAt} >= date_trunc('month', CURRENT_DATE)`
-      )
-    );
 
   return {
     total: 0,
     drafts: 0,
     submitted: 0,
     resolved: 0,
-    byStatus: { draft: 0, submitted: 0, supervisor_approved: 0, hod_assigned: 0, qi_final_review: 0, closed: 0 },
+    byStatus: { draft: 0, hod_assigned: 0, qi_final_review: 0, closed: 0 },
     byDepartment: [],
     recentIncidents: [],
     activeUsers: 0,
     avgResolutionTime: 0,
     myReports,
     myRecentReports,
-    supervisorPending: pendingReports.length,
-    supervisorApproved: approvedThisMonthResult?.count || 0,
+    // REMOVED: Supervisor approval stats - no longer applicable
+    supervisorPending: 0,
+    supervisorApproved: 0,
     teamReports: teamReportsResult?.count || 0,
-    supervisorPendingReports: pendingWithReporters,
-    supervisorApprovedReports: approvedReports,
+    supervisorPendingReports: [],
+    supervisorApprovedReports: [],
   };
 }
 

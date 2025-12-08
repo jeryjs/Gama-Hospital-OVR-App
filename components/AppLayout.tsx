@@ -97,12 +97,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               tooltip: 'Report New incident'
             }
           },
-          {
-            title: 'Pending Approval',
-            path: '/incidents?status=submitted',
-            roles: ['supervisor', 'team_lead', 'employee'],
-            badge: { content: 3, tooltip: 'Found 3 reports pending approval' }
-          },
+          // REMOVED: Pending Approval menu item - no longer applicable
+          // {
+          //   title: 'Pending Approval',
+          //   path: '/incidents?status=submitted',
+          //   roles: ['supervisor', 'team_lead', 'employee'],
+          //   badge: { content: 3, tooltip: 'Found 3 reports pending approval' }
+          // },
           {
             title: 'Investigation',
             path: '/incidents/hod/review',

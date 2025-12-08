@@ -41,8 +41,8 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
 
   const statusColors: Record<string, string> = {
     draft: '#6B7280',
-    submitted: '#3B82F6',
-    supervisor_approved: '#10B981',
+    // submitted: '#3B82F6', // REMOVED: No longer used
+    // supervisor_approved: '#10B981', // REMOVED: Supervisor approval eliminated
     hod_assigned: '#F59E0B',
     qi_final_review: '#EC4899',
     closed: '#059669',
@@ -50,8 +50,8 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
 
   const statusLabels: Record<string, string> = {
     draft: 'Draft',
-    submitted: 'Needs Review',
-    supervisor_approved: 'Approved',
+    // submitted: 'Needs Review', // REMOVED
+    // supervisor_approved: 'Approved', // REMOVED
     hod_assigned: 'Under Investigation',
     qi_final_review: 'QI Review',
     closed: 'Closed',
@@ -66,27 +66,25 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
       subtitle: 'Total submitted',
     },
     {
-      title: 'Pending Review',
-      value: stats.supervisorPending || 0,
-      icon: <HourglassEmpty fontSize="large" />,
-      color: 'warning.main',
-      subtitle: 'Need approval',
-      urgent: true,
-      action: () => router.push('/incidents?status=submitted'),
-    },
-    {
-      title: 'Approved by Me',
-      value: stats.supervisorApproved || 0,
-      icon: <ThumbUp fontSize="large" />,
-      color: 'success.main',
-      subtitle: 'This month',
-    },
-    {
       title: 'Team Reports',
       value: stats.teamReports || 0,
       icon: <RateReview fontSize="large" />,
       color: 'info.main',
       subtitle: 'All time',
+    },
+    {
+      title: 'In Progress',
+      value: stats.myReports?.inProgress || 0,
+      icon: <HourglassEmpty fontSize="large" />,
+      color: 'warning.main',
+      subtitle: 'Currently active',
+    },
+    {
+      title: 'Resolved',
+      value: stats.myReports?.resolved || 0,
+      icon: <ThumbUp fontSize="large" />,
+      color: 'success.main',
+      subtitle: 'Closed cases',
     },
   ];
 
@@ -177,50 +175,6 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                     Supervisor Actions
                   </Typography>
                   <Stack spacing={2} mt={2}>
-                    <Box
-                      onClick={() => router.push('/incidents?status=submitted')}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        border: 2,
-                        borderColor: 'warning.main',
-                        bgcolor: (theme) => alpha(theme.palette.warning.main, 0.05),
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
-                          transform: 'translateX(4px)',
-                        },
-                      }}
-                    >
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Box
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 2,
-                            bgcolor: 'warning.main',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Typography variant="h4" fontWeight={700}>
-                            {stats.supervisorPending || 0}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            Review & Approve
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Reports waiting for your review
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Box>
-
                     <Button
                       fullWidth
                       variant="contained"
@@ -254,24 +208,24 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                 </Paper>
               </Grid>
 
-              {/* Pending Approvals */}
+              {/* Recent Reports */}
               <Grid size={{ xs: 12, md: 8 }}>
                 <Paper sx={{ p: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6" fontWeight={600}>
-                      Reports Pending Your Approval
+                      My Recent Reports
                     </Typography>
                     <Button
                       size="small"
-                      onClick={() => router.push('/incidents?status=submitted')}
+                      onClick={() => router.push('/incidents?mine=true')}
                     >
                       View All
                     </Button>
                   </Stack>
 
-                  {stats.supervisorPendingReports && stats.supervisorPendingReports.length > 0 ? (
+                  {stats.myRecentReports && stats.myRecentReports.length > 0 ? (
                     <List>
-                      {stats.supervisorPendingReports.slice(0, 5).map((report, index) => (
+                      {stats.myRecentReports.slice(0, 5).map((report, index) => (
                         <Box key={report.id}>
                           <ListItem
                             component={Link}
@@ -288,11 +242,11 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                             <ListItemAvatar>
                               <Avatar
                                 sx={{
-                                  bgcolor: (theme) => alpha(theme.palette.warning.main, 0.2),
-                                  color: 'warning.main',
+                                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                                  color: 'primary.main',
                                 }}
                               >
-                                <PendingActions fontSize="small" />
+                                <Description fontSize="small" />
                               </Avatar>
                             </ListItemAvatar>
                             <ListItemText
@@ -301,22 +255,16 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                                   <Typography variant="body2" fontWeight={600}>
                                     {report.refNo}
                                   </Typography>
-                                  <Chip
-                                    label="REVIEW NEEDED"
-                                    size="small"
-                                    color="warning"
-                                    sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                                  />
                                 </Stack>
                               }
-                              secondary={`Reported by ${report.reporter.firstName} ${report.reporter.lastName} • ${format(new Date(report.createdAt), 'MMM dd, HH:mm')}`}
+                              secondary={`${report.occurrenceCategory} • ${format(new Date(report.createdAt), 'MMM dd, HH:mm')}`}
                             />
                             <Chip
-                              label="Pending"
+                              label={statusLabels[report.status] || report.status}
                               size="small"
                               sx={{
-                                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
-                                color: 'warning.main',
+                                bgcolor: (theme) => alpha(statusColors[report.status] || '#6B7280', 0.1),
+                                color: statusColors[report.status] || '#6B7280',
                                 fontWeight: 600,
                               }}
                             />
@@ -327,79 +275,19 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                     </List>
                   ) : (
                     <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+                      <Description sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>
-                        All caught up!
+                        No reports yet
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        No reports pending your approval
+                        Start by reporting a new incident
                       </Typography>
                     </Box>
                   )}
                 </Paper>
               </Grid>
 
-              {/* Recently Approved */}
-              <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Recently Approved by You
-                  </Typography>
-
-                  {stats.supervisorApprovedReports && stats.supervisorApprovedReports.length > 0 ? (
-                    <List>
-                      {stats.supervisorApprovedReports.slice(0, 3).map((report, index) => (
-                        <Box key={report.id}>
-                          <ListItem
-                            component={Link}
-                            href={`/incidents/view/${report.id}`}
-                            sx={{
-                              borderRadius: 1,
-                              mb: 1,
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                              },
-                            }}
-                          >
-                            <ListItemAvatar>
-                              <Avatar
-                                sx={{
-                                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.2),
-                                  color: 'success.main',
-                                }}
-                              >
-                                <Done fontSize="small" />
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={report.refNo}
-                              secondary={`Approved on ${format(new Date(report.supervisorApprovedAt || report.createdAt), 'MMM dd, yyyy')} • Now with QI Department`}
-                              primaryTypographyProps={{ fontWeight: 600 }}
-                            />
-                            <Chip
-                              label={statusLabels[report.status]}
-                              size="small"
-                              sx={{
-                                bgcolor: (theme) => alpha(statusColors[report.status], 0.1),
-                                color: statusColors[report.status],
-                                fontWeight: 600,
-                              }}
-                            />
-                          </ListItem>
-                          {index < 2 && <Divider />}
-                        </Box>
-                      ))}
-                    </List>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No recently approved reports
-                      </Typography>
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
+              {/* REMOVED: Recently Approved Section - no longer applicable */}
             </Grid>
           </Stack>
         </motion.div>

@@ -33,7 +33,7 @@ export function MedicalAssessmentSection({ incident }: Props) {
           borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
         }}
       >
-        <LocalHospital /> Medical Assessment
+        <LocalHospital /> Immediate Actions
       </Typography>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>

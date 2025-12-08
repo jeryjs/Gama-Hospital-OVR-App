@@ -233,9 +233,9 @@ export async function POST(request: NextRequest) {
         reporterDepartment: body.reporterDepartment || session.user.department,
         reporterPosition: body.reporterPosition || session.user.position,
 
-        // Status
-        status: body.status,
-        submittedAt: body.status === 'submitted' ? new Date() : null,
+        // Status - Skip supervisor approval, go directly to QI (hod_assigned)
+        status: body.status === 'draft' ? 'draft' : 'hod_assigned',
+        submittedAt: body.status !== 'draft' ? new Date() : null,
       })
       .returning();
 
