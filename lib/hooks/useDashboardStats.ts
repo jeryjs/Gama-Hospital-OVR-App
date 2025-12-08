@@ -1,4 +1,4 @@
-import { apiCall, ParsedError } from '@/lib/client/error-handler';
+import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 
 export interface DashboardStats {

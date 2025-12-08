@@ -2,9 +2,9 @@ import { authOptions } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { PaginationMeta, PaginationParams } from './schemas';
 import { hasAnyRole } from '../auth-helpers';
 import type { AppRole } from '../constants';
+import { PaginationMeta, PaginationParams } from './schemas';
 
 // ============================================
 // ERROR CLASSES
@@ -54,32 +54,94 @@ export class NotFoundError extends ApiError {
 // ERROR HANDLER
 // ============================================
 
+/**
+ * Centralized API error handler
+ * Converts various error types to consistent JSON responses
+ */
 export function handleApiError(error: unknown): NextResponse {
+  // Log the full error for debugging
   console.error('API Error:', error);
 
+  // Known API errors
   if (error instanceof ApiError) {
-    return NextResponse.json(
-      {
-        error: error.message,
-        code: error.code,
-        details: error.details,
-      },
-      { status: error.statusCode }
-    );
+    const response: Record<string, unknown> = {
+      error: error.message,
+      code: error.code,
+    };
+    if (error.details) {
+      response.details = error.details;
+    }
+    return NextResponse.json(response, { status: error.statusCode });
   }
 
+  // Zod validation errors - format nicely
   if (error instanceof z.ZodError) {
+    const details = error.issues.map((issue) => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+    }));
+
     return NextResponse.json(
       {
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
-        details: error.issues.map((err: any) => ({
-          path: err.path.join('.'),
-          message: err.message,
-        })),
+        details,
       },
       { status: 400 }
     );
+  }
+
+  // Database/Drizzle errors - extract useful info
+  if (error instanceof Error) {
+    const message = error.message;
+
+    // Check for common database errors
+    if (message.includes('column') && message.includes('does not exist')) {
+      const columnMatch = message.match(/column "([^"]+)" does not exist/);
+      return NextResponse.json(
+        {
+          error: 'Database schema mismatch',
+          code: 'DB_SCHEMA_ERROR',
+          message: columnMatch
+            ? `Column "${columnMatch[1]}" not found. Database migration may be needed.`
+            : 'A database column is missing. Please run migrations.',
+        },
+        { status: 500 }
+      );
+    }
+
+    if (message.includes('relation') && message.includes('does not exist')) {
+      return NextResponse.json(
+        {
+          error: 'Database table not found',
+          code: 'DB_SCHEMA_ERROR',
+          message: 'A required database table is missing. Please run migrations.',
+        },
+        { status: 500 }
+      );
+    }
+
+    if (message.includes('duplicate key') || message.includes('unique constraint')) {
+      return NextResponse.json(
+        {
+          error: 'Duplicate entry',
+          code: 'DUPLICATE_ERROR',
+          message: 'A record with this value already exists.',
+        },
+        { status: 409 }
+      );
+    }
+
+    if (message.includes('foreign key constraint')) {
+      return NextResponse.json(
+        {
+          error: 'Reference error',
+          code: 'REFERENCE_ERROR',
+          message: 'Cannot complete this action due to existing references.',
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Unknown error
@@ -87,9 +149,8 @@ export function handleApiError(error: unknown): NextResponse {
     {
       error: 'Internal server error',
       code: 'INTERNAL_ERROR',
-      message: process.env.NODE_ENV === 'development'
-        ? (error as Error).message
-        : 'An unexpected error occurred',
+      message: error instanceof Error ? error.message : 'An unexpected error occurred',
+      stack: error instanceof Error ? error.stack : undefined,
     },
     { status: 500 }
   );

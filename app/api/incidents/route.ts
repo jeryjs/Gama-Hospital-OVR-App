@@ -130,8 +130,19 @@ export async function GET(request: NextRequest) {
 
     const total = Number(countResult[0].count);
 
-    // Parse field selection
-    const fieldSelection = parseFields(query.fields);
+    // Default columns for list view - only what's needed for display
+    // Can be overridden with ?fields=col1,col2,col3
+    const defaultListColumns = {
+      id: true,
+      refNo: true,
+      status: true,
+      occurrenceDate: true,
+      occurrenceCategory: true,
+      createdAt: true,
+    } as const;
+
+    // Parse custom field selection or use defaults
+    const fieldSelection = parseFields(query.fields) || defaultListColumns;
 
     // Fetch paginated data with relations
     const incidents = await db.query.ovrReports.findMany({
@@ -147,28 +158,6 @@ export async function GET(request: NextRequest) {
             firstName: true,
             lastName: true,
             email: true,
-          },
-        },
-        location: {
-          columns: {
-            id: true,
-            name: true,
-            building: true,
-            floor: true,
-          },
-        },
-        supervisor: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        departmentHead: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -207,7 +196,7 @@ export async function POST(request: NextRequest) {
     const newIncident = await db
       .insert(ovrReports)
       .values({
-        refNo: `OVR-${year}-${String(count).padStart(4, '0')}`,
+        refNo: `OVR-${year}-${String(count).padStart(3, '0')}`,
         reporterId: userId,
 
         // Occurrence Details

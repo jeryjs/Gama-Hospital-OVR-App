@@ -140,10 +140,11 @@ export const paginatedResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =
     pagination: paginationMetaSchema,
   });
 
-// API Error
+// API Error Response Schema
 export const apiErrorSchema = z.object({
   error: z.string(),
-  code: z.string(),
+  code: z.string().optional(),
+  message: z.string().optional(),
   details: z.array(z.object({
     path: z.string(),
     message: z.string(),
@@ -304,7 +305,6 @@ export const userListQuerySchema = z.object({
 
 export const userUpdateSchema = userInsertSchema.pick({
   roles: true,
-  adGroups: true,
   department: true,
   position: true,
   isActive: true,

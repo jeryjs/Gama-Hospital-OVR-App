@@ -1,4 +1,4 @@
-import { apiCall, ParsedError } from '@/lib/client/error-handler';
+import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import type { IncidentListQuery, OVRReportListItem, PaginationMeta } from '@/lib/types';
 import useSWR from 'swr';
 
@@ -13,7 +13,7 @@ export interface UseIncidentsReturn {
   incidents: OVRReportListItem[];
   pagination: PaginationMeta | null;
   isLoading: boolean;
-  error: ParsedError;
+  error: ParsedError | undefined;
   mutate: () => void;
 }
 
