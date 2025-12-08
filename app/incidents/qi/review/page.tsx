@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { OVRReportListItem, UserMinimal } from '@/lib/api/schemas';
 import { APP_ROLES } from '@/lib/constants';
+import { apiCall } from '@/lib/client/error-handler';
 import { AssignmentInd, Visibility } from '@mui/icons-material';
 import {
   alpha,
@@ -55,7 +56,7 @@ export default function QIReviewPage() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<number | null>(null);
   const [selectedHOD, setSelectedHOD] = useState<number | null>(null);
-  const [assigning, setAssigning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (session && !ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || [])) {
@@ -113,25 +114,25 @@ export default function QIReviewPage() {
   const handleAssignToHOD = async () => {
     if (!selectedIncident || !selectedHOD) return;
 
-    setAssigning(true);
-    try {
-      const res = await fetch(`/api/incidents/${selectedIncident}/qi-assign-hod`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ departmentHeadId: selectedHOD }),
-      });
+    setSubmitting(true);
 
-      if (res.ok) {
-        fetchIncidents();
-        handleCloseAssignDialog();
-      } else {
-        alert('Failed to assign to HOD');
-      }
-    } catch (error) {
-      console.error('Error assigning to HOD:', error);
-    } finally {
-      setAssigning(false);
+    const { data, error } = await apiCall(`/api/incidents/${selectedIncident}/actions`, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'qi-assign-hod',
+        data: { departmentHeadId: selectedHOD },
+      }),
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      alert(error.message || 'Failed to assign to HOD');
+      return;
     }
+
+    fetchIncidents();
+    handleCloseAssignDialog();
   };
 
   if (loading) {
@@ -280,9 +281,9 @@ export default function QIReviewPage() {
             <Button
               variant="contained"
               onClick={handleAssignToHOD}
-              disabled={!selectedHOD || assigning}
+              disabled={!selectedHOD || submitting}
             >
-              {assigning ? 'Assigning...' : 'Assign'}
+              {submitting ? 'Assigning...' : 'Assign'}
             </Button>
           </DialogActions>
         </Dialog>

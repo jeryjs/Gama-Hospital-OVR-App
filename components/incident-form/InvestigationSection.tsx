@@ -1,10 +1,12 @@
 'use client';
 
-import { apiCall } from '@/lib/client/error-handler';
-import { useUsers } from '@/lib/hooks';
+import { useUsers, useIncidentActions } from '@/lib/hooks';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { PersonAdd, Science } from '@mui/icons-material';
+import { PersonAdd, Science, ExpandMore } from '@mui/icons-material';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   alpha,
   Autocomplete,
@@ -35,10 +37,13 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
   const [problemsIdentified, setProblemsIdentified] = useState(incident.problemsIdentified || '');
   const [causeClassification, setCauseClassification] = useState(incident.causeClassification || '');
   const [preventionRecommendation, setPreventionRecommendation] = useState(incident.preventionRecommendation || '');
-  const [submitting, setSubmitting] = useState(false);
+  const [expandedInvestigator, setExpandedInvestigator] = useState<number | false>(false);
+  const [editMode, setEditMode] = useState<Record<number, boolean>>({});
 
   // Fetch users with SWR
   const { users } = useUsers();
+
+  const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
 
   const isAssignedHOD = session?.user?.id === incident.departmentHeadId?.toString();
   const canEditInvestigation = ACCESS_CONTROL.ui.incidentForm.canEditInvestigationSection(
@@ -54,41 +59,30 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
   const handleAssignInvestigator = async () => {
     if (!selectedInvestigator) return;
 
-    setSubmitting(true);
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/assign-investigator`, {
-      method: 'POST',
-      body: JSON.stringify({ investigatorId: selectedInvestigator }),
+    const result = await performAction('assign-investigator', {
+      investigatorId: selectedInvestigator
     });
 
-    setSubmitting(false);
-    if (error) {
-      alert(error.message || 'Failed to assign investigator');
+    if (!result.success) {
+      alert(result.error || 'Failed to assign investigator');
       return;
     }
 
     setSelectedInvestigator(null);
-    onUpdate();
   };
 
-  const handleSubmitFindings = async () => {
-    if (!findings.trim()) {
+  const handleSubmitFindings = async (investigatorId: number) => {
+    const inv = incident.investigators?.find(inv => inv.id === investigatorId);
+    if (!inv || !findings.trim()) {
       alert('Please provide investigation findings');
       return;
     }
 
-    setSubmitting(true);
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/submit-findings`, {
-      method: 'POST',
-      body: JSON.stringify({ findings }),
-    });
+    const result = await performAction('submit-findings', { findings });
 
-    setSubmitting(false);
-    if (error) {
-      alert(error.message || 'Failed to submit findings');
-      return;
+    if (!result.success) {
+      alert(result.error || 'Failed to submit findings');
     }
-
-    onUpdate();
   };
 
   const handleSubmitHODReport = async () => {
@@ -97,25 +91,38 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
       return;
     }
 
-    setSubmitting(true);
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/hod-submit`, {
-      method: 'POST',
-      body: JSON.stringify({
-        investigationFindings: incident.investigationFindings || '',
-        problemsIdentified,
-        causeClassification,
-        causeDetails: causeClassification,
-        preventionRecommendation,
-      }),
+    const result = await performAction('hod-submit', {
+      investigationFindings: incident.investigationFindings || '',
+      problemsIdentified,
+      causeClassification,
+      causeDetails: causeClassification,
+      preventionRecommendation,
     });
 
-    setSubmitting(false);
-    if (error) {
-      alert(error.message || 'Failed to submit HOD report');
-      return;
+    if (!result.success) {
+      alert(result.error || 'Failed to submit HOD report');
     }
+  };
 
-    onUpdate();
+  const stripMarkdown = (markdown: string) => {
+    return markdown
+      .replace(/#{1,6}\s*/g, '') // Remove headers
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic
+      .replace(/\[.*?\]\(.*?\)/g, '') // Remove links
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/`(.*?)`/g, '$1') // Remove inline code
+      .replace(/^\s*[-*+]\s+/gm, '') // Remove list markers
+      .replace(/\n+/g, ' ') // Replace newlines with spaces
+      .trim();
+  };
+
+  const handleAccordionChange = (investigatorId: number) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpandedInvestigator(isExpanded ? investigatorId : false);
+  };
+
+  const toggleEditMode = (investigatorId: number) => {
+    setEditMode(prev => ({ ...prev, [investigatorId]: !prev[investigatorId] }));
   };
 
   return (
@@ -141,16 +148,89 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
           <Typography variant="subtitle2" fontWeight={600} gutterBottom>
             Assigned Investigators
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-            {incident.investigators.map(inv => (
-              <Chip
+          {incident.investigators.map(inv => {
+            const isCurrentUser = inv.investigatorId.toString() === session?.user?.id;
+            const canEdit = isCurrentUser && inv.status === 'pending';
+            const summary = inv.findings ? stripMarkdown(inv.findings).substring(0, 100) + (stripMarkdown(inv.findings).length > 100 ? '...' : '') : 'No findings submitted yet.';
+            return (
+              <Accordion
                 key={inv.id}
-                label={`${inv.investigator.firstName} ${inv.investigator.lastName}`}
-                color={inv.status === 'submitted' ? 'success' : 'default'}
-                size="small"
-              />
-            ))}
-          </Stack>
+                expanded={expandedInvestigator === inv.id}
+                onChange={handleAccordionChange(inv.id)}
+                sx={{ mt: 1 }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {inv.investigator.firstName} {inv.investigator.lastName}
+                    </Typography>
+                    <Chip
+                      label={inv.status === 'submitted' ? 'Submitted' : 'Pending'}
+                      color={inv.status === 'submitted' ? 'success' : 'default'}
+                      size="small"
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {summary}
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {canEdit ? (
+                    <Box>
+                      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                        <Button
+                          variant={editMode[inv.id] ? 'outlined' : 'contained'}
+                          onClick={() => toggleEditMode(inv.id)}
+                        >
+                          {editMode[inv.id] ? 'Edit' : 'Preview'}
+                        </Button>
+                      </Stack>
+                      {editMode[inv.id] ? (
+                        <Box sx={{ mt: 2, '& p': { mb: 1 }, '& ul': { pl: 2 } }}>
+                          <ReactMarkdown>{findings || '## Investigation Summary\n\n### Findings\n- Finding 1\n- Finding 2'}</ReactMarkdown>
+                        </Box>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={8}
+                          label="Investigation Findings (Markdown supported)"
+                          value={findings}
+                          onChange={(e) => setFindings(e.target.value)}
+                          placeholder="## Investigation Summary&#10;&#10;### Findings&#10;- Finding 1&#10;- Finding 2"
+                        />
+                      )}
+                      <Button
+                        variant="contained"
+                        onClick={() => handleSubmitFindings(inv.id)}
+                        disabled={submitting || !findings.trim()}
+                        sx={{ mt: 2 }}
+                      >
+                        Submit Findings
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box>
+                      {inv.findings ? (
+                        <>
+                          <Typography variant="caption" color="text.secondary">
+                            Submitted on {inv.submittedAt && format(new Date(inv.submittedAt), 'MMM dd, yyyy HH:mm')}
+                          </Typography>
+                          <Box sx={{ mt: 2, '& p': { mb: 1 }, '& ul': { pl: 2 } }}>
+                            <ReactMarkdown>{inv.findings}</ReactMarkdown>
+                          </Box>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No findings submitted yet.
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
         </Box>
       )}
 
@@ -179,59 +259,6 @@ export function InvestigationSection({ incident, onUpdate }: Props) {
           </Stack>
         </Box>
       )}
-
-      {/* Investigator Findings Submission */}
-      {canSubmitFindings && (
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-            Submit Your Investigation Findings
-          </Typography>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            You can use Markdown for formatting. Attachments coming soon.
-          </Alert>
-          <TextField
-            fullWidth
-            multiline
-            rows={8}
-            label="Investigation Findings (Markdown supported)"
-            value={findings}
-            onChange={(e) => setFindings(e.target.value)}
-            placeholder="## Investigation Summary&#10;&#10;### Findings&#10;- Finding 1&#10;- Finding 2"
-          />
-          <Button
-            variant="contained"
-            onClick={handleSubmitFindings}
-            disabled={submitting}
-            sx={{ mt: 2 }}
-          >
-            Submit Findings
-          </Button>
-        </Box>
-      )}
-
-      {/* Display Submitted Findings */}
-      {incident.investigators?.filter(inv => inv.findings).map(inv => (
-        <Box
-          key={inv.id}
-          sx={{
-            mt: 3,
-            p: 2,
-            bgcolor: (theme) => alpha(theme.palette.info.main, 0.05),
-            borderRadius: 1,
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-            Findings by {inv.investigator.firstName} {inv.investigator.lastName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Submitted on {inv.submittedAt && format(new Date(inv.submittedAt), 'MMM dd, yyyy HH:mm')}
-          </Typography>
-          <Box sx={{ mt: 2, '& p': { mb: 1 }, '& ul': { pl: 2 } }}>
-            <ReactMarkdown>{inv.findings || ''}</ReactMarkdown>
-          </Box>
-        </Box>
-      ))}
 
       {/* HOD Final Report */}
       {canSubmitHODReport && (

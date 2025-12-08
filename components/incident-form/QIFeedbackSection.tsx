@@ -1,6 +1,6 @@
 'use client';
 
-import { apiCall } from '@/lib/client/error-handler';
+import { useIncidentActions } from '@/lib/hooks';
 import { getSeverityLabel, SEVERITY_LEVELS } from '@/lib/constants';
 import { Assessment, CheckCircle } from '@mui/icons-material';
 import {
@@ -36,7 +36,8 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const [actionComplies, setActionComplies] = useState(incident.qiActionCompliesStandards || false);
   const [effectiveAction, setEffectiveAction] = useState(incident.qiEffectiveCorrectiveAction || false);
   const [severityLevel, setSeverityLevel] = useState(incident.severityLevel || '');
-  const [submitting, setSubmitting] = useState(false);
+
+  const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
 
   const canSubmit = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []) && incident.status === 'qi_final_review';
   const isClosed = incident.status === 'closed';
@@ -47,27 +48,19 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
       return;
     }
 
-    setSubmitting(true);
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/qi-close`, {
-      method: 'POST',
-      body: JSON.stringify({
-        feedback,
-        formComplete,
-        causeIdentified,
-        timeframe,
-        actionComplies,
-        effectiveAction,
-        severityLevel,
-      }),
+    const result = await performAction('qi-close', {
+      feedback,
+      formComplete,
+      causeIdentified,
+      timeframe,
+      actionComplies,
+      effectiveAction,
+      severityLevel,
     });
 
-    setSubmitting(false);
-    if (error) {
-      alert(error.message || 'Failed to submit feedback');
-      return;
+    if (!result.success) {
+      alert(result.error || 'Failed to submit feedback');
     }
-
-    onUpdate();
   };
 
   return (

@@ -1,7 +1,6 @@
 'use client';
 
-import { apiCall } from '@/lib/client/error-handler';
-import { useUsers } from '@/lib/hooks';
+import { useUsers, useIncidentActions } from '@/lib/hooks';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AssignmentInd } from '@mui/icons-material';
 import {
@@ -27,12 +26,19 @@ interface Props {
 export function QIAssignHODSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
   const [selectedHOD, setSelectedHOD] = useState<number | null>(incident.departmentHeadId || null);
-  const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   // Fetch HODs with SWR
   const { users: hodUsers } = useUsers({ role: 'admin' });
+
+  const { performAction, submitting } = useIncidentActions(incident.id, () => {
+    setSuccessMessage('HOD assigned successfully');
+    setTimeout(() => {
+      setSuccessMessage('');
+      onUpdate();
+    }, 2000);
+  });
 
   const canAssignHOD =
     ACCESS_CONTROL.ui.incidentForm.canAssignHOD(session?.user.roles || []) &&
@@ -44,26 +50,13 @@ export function QIAssignHODSection({ incident, onUpdate }: Props) {
       return;
     }
 
-    setSubmitting(true);
     setErrorMessage('');
 
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/qi-assign-hod`, {
-      method: 'POST',
-      body: JSON.stringify({ departmentHeadId: selectedHOD }),
-    });
+    const result = await performAction('qi-assign-hod', { departmentHeadId: selectedHOD });
 
-    if (error) {
-      setErrorMessage(error.message || 'Failed to assign HOD');
-      setSubmitting(false);
-      return;
+    if (!result.success) {
+      setErrorMessage(result.error || 'Failed to assign HOD');
     }
-
-    setSuccessMessage('HOD assigned successfully');
-    setSubmitting(false);
-    setTimeout(() => {
-      setSuccessMessage('');
-      onUpdate();
-    }, 2000);
   };
 
   if (!canAssignHOD) {

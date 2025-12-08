@@ -1,6 +1,6 @@
 'use client';
 
-import { apiCall } from '@/lib/client/error-handler';
+import { useIncidentActions } from '@/lib/hooks';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { CheckCircle, SupervisorAccount } from '@mui/icons-material';
 import {
@@ -26,7 +26,7 @@ interface Props {
 export function SupervisorSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
   const [action, setAction] = useState(incident.supervisorAction || '');
-  const [submitting, setSubmitting] = useState(false);
+  const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
 
   const canEditSection = ACCESS_CONTROL.ui.incidentForm.canEditSupervisorSection(session?.user.roles || []);
   const canApprove = canEditSection && incident.status === 'submitted';
@@ -38,19 +38,11 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
       return;
     }
 
-    setSubmitting(true);
-    const { data, error } = await apiCall(`/api/incidents/${incident.id}/supervisor-approve`, {
-      method: 'POST',
-      body: JSON.stringify({ action }),
-    });
+    const result = await performAction('supervisor-approve', { action });
 
-    setSubmitting(false);
-    if (error) {
-      alert(error.message || 'Failed to approve');
-      return;
+    if (!result.success) {
+      alert(result.error || 'Failed to approve');
     }
-
-    onUpdate();
   };
 
   return (

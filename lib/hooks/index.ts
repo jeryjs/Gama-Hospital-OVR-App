@@ -5,7 +5,7 @@
 // Single source of truth with /lib/api/schemas.ts types
 
 export { useIncidents } from './useIncidents';
-export { useIncident } from './useIncident';
+export { useIncident, useIncidentActions } from './useIncident';
 export { useComments } from './useComments';
 export { useUsers } from './useUsers';
 export { useLocations } from './useLocations';
@@ -14,7 +14,13 @@ export { useUserManagement } from './useUserManagement';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
-export type { UseIncidentOptions, UseIncidentReturn } from './useIncident';
+export type {
+    UseIncidentOptions,
+    UseIncidentReturn,
+    IncidentActionType,
+    ActionResult,
+    UseIncidentActionsReturn,
+} from './useIncident';
 export type { UseCommentsReturn } from './useComments';
 export type { UseUsersOptions, UseUsersReturn } from './useUsers';
 export type { UseLocationsReturn } from './useLocations';
