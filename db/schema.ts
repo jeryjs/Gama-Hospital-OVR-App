@@ -101,7 +101,7 @@ export const locations = pgTable('locations', {
 // MAIN OVR INCIDENT REPORTS TABLE
 // ============================================
 export const ovrReports = pgTable('ovr_reports', {
-  id: varchar('id', { length: 20 }).primaryKey(), // Format: OVR-YYYY-NNN
+  id: varchar('id', { length: 20 }).primaryKey(), // Format: OVR-YYYY-MM-NNN
   // refNo removed - id IS the refNo now
 
   // Basic Information
