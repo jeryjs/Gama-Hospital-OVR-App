@@ -149,10 +149,16 @@ export default function ReportsPage() {
                         )}
 
                         {/* Tabs */}
-                        <Paper sx={{ px: 2 }}>
-                            <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+                        <Paper sx={{ px: 2, overflowX: 'auto' }}>
+                            <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="scrollable">
                                 {tabs.map((tab) => (
-                                    <Tab key={tab.label} icon={tab.icon} label={tab.label} iconPosition="start" />
+                                    <Tab
+                                        key={tab.label}
+                                        icon={tab.icon}
+                                        label={tab.label}
+                                        iconPosition="start"
+                                        sx={{ minWidth: 120, mx: 2 }}
+                                    />
                                 ))}
                             </Tabs>
                         </Paper>

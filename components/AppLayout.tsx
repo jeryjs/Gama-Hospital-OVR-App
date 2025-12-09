@@ -1,15 +1,16 @@
 'use client';
 
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { AppRole } from '@/lib/constants';
+import { useDashboardStats } from '@/lib/hooks';
 import {
   AccountCircle,
   Add,
-  Business,
+  Analytics,
   Dashboard,
   Description,
   ExpandLess,
   ExpandMore,
-  Groups,
-  LocationOn,
   Logout,
   Menu as MenuIcon
 } from '@mui/icons-material';
@@ -34,14 +35,10 @@ import {
   Typography
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
-import { User } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useState } from 'react';
-import { ACCESS_CONTROL } from '@/lib/access-control';
-import { AppRole } from '@/lib/constants';
-import { useDashboardStats } from '@/lib/hooks';
 
 const DRAWER_WIDTH = 280;
 
@@ -106,14 +103,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               content: qiReviewCount,
               tooltip: `${qiReviewCount} incident${qiReviewCount !== 1 ? 's' : ''} pending QI review`
             } : undefined
-          },
-          {
-            title: 'Analytics',
-            path: '/incidents/analytics',
-            badge: { content: 'WIP', tooltip: 'New analytics features is under development' }
           }
         ],
       },
+      {
+        title: 'Analytics',
+        path: '/analytics',
+        icon: <Analytics />,
+        open: navItemsOpen.Analytics,
+      }
     ];
 
     // Administration menu (admin/tech users only)
@@ -200,7 +198,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           const isActive = item.path === pathname;
 
           return (
-            <Box key={item.title}>
+            <Box key={item.title} sx={{ mb: 2 }}>
               <ListItemButton
                 component={item.path ? Link : 'li'}
                 href={item.path}
