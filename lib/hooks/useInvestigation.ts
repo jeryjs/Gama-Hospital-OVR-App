@@ -34,6 +34,7 @@ export interface SharedAccessInfo {
     userId: number | null;
     role: 'investigator' | 'action_handler' | 'viewer';
     status: 'pending' | 'accepted' | 'revoked';
+    accessToken: string | null;
     invitedAt: Date;
     lastAccessedAt: Date | null;
 }

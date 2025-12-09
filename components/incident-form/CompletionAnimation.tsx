@@ -21,40 +21,44 @@ import {
     Home as HomeIcon,
     List as ListIcon,
 } from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
-import { keyframes } from '@mui/system';
+
+// Animations using styled components
+const scaleInAnimation = `
+  @keyframes scaleIn {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+`;
+
+const fadeInAnimation = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
 
 interface CompletionAnimationProps {
     open: boolean;
     incidentId: string;
     onClose?: () => void;
 }
-
-// Animations
-const scaleIn = keyframes`
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-`;
-
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
 
 /**
  * Completion Animation Component
@@ -88,6 +92,7 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
                 },
             }}
         >
+            <style>{scaleInAnimation}{fadeInAnimation}</style>
             <DialogContent sx={{ p: 6 }}>
                 {/* Success Icon */}
                 <Box
@@ -95,7 +100,7 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
                         display: 'flex',
                         justifyContent: 'center',
                         mb: 3,
-                        animation: `${scaleIn} 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)`,
+                        animation: 'scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                 >
                     <SuccessIcon
@@ -111,7 +116,7 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
                 <Stack
                     spacing={2}
                     sx={{
-                        animation: `${fadeIn} 0.6s ease-out 0.3s both`,
+                        animation: 'fadeIn 0.6s ease-out 0.3s both',
                     }}
                 >
                     <Typography variant="h4" fontWeight={600} color="success.main">

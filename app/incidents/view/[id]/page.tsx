@@ -2,30 +2,34 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
-import { InvestigationSection } from '@/components/incident-form/InvestigationSection';
+import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
+import { CompletionAnimation } from '@/components/incident-form/CompletionAnimation';
+import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
+import { InvestigationManagement } from '@/components/incident-form/InvestigationManagement';
 import { MedicalAssessmentSection } from '@/components/incident-form/MedicalAssessmentSection';
 import { OccurrenceDetailsSection } from '@/components/incident-form/OccurrenceDetailsSection';
 import { PatientInfoSection } from '@/components/incident-form/PatientInfoSection';
-import { QIAssignHODSection } from '@/components/incident-form/QIAssignHODSection';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
+import { QIReviewSection } from '@/components/incident-form/QIReviewSection';
 import { RiskClassificationSection } from '@/components/incident-form/RiskClassificationSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { useIncident } from '@/lib/hooks';
 import { Box, Typography } from '@mui/material';
 import { useParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
 import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
+import { WorkflowSection } from './WorkflowSection';
 
 // Inner component that fetches data
 function IncidentDetails() {
   const params = useParams();
+  const [showCompletion, setShowCompletion] = useState(false);
 
   // This will suspend while loading
   const { incident, mutate } = useIncident(params.id as string);
-
 
   if (!incident) {
     return (
@@ -38,6 +42,13 @@ function IncidentDetails() {
       </AppLayout>
     );
   }
+
+  // Handle successful closure
+  const handleClosureSuccess = () => {
+    mutate();
+    setShowCompletion(true);
+  };
+
   return (
     <AppLayout>
       <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
@@ -48,42 +59,44 @@ function IncidentDetails() {
           <StatusTimeline status={incident.status} submittedAt={incident.submittedAt} />
         )}
 
-        {/* Patient & Occurrence Information */}
+        {/* ========== STATIC INFORMATION SECTIONS ========== */}
+        {/* Always visible - Basic incident information */}
         <PatientInfoSection incident={incident} />
         <OccurrenceDetailsSection incident={incident} />
 
-        {/* Medical Assessment */}
+        {/* Medical Assessment - Conditional on physician involvement */}
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
 
-        {/* Supervisor Section - Display only, no approval needed */}
+        {/* Supervisor Section - Read-only display */}
         {(incident.supervisorId || incident.supervisorAction) && (
           <SupervisorSection incident={incident} onUpdate={mutate} />
         )}
 
-        {/* Risk Classification Section */}
+        {/* Risk Classification - If available */}
         {incident.riskScore && <RiskClassificationSection incident={incident} />}
 
-        {/* QI Assign HOD Section - Can assign directly after submission */}
-        {incident.status === 'hod_assigned' && !incident.departmentHeadId && (
-          <QIAssignHODSection incident={incident} onUpdate={mutate} />
-        )}
+        {/* ========== WORKFLOW SECTIONS ========== */}
+        {/* Status-driven workflow components */}
+        <WorkflowSection
+          incident={incident}
+          onUpdate={mutate}
+          onClosureSuccess={handleClosureSuccess}
+        />
 
-        {/* Investigation Section (for HOD and investigators) */}
-        {(incident.status === 'hod_assigned' || incident.status === 'qi_final_review' || incident.status === 'closed') && (
-          <InvestigationSection incident={incident} onUpdate={mutate} />
-        )}
+        {/* ========== COMMENTS & ACTIONS ========== */}
+        {/* Comments - Always visible after submission */}
+        {incident.status !== 'draft' && <CommentsSection incidentId={incident.id} />}
 
-        {/* QI Final Feedback */}
-        {(incident.status === 'qi_final_review' || incident.status === 'closed') && (
-          <QIFeedbackSection incident={incident} onUpdate={mutate} />
-        )}
-
-        {/* Comments Section */}
-        <CommentsSection incidentId={incident.id} />
-
-        {/* Action Buttons */}
+        {/* Action Buttons - Context-aware actions */}
         <ActionButtons incident={incident} onUpdate={mutate} />
       </Box>
+
+      {/* Completion Animation */}
+      <CompletionAnimation
+        open={showCompletion}
+        incidentId={incident.id}
+        onClose={() => setShowCompletion(false)}
+      />
     </AppLayout>
   );
 }
