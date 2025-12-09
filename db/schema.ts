@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { boolean, date, integer, pgEnum, pgTable, serial, text, time, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, pgEnum, pgTable, serial, text, time, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // ============================================
 // ENUMS - Based on actual OVR form
@@ -39,15 +39,14 @@ export const severityLevelEnum = pgEnum('severity_level', [
   'major'
 ]);
 
-// OVR Form Status Workflow - Matches actual hospital process
+// OVR Form Status Workflow - QI-led investigation workflow
 export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
-  'submitted',                // Step 1: Waiting for QI Dept approval
-  // 'supervisor_approved',      // REMOVED: Supervisor approval step eliminated - goes directly to QI
-  'qi_review',                // Step 2: QI dept reviews and approves/rejects the report
-  'hod_assigned',             // Step 3: After submission, directly assigned to QI who assigns to HOD
-  'qi_final_review',          // Step 4: QI final review and feedback
-  'closed'                    // Step 5: Case closed
+  'submitted',                // Step 1: Submitted, waiting for QI review
+  'qi_review',                // Step 2: QI reviews and approves/rejects
+  'investigating',            // Step 3: Investigation phase - QI assigns investigators and collects findings
+  'qi_final_actions',         // Step 4: QI creates action items and tracks completion
+  'closed'                    // Step 5: Case closed with feedback
 ]);
 
 // ============================================
@@ -147,7 +146,7 @@ export const ovrReports = pgTable('ovr_reports', {
 
   // Description
   description: text('description').notNull(),
-  levelOfHarm: levelOfHarmEnum('level_of_harm'), // Added after description
+  levelOfHarm: levelOfHarmEnum('level_of_harm'),
 
   // Reporter Information
   reporterId: integer('reporter_id').notNull().references(() => users.id),
@@ -162,14 +161,6 @@ export const ovrReports = pgTable('ovr_reports', {
   diagnosis: text('diagnosis'),
   injuryOutcome: injuryOutcomeEnum('injury_outcome'),
 
-  // Supervisor/Manager Action
-  supervisorNotified: boolean('supervisor_notified').default(false),
-  supervisorId: integer('supervisor_id').references(() => users.id),
-  supervisorName: varchar('supervisor_name', { length: 255 }),
-  supervisorAction: text('supervisor_action'),
-  supervisorActionDate: timestamp('supervisor_action_date'),
-  supervisorApprovedAt: timestamp('supervisor_approved_at'),
-
   // Treatment details
   treatmentTypes: text('treatment_types').array(),
   hospitalizedDetails: varchar('hospitalized_details', { length: 255 }),
@@ -183,24 +174,21 @@ export const ovrReports = pgTable('ovr_reports', {
   riskLikelihood: integer('risk_likelihood'), // 1-5 (Rare to Almost Certain)
   riskScore: integer('risk_score'), // Calculated: impact * likelihood
 
-  // QI Department Assignment
-  qiAssignedBy: integer('qi_assigned_by').references(() => users.id),
-  qiAssignedDate: timestamp('qi_assigned_date'),
+  // Supervisor Notification (for information only, no approval)
+  supervisorNotified: boolean('supervisor_notified'),
+  supervisorId: integer('supervisor_id').references(() => users.id),
+  supervisorAction: text('supervisor_action'), // Notes only
 
-  // Department Head Review & Investigation
-  departmentHeadId: integer('department_head_id').references(() => users.id),
-  hodAssignedAt: timestamp('hod_assigned_at'),
-  investigationFindings: text('investigation_findings'), // Markdown format
-  problemsIdentified: text('problems_identified'),
-  causeClassification: varchar('cause_classification', { length: 50 }), // From 1-10 classification
-  causeDetails: text('cause_details'),
-  preventionRecommendation: text('prevention_recommendation'),
-  hodActionDate: timestamp('hod_action_date'),
-  hodSubmittedAt: timestamp('hod_submitted_at'),
-
-  // QI Department
+  // QI Department Review & Assignment
   qiReceivedBy: integer('qi_received_by').references(() => users.id),
   qiReceivedDate: timestamp('qi_received_date'),
+  qiAssignedBy: integer('qi_assigned_by').references(() => users.id),
+  qiAssignedDate: timestamp('qi_assigned_date'),
+  qiApprovedBy: integer('qi_approved_by').references(() => users.id),
+  qiApprovedAt: timestamp('qi_approved_at'),
+  qiRejectionReason: text('qi_rejection_reason'), // If rejected during qi_review
+
+  // QI Final Assessment (old fields kept for backward compatibility)
   qiFeedback: text('qi_feedback'),
   qiFormComplete: boolean('qi_form_complete'),
   qiProperCauseIdentified: boolean('qi_proper_cause_identified'),
@@ -208,6 +196,12 @@ export const ovrReports = pgTable('ovr_reports', {
   qiActionCompliesStandards: boolean('qi_action_complies_standards'),
   qiEffectiveCorrectiveAction: boolean('qi_effective_corrective_action'),
   severityLevel: severityLevelEnum('severity_level'),
+
+  // Final Case Closure
+  caseReview: text('case_review'), // Final case review & takeaways (Markdown)
+  reporterFeedback: text('reporter_feedback'), // Feedback for the reporter
+  closedBy: integer('closed_by').references(() => users.id),
+  closedAt: timestamp('closed_at'),
 
   // Status & Workflow
   status: ovrStatusEnum('status').notNull().default('draft'),
@@ -217,24 +211,96 @@ export const ovrReports = pgTable('ovr_reports', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   submittedAt: timestamp('submitted_at'),
   resolvedAt: timestamp('resolved_at'),
+});
+
+// ============================================
+// OVR INVESTIGATIONS - Investigation phase tracking
+// ============================================
+export const ovrInvestigations = pgTable('ovr_investigations', {
+  id: serial('id').primaryKey(),
+  ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+
+  // Investigation Content
+  findings: text('findings'), // Markdown format
+  problemsIdentified: text('problems_identified'),
+  causeClassification: varchar('cause_classification', { length: 50 }),
+  causeDetails: text('cause_details'),
+  correctiveActionPlan: text('corrective_action_plan'), // JSON array of checklist items
+
+  // RCA & Fishbone (for high/extreme risk only)
+  rcaAnalysis: text('rca_analysis'), // Markdown/JSON
+  fishboneAnalysis: text('fishbone_analysis'), // Markdown/JSON
+
+  // Metadata
+  createdBy: integer('created_by').notNull().references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  submittedAt: timestamp('submitted_at'), // When investigators submit
+});
+
+// ============================================
+// OVR CORRECTIVE ACTIONS - Action items tracking
+// ============================================
+export const ovrCorrectiveActions = pgTable('ovr_corrective_actions', {
+  id: serial('id').primaryKey(),
+  ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+
+  // Action Details
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  dueDate: timestamp('due_date').notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('open'), // 'open' | 'closed'
+
+  // Action Checklist & Completion
+  checklist: text('checklist').notNull(), // JSON: [{item: string, completed: boolean}]
+  actionTaken: text('action_taken'), // Markdown
+  evidenceFiles: text('evidence_files'), // JSON array of file metadata
+
+  // Metadata
+  createdBy: integer('created_by').notNull().references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at'),
+  closedBy: integer('closed_by').references(() => users.id),
   closedAt: timestamp('closed_at'),
 });
 
 // ============================================
-// OVR INVESTIGATORS - Track assigned investigators
+// SHARED ACCESS - Google Forms style sharing
+// Resource types: 'investigation' | 'corrective_action'
 // ============================================
-export const ovrInvestigators = pgTable('ovr_investigators', {
+export const ovrSharedAccess = pgTable('ovr_shared_access', {
   id: serial('id').primaryKey(),
+
+  // Resource identification
+  resourceType: varchar('resource_type', { length: 30 }).notNull(), // 'investigation' | 'corrective_action'
+  resourceId: integer('resource_id').notNull(), // ID of investigation or action
   ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
-  investigatorId: integer('investigator_id').notNull().references(() => users.id),
-  assignedBy: integer('assigned_by').notNull().references(() => users.id),
-  findings: text('findings'), // Markdown format
-  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, submitted
-  assignedAt: timestamp('assigned_at').notNull().defaultNow(),
-  submittedAt: timestamp('submitted_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+
+  // Access details
+  email: varchar('email', { length: 255 }).notNull(), // Email invited (may not be user yet)
+  userId: integer('user_id').references(() => users.id), // Linked user if registered
+  role: varchar('role', { length: 30 }).notNull(), // 'investigator' | 'action_handler' | 'viewer'
+
+  // Access token for email-based access
+  accessToken: varchar('access_token', { length: 64 }).notNull().unique(),
+  tokenExpiresAt: timestamp('token_expires_at'),
+
+  // Status
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending' | 'accepted' | 'revoked'
+  lastAccessedAt: timestamp('last_accessed_at'),
+
+  // Metadata
+  invitedBy: integer('invited_by').notNull().references(() => users.id),
+  invitedAt: timestamp('invited_at').notNull().defaultNow(),
+  revokedBy: integer('revoked_by').references(() => users.id),
+  revokedAt: timestamp('revoked_at'),
+}, (table) => ({
+  // Composite index for fast lookups
+  resourceIdx: index('ovr_shared_access_resource_idx').on(table.resourceType, table.resourceId),
+  tokenIdx: index('ovr_shared_access_token_idx').on(table.accessToken),
+  emailIdx: index('ovr_shared_access_email_idx').on(table.email),
+}));
 
 // ============================================
 // OVR ATTACHMENTS
@@ -269,8 +335,10 @@ export const ovrComments = pgTable('ovr_comments', {
 export const usersRelations = relations(users, ({ many, one }) => ({
   reportedIncidents: many(ovrReports, { relationName: 'reporter' }),
   supervisedIncidents: many(ovrReports, { relationName: 'supervisor' }),
-  hodReviewedIncidents: many(ovrReports, { relationName: 'hod' }),
   qiReceivedIncidents: many(ovrReports, { relationName: 'qi_receiver' }),
+  investigations: many(ovrInvestigations),
+  correctiveActions: many(ovrCorrectiveActions, { relationName: 'action_creator' }),
+  sharedAccess: many(ovrSharedAccess, { relationName: 'shared_user' }),
   comments: many(ovrComments),
   attachments: many(ovrAttachments),
   headedDepartment: one(departments, {
@@ -311,11 +379,6 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     references: [users.id],
     relationName: 'supervisor',
   }),
-  departmentHead: one(users, {
-    fields: [ovrReports.departmentHeadId],
-    references: [users.id],
-    relationName: 'hod',
-  }),
   qiReceiver: one(users, {
     fields: [ovrReports.qiReceivedBy],
     references: [users.id],
@@ -330,25 +393,65 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     fields: [ovrReports.locationId],
     references: [locations.id],
   }),
+  investigation: one(ovrInvestigations, {
+    fields: [ovrReports.id],
+    references: [ovrInvestigations.ovrReportId],
+  }),
+  correctiveActions: many(ovrCorrectiveActions),
+  sharedAccess: many(ovrSharedAccess),
   attachments: many(ovrAttachments),
   comments: many(ovrComments),
-  investigators: many(ovrInvestigators),
 }));
 
-export const ovrInvestigatorsRelations = relations(ovrInvestigators, ({ one }) => ({
+export const ovrInvestigationsRelations = relations(ovrInvestigations, ({ one, many }) => ({
   report: one(ovrReports, {
-    fields: [ovrInvestigators.ovrReportId],
+    fields: [ovrInvestigations.ovrReportId],
     references: [ovrReports.id],
   }),
-  investigator: one(users, {
-    fields: [ovrInvestigators.investigatorId],
+  creator: one(users, {
+    fields: [ovrInvestigations.createdBy],
     references: [users.id],
-    relationName: 'investigator',
   }),
-  assigner: one(users, {
-    fields: [ovrInvestigators.assignedBy],
+  sharedAccess: many(ovrSharedAccess),
+}));
+
+export const ovrCorrectiveActionsRelations = relations(ovrCorrectiveActions, ({ one, many }) => ({
+  report: one(ovrReports, {
+    fields: [ovrCorrectiveActions.ovrReportId],
+    references: [ovrReports.id],
+  }),
+  creator: one(users, {
+    fields: [ovrCorrectiveActions.createdBy],
     references: [users.id],
-    relationName: 'assigner',
+    relationName: 'action_creator',
+  }),
+  closer: one(users, {
+    fields: [ovrCorrectiveActions.closedBy],
+    references: [users.id],
+    relationName: 'action_closer',
+  }),
+  sharedAccess: many(ovrSharedAccess),
+}));
+
+export const ovrSharedAccessRelations = relations(ovrSharedAccess, ({ one }) => ({
+  report: one(ovrReports, {
+    fields: [ovrSharedAccess.ovrReportId],
+    references: [ovrReports.id],
+  }),
+  user: one(users, {
+    fields: [ovrSharedAccess.userId],
+    references: [users.id],
+    relationName: 'shared_user',
+  }),
+  inviter: one(users, {
+    fields: [ovrSharedAccess.invitedBy],
+    references: [users.id],
+    relationName: 'inviter',
+  }),
+  revoker: one(users, {
+    fields: [ovrSharedAccess.revokedBy],
+    references: [users.id],
+    relationName: 'revoker',
   }),
 }));
 
