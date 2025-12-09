@@ -63,20 +63,16 @@ export function useIncident(
 
 // ============================================
 // INCIDENT ACTIONS HOOK
-// Unified hook for all incident workflow actions
+// Unified hook for incident-level workflow actions
 // ============================================
 
 /**
- * Valid action types - derived from backend ACTION_SCHEMAS
- * Type-safe and auto-synced with backend
+ * Valid action types for new QI-led workflow
+ * Simplified actions at incident level
  */
 export type IncidentActionType =
-  | 'supervisor-approve'
-  | 'qi-assign-hod'
-  | 'qi-close'
-  | 'assign-investigator'
-  | 'submit-findings'
-  | 'hod-submit';
+  | 'qi-review'        // QI approve/reject submitted incident
+  | 'close-incident';  // Final case closure by QI
 
 /**
  * Action result with type-safe error handling
@@ -123,13 +119,18 @@ export interface UseIncidentActionsReturn {
  * @param onSuccess - Optional callback after successful action
  * 
  * @example
- * const { performAction, submitting } = useIncidentActions(123, onUpdate);
+ * const { performAction, submitting } = useIncidentActions('OVR-2025-01-001', onUpdate);
  * 
- * // Supervisor approval
- * await performAction('supervisor-approve', { action: 'Approved' });
+ * // QI Review (approve/reject)
+ * await performAction('qi-review', {
+ *   approved: true
+ * });
  * 
- * // QI assign HOD
- * await performAction('qi-assign-hod', { departmentHeadId: 456 });
+ * // Close incident
+ * await performAction('close-incident', {
+ *   caseReview: '...',
+ *   reporterFeedback: '...'
+ * });
  */
 export function useIncidentActions(
   incidentId: number | string,
@@ -146,13 +147,15 @@ export function useIncidentActions(
     setError(null);
 
     try {
-      const { data: result, error: err } = await apiCall<T>(
-        `/api/incidents/${incidentId}/actions`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ action, data }),
-        }
-      );
+      // Map actions to endpoints
+      const endpoint = action === 'qi-review'
+        ? `/api/incidents/${incidentId}/qi-review`
+        : `/api/incidents/${incidentId}/close`;
+
+      const { data: result, error: err } = await apiCall<T>(endpoint, {
+        method: 'POST',
+        body: data,
+      });
 
       setSubmitting(false);
 
