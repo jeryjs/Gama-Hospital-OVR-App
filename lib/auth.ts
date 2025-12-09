@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         // Map Azure AD security groups (using group IDs) to application roles
-        const adGroupIds = (user as any).groups || [];
+        const adGroupIds = (user as any).roles || [];
         const mappedRoles = mapAdGroupsToRoles(adGroupIds);
 
         if (existingUser) {
