@@ -40,18 +40,18 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
   const statusColors: Record<string, string> = {
     draft: '#6B7280',
     submitted: '#3B82F6',
-    supervisor_approved: '#10B981',
-    hod_assigned: '#F59E0B',
-    qi_final_review: '#EC4899',
+    qi_review: '#F59E0B',
+    investigating: '#8B5CF6',
+    qi_final_actions: '#EC4899',
     closed: '#059669',
   };
 
   const statusLabels: Record<string, string> = {
     draft: 'Draft',
     submitted: 'Submitted',
-    supervisor_approved: 'Supervisor Approved',
-    hod_assigned: 'Under Investigation',
-    qi_final_review: 'QI Review',
+    qi_review: 'QI Review',
+    investigating: 'Investigating',
+    qi_final_actions: 'Final Actions',
     closed: 'Closed',
   };
 

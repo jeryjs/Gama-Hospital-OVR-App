@@ -318,8 +318,8 @@ export const createIncidentSchema = ovrReportInsertSchema
     qiReceivedDate: true,
     qiAssignedBy: true,
     qiAssignedDate: true,
-    qiApprovedBy: true,
-    qiApprovedAt: true,
+    qiReviewedBy: true,
+    qiReviewedAt: true,
     qiRejectionReason: true,
 
     // QI final assessment fields (set during review)
@@ -453,7 +453,7 @@ export type UpdateIncidentInput = z.infer<typeof updateIncidentSchema>;
  * QI Review - Approve or reject submitted incident
  */
 export const qiReviewSchema = z.object({
-  approved: z.boolean(),
+  decision: z.enum(['approve', 'reject']),
   rejectionReason: z.string().optional().refine((val) => {
     // If provided, must be at least 20 characters
     if (val !== undefined && val !== null && val.trim().length > 0) {
@@ -464,8 +464,8 @@ export const qiReviewSchema = z.object({
     message: 'Rejection reason must be at least 20 characters',
   }),
 }).refine((data) => {
-  // If rejected (approved === false), rejection reason is required
-  if (data.approved === false) {
+  // If rejected, rejection reason is required
+  if (data.decision === 'reject') {
     return data.rejectionReason && data.rejectionReason.trim().length >= 20;
   }
   return true;

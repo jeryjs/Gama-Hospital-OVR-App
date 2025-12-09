@@ -131,8 +131,8 @@ CREATE TABLE "ovr_reports" (
 	"qi_received_date" timestamp,
 	"qi_assigned_by" integer,
 	"qi_assigned_date" timestamp,
-	"qi_approved_by" integer,
-	"qi_approved_at" timestamp,
+	"qi_reviewed_by" integer,
+	"qi_reviewed_at" timestamp,
 	"qi_rejection_reason" text,
 	"qi_feedback" text,
 	"qi_form_complete" boolean,
@@ -206,7 +206,7 @@ ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_reporter_id_users_id_fk" F
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_supervisor_id_users_id_fk" FOREIGN KEY ("supervisor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_qi_received_by_users_id_fk" FOREIGN KEY ("qi_received_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_qi_assigned_by_users_id_fk" FOREIGN KEY ("qi_assigned_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_qi_approved_by_users_id_fk" FOREIGN KEY ("qi_approved_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_qi_reviewed_by_users_id_fk" FOREIGN KEY ("qi_reviewed_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_closed_by_users_id_fk" FOREIGN KEY ("closed_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_ovr_report_id_ovr_reports_id_fk" FOREIGN KEY ("ovr_report_id") REFERENCES "public"."ovr_reports"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

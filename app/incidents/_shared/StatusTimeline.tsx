@@ -13,7 +13,7 @@ interface Props {
  */
 const steps = [
   { key: 'submitted', label: 'Submitted', description: { current: 'Waiting for QI review', final: 'Submitted to QI department' } },
-  { key: 'qi_review', label: 'QI Review', description: { current: 'QI reviewing incident', final: 'Reviewed and approved by QI' } },
+  { key: 'qi_review', label: 'QI Review', description: { current: 'QI reviewing incident', final: 'Reviewed by QI' } },
   { key: 'investigating', label: 'Investigation', description: { current: 'Investigators collecting findings', final: 'Investigation completed' } },
   { key: 'qi_final_actions', label: 'Corrective Actions', description: { current: 'Implementing action items', final: 'All actions completed' } },
   { key: 'closed', label: 'Closed', description: { current: 'Case closed and archived', final: 'Case closed and archived' } },

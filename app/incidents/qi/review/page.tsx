@@ -106,7 +106,7 @@ export default function QIReviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          approved: reviewDecision === 'approve',
+          decision: reviewDecision as 'approve' | 'reject',
           ...(reviewDecision === 'reject' && { rejectionReason: rejectionReason.trim() }),
         }),
       });

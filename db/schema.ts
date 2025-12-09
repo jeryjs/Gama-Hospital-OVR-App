@@ -184,8 +184,8 @@ export const ovrReports = pgTable('ovr_reports', {
   qiReceivedDate: timestamp('qi_received_date'),
   qiAssignedBy: integer('qi_assigned_by').references(() => users.id),
   qiAssignedDate: timestamp('qi_assigned_date'),
-  qiApprovedBy: integer('qi_approved_by').references(() => users.id),
-  qiApprovedAt: timestamp('qi_approved_at'),
+  qiReviewedBy: integer('qi_reviewed_by').references(() => users.id),
+  qiReviewedAt: timestamp('qi_reviewed_at'),
   qiRejectionReason: text('qi_rejection_reason'), // If rejected during qi_review
 
   // QI Final Assessment (old fields kept for backward compatibility)

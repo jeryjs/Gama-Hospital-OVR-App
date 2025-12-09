@@ -234,8 +234,8 @@ Room signage: Fall precautions posted`,
                 // Status and timestamps
                 status: 'closed',
                 submittedAt: new Date('2025-11-15T15:00:00'),
-                qiApprovedBy: sarahQI.id,
-                qiApprovedAt: new Date('2025-11-16T09:00:00'),
+                qiReviewedBy: sarahQI.id,
+                qiReviewedAt: new Date('2025-11-16T09:00:00'),
                 closedAt: new Date('2025-12-05T16:30:00'),
                 closedBy: sarahQI.id,
                 caseReview: `**Investigation Summary**
@@ -306,8 +306,8 @@ Patient sustained left hip fracture requiring surgical intervention. Full recove
 
                 status: 'qi_final_actions',
                 submittedAt: new Date('2025-11-28T09:00:00'),
-                qiApprovedBy: sarahQI.id,
-                qiApprovedAt: new Date('2025-11-28T10:30:00'),
+                qiReviewedBy: sarahQI.id,
+                qiReviewedAt: new Date('2025-11-28T10:30:00'),
 
                 createdAt: new Date('2025-11-28T08:50:00'),
                 updatedAt: new Date('2025-12-08T14:00:00'),
@@ -354,8 +354,8 @@ Patient's father presented with minor laceration requiring assessment. Departmen
 
                 status: 'investigating',
                 submittedAt: new Date('2025-12-05T23:30:00'),
-                qiApprovedBy: michaelQI.id,
-                qiApprovedAt: new Date('2025-12-06T08:00:00'),
+                qiReviewedBy: michaelQI.id,
+                qiReviewedAt: new Date('2025-12-06T08:00:00'),
 
                 createdAt: new Date('2025-12-05T23:00:00'),
                 updatedAt: new Date('2025-12-07T11:00:00'),

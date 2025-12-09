@@ -55,7 +55,7 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
 
         // Build payload based on decision
         const payload: QIReviewInput = {
-            approved: decision === 'approve',
+            decision: decision as 'approve' | 'reject',
             ...(decision === 'reject' && { rejectionReason: rejectionReason.trim() }),
         };
 

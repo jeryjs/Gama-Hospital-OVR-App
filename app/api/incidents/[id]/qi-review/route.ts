@@ -57,11 +57,11 @@ export async function POST(
             qiReceivedDate: new Date(),
         };
 
-        if (body.approved) {
+        if (body.decision === 'approve') {
             // Approved - move to investigating status
             updateData.status = 'investigating';
-            updateData.qiApprovedBy = parseInt(session.user.id);
-            updateData.qiApprovedAt = new Date();
+            updateData.qiReviewedBy = parseInt(session.user.id);
+            updateData.qiReviewedAt = new Date();
             updateData.qiAssignedBy = parseInt(session.user.id);
             updateData.qiAssignedDate = new Date();
         } else {
@@ -79,8 +79,8 @@ export async function POST(
 
         return NextResponse.json({
             success: true,
-            message: body.approved
-                ? 'Incident approved and moved to investigation'
+            message: body.decision === 'approve'
+                ? 'Incident reviewed and moved to investigation'
                 : 'Incident rejected and returned to reporter',
             incident: updated,
         });

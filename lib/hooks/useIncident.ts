@@ -123,7 +123,7 @@ export interface UseIncidentActionsReturn {
  * 
  * // QI Review (approve/reject)
  * await performAction('qi-review', {
- *   approved: true
+ *   decision: 'approve'
  * });
  * 
  * // Close incident

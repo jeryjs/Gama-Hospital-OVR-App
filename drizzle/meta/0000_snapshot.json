@@ -1,5 +1,5 @@
 {
-  "id": "1e4aa8ec-ae89-4076-8a8a-01a993174de0",
+  "id": "95af3bf2-26fc-4be5-b658-a96053806ea8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -906,14 +906,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "qi_approved_by": {
-          "name": "qi_approved_by",
+        "qi_reviewed_by": {
+          "name": "qi_reviewed_by",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "qi_approved_at": {
-          "name": "qi_approved_at",
+        "qi_reviewed_at": {
+          "name": "qi_reviewed_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -1100,12 +1100,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "ovr_reports_qi_approved_by_users_id_fk": {
-          "name": "ovr_reports_qi_approved_by_users_id_fk",
+        "ovr_reports_qi_reviewed_by_users_id_fk": {
+          "name": "ovr_reports_qi_reviewed_by_users_id_fk",
           "tableFrom": "ovr_reports",
           "tableTo": "users",
           "columnsFrom": [
-            "qi_approved_by"
+            "qi_reviewed_by"
           ],
           "columnsTo": [
             "id"
