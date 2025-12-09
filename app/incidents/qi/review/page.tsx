@@ -2,22 +2,27 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { OVRReportListItem, UserMinimal } from '@/lib/api/schemas';
-import { APP_ROLES } from '@/lib/constants';
-import { apiCall } from '@/lib/client/error-handler';
-import { AssignmentInd, Visibility } from '@mui/icons-material';
+import { formatErrorForAlert } from '@/lib/client/error-handler';
+import { useIncidents } from '@/lib/hooks';
+import { getStatusColor, getStatusLabel } from '@/lib/utils/status';
+import { CheckCircle, Close, FilterList, Visibility } from '@/lib/icons';
 import {
-  alpha,
-  Autocomplete,
+  Alert,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Grid,
+  IconButton,
   LinearProgress,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -35,107 +40,134 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-type QIIncident = OVRReportListItem & {
-  reporter: {
-    firstName: string;
-    lastName: string;
-  };
-};
+'use client';
 
-type HODUser = UserMinimal & {
-  name: string;
-  department: string | null;
-};
+import { AppLayout } from '@/components/AppLayout';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { formatErrorForAlert } from '@/lib/client/error-handler';
+import { useIncidents } from '@/lib/hooks';
+import { getStatusColor, getStatusLabel } from '@/lib/utils/status';
+import { CheckCircle, Close, FilterList, Visibility } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  LinearProgress,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { format } from 'date-fns';
+import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
+/**
+ * QI Review Queue Page
+ * 
+ * Purpose: Manage submitted incidents awaiting QI review
+ * Distinct from QI Dashboard - this is the action queue
+ * 
+ * Features:
+ * - Shows ONLY 'submitted' status incidents
+ * - Quick approve/reject actions
+ * - Filtering and search
+ * - Metrics cards
+ */
 export default function QIReviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [incidents, setIncidents] = useState<QIIncident[]>([]);
-  const [users, setUsers] = useState<HODUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<number | null>(null);
-  const [selectedHOD, setSelectedHOD] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
+  const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject' | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Check access
   useEffect(() => {
     if (session && !ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || [])) {
       return router.replace('/dashboard');
     }
-    fetchIncidents();
   }, [session, router]);
 
-  const fetchIncidents = async () => {
-    try {
-      const res = await fetch('/api/incidents?status=supervisor_approved');
-      if (res.ok) {
-        const data = await res.json();
-        setIncidents(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch submitted incidents
+  const { incidents, pagination, isLoading, error, mutate } = useIncidents({
+    status: 'submitted',
+    search: searchTerm || undefined,
+    occurrenceCategory: categoryFilter || undefined,
+    page: 1,
+    limit: 20,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  });
 
-  const fetchUsers = async () => {
-    try {
-      const hodRoles = [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD].join(',');
-      const res = await fetch(`/api/users?legacy=true&roles=${hodRoles}`);
-      if (res.ok) {
-        const data = await res.json();
-        const formattedUsers: HODUser[] = data.map((user: any) => ({
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          name: user.name ?? `${user.firstName} ${user.lastName}`,
-          department: user.department ?? null,
-        }));
-        setUsers(formattedUsers);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
-
-  const handleOpenAssignDialog = (incidentId: number) => {
+  const handleOpenReviewDialog = (incidentId: string) => {
     setSelectedIncident(incidentId);
-    setAssignDialogOpen(true);
-    fetchUsers();
+    setReviewDialogOpen(true);
   };
 
-  const handleCloseAssignDialog = () => {
-    setAssignDialogOpen(false);
+  const handleCloseReviewDialog = () => {
+    setReviewDialogOpen(false);
     setSelectedIncident(null);
-    setSelectedHOD(null);
+    setReviewDecision(null);
+    setRejectionReason('');
   };
 
-  const handleAssignToHOD = async () => {
-    if (!selectedIncident || !selectedHOD) return;
-
-    setSubmitting(true);
-
-    const { data, error } = await apiCall(`/api/incidents/${selectedIncident}/actions`, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'qi-assign-hod',
-        data: { departmentHeadId: selectedHOD },
-      }),
-    });
-
-    setSubmitting(false);
-
-    if (error) {
-      alert(error.message || 'Failed to assign to HOD');
+  const handleSubmitReview = async () => {
+    if (!selectedIncident || !reviewDecision) return;
+    if (reviewDecision === 'reject' && rejectionReason.trim().length < 20) {
+      alert('Rejection reason must be at least 20 characters');
       return;
     }
 
-    fetchIncidents();
-    handleCloseAssignDialog();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/incidents/${selectedIncident}/qi-review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approved: reviewDecision === 'approve',
+          ...(reviewDecision === 'reject' && { rejectionReason: rejectionReason.trim() }),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit review');
+      }
+
+      mutate();
+      handleCloseReviewDialog();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to submit review');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout>
         <LinearProgress />
@@ -143,30 +175,99 @@ export default function QIReviewPage() {
     );
   }
 
+  if (error) {
+    return (
+      <AppLayout>
+        <Alert severity="error" sx={{ mt: 4 }}>
+          Failed to load incidents. {formatErrorForAlert(error)}
+        </Alert>
+      </AppLayout>
+    );
+  }
+
+  const pendingCount = incidents?.length || 0;
+
   return (
     <AppLayout>
-      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
           <Stack spacing={3}>
+            {/* Header */}
             <Box>
               <Typography variant="h4" fontWeight={700} gutterBottom>
-                QI Department - Pending Review
+                QI Review Queue
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Review supervisor-approved incidents and assign to Department Heads for investigation
+                Review and approve/reject submitted incidents before investigation
               </Typography>
             </Box>
 
+            {/* Metrics Cards */}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Pending Review
+                    </Typography>
+                    <Typography variant="h3" fontWeight={700}>
+                      {pendingCount}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Total Records
+                    </Typography>
+                    <Typography variant="h3" fontWeight={700}>
+                      {pagination?.total || 0}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Filters */}
+            <Paper sx={{ p: 2 }}>
+              <Stack direction="row" spacing={2}>
+                <TextField
+                  placeholder="Search by reference or description..."
+                  size="small"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  size="small"
+                  displayEmpty
+                  sx={{ minWidth: 200 }}
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  <MenuItem value="fall">Fall</MenuItem>
+                  <MenuItem value="medication">Medication</MenuItem>
+                  <MenuItem value="equipment">Equipment</MenuItem>
+                  <MenuItem value="procedure">Procedure</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </Stack>
+            </Paper>
+
+            {/* Incidents Table */}
             <Paper>
               <TableContainer>
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Reference #</TableCell>
+                      <TableCell>Reference</TableCell>
                       <TableCell>Reporter</TableCell>
                       <TableCell>Date</TableCell>
                       <TableCell>Category</TableCell>
@@ -175,55 +276,38 @@ export default function QIReviewPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {incidents.length === 0 ? (
+                    {!incidents || incidents.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                           <Typography variant="body1" color="text.secondary">
-                            No incidents pending QI review
+                            No incidents pending review
                           </Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
                       incidents.map((incident) => (
-                        <TableRow
-                          key={incident.id}
-                          hover
-                          sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                              backgroundColor: (theme) =>
-                                alpha(theme.palette.primary.main, 0.05),
-                            },
-                          }}
-                        >
+                        <TableRow key={incident.id} hover>
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {incident.refNo}
+                              {incident.id}
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {incident.reporter.firstName} {incident.reporter.lastName}
+                            {incident.reporter?.firstName} {incident.reporter?.lastName}
                           </TableCell>
                           <TableCell>
                             {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
                           </TableCell>
                           <TableCell>
-                            <Typography
-                              variant="body2"
-                              sx={{ textTransform: 'capitalize' }}
-                            >
-                              {incident.occurrenceCategory.replace(/_/g, ' ')}
+                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                              {incident.occurrenceCategory?.replace(/_/g, ' ')}
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Chip
-                              label="Supervisor Approved"
+                              label={getStatusLabel(incident.status)}
+                              color={getStatusColor(incident.status) as any}
                               size="small"
-                              sx={{
-                                bgcolor: alpha('#10B981', 0.15),
-                                color: '#10B981',
-                                fontWeight: 600,
-                              }}
                             />
                           </TableCell>
                           <TableCell align="right">
@@ -239,10 +323,10 @@ export default function QIReviewPage() {
                               <Button
                                 size="small"
                                 variant="contained"
-                                startIcon={<AssignmentInd />}
-                                onClick={() => handleOpenAssignDialog(incident.id)}
+                                startIcon={<CheckCircle />}
+                                onClick={() => handleOpenReviewDialog(incident.id)}
                               >
-                                Assign HOD
+                                Review
                               </Button>
                             </Stack>
                           </TableCell>
@@ -256,34 +340,64 @@ export default function QIReviewPage() {
           </Stack>
         </motion.div>
 
-        {/* Assign HOD Dialog */}
-        <Dialog
-          open={assignDialogOpen}
-          onClose={handleCloseAssignDialog}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Assign to Department Head</DialogTitle>
+        {/* Review Dialog */}
+        <Dialog open={reviewDialogOpen} onClose={handleCloseReviewDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>Review Incident</DialogTitle>
           <DialogContent>
-            <Box sx={{ mt: 2 }}>
-              <Autocomplete
-                options={users}
-                getOptionLabel={(option) => `${option.name} ${option.department ? `(${option.department})` : ''}`}
-                onChange={(_, value) => setSelectedHOD(value?.id || null)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Select Department Head" required />
-                )}
-              />
-            </Box>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="body2">
+                Select your decision for this incident:
+              </Typography>
+
+              <Stack spacing={1}>
+                <Button
+                  variant={reviewDecision === 'approve' ? 'contained' : 'outlined'}
+                  color="success"
+                  fullWidth
+                  onClick={() => setReviewDecision('approve')}
+                  startIcon={<CheckCircle />}
+                >
+                  Approve - Move to Investigation
+                </Button>
+                <Button
+                  variant={reviewDecision === 'reject' ? 'contained' : 'outlined'}
+                  color="error"
+                  fullWidth
+                  onClick={() => setReviewDecision('reject')}
+                  startIcon={<Close />}
+                >
+                  Reject - Return to Reporter
+                </Button>
+              </Stack>
+
+              {reviewDecision === 'reject' && (
+                <TextField
+                  label="Rejection Reason"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  required
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Explain why this report is being rejected (min 20 characters)..."
+                  helperText={`${rejectionReason.length}/20 minimum characters`}
+                  error={rejectionReason.length > 0 && rejectionReason.length < 20}
+                />
+              )}
+            </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseAssignDialog}>Cancel</Button>
+            <Button onClick={handleCloseReviewDialog}>Cancel</Button>
             <Button
               variant="contained"
-              onClick={handleAssignToHOD}
-              disabled={!selectedHOD || submitting}
+              onClick={handleSubmitReview}
+              disabled={
+                !reviewDecision ||
+                (reviewDecision === 'reject' && rejectionReason.trim().length < 20) ||
+                submitting
+              }
             >
-              {submitting ? 'Assigning...' : 'Assign'}
+              {submitting ? 'Submitting...' : 'Submit Review'}
             </Button>
           </DialogActions>
         </Dialog>

@@ -1,20 +1,27 @@
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 
+/**
+ * Dashboard Statistics Interface
+ * Aligned with new QI-led workflow
+ */
 export interface DashboardStats {
     total: number;
     drafts: number;
-    submitted: number; // DEPRECATED: Will be removed (currently unused)
+    submitted: number;
     resolved: number;
+
     byStatus: {
         draft: number;
-        // submitted: number; // REMOVED: No longer used
-        // supervisor_approved: number; // REMOVED: Supervisor approval step eliminated
-        hod_assigned: number;
-        qi_final_review: number;
+        submitted: number;
+        qi_review: number;
+        investigating: number;
+        qi_final_actions: number;
         closed: number;
     };
+
     byDepartment: Array<{ department: string; count: number }>;
+
     recentIncidents: Array<{
         id: number;
         refNo: string;
@@ -22,37 +29,20 @@ export interface DashboardStats {
         status: string;
         createdAt: string;
         reporter: { firstName: string; lastName: string };
-        needsInvestigator?: boolean;
-        needsFindings?: boolean;
     }>;
+
     activeUsers: number;
     avgResolutionTime: number;
     closedThisMonth?: number;
 
-    // HOD-specific fields
-    assignedToMe?: number;
-    myPendingInvestigations?: number;
-    myActiveInvestigations?: number;
-    myCompletedInvestigations?: number;
-    myNeedingFindings?: number;
-    myAssignedIncidents?: Array<{
-        id: number;
-        refNo: string;
-        occurrenceCategory: string;
-        status: string;
-        createdAt: string;
-        reporter: { firstName: string; lastName: string };
-        needsInvestigator?: boolean;
-        needsFindings?: boolean;
-    }>;
-
-    // Employee/Supervisor-specific fields
+    // Employee-specific fields
     myReports?: {
         total: number;
         drafts: number;
         inProgress: number;
         resolved: number;
     };
+
     myRecentReports?: Array<{
         id: number;
         refNo: string;
@@ -61,23 +51,14 @@ export interface DashboardStats {
         createdAt: string;
     }>;
 
-    // Supervisor-specific fields
-    supervisorPending?: number;
-    supervisorApproved?: number;
+    // Supervisor-specific fields (read-only, no approval)
     teamReports?: number;
-    supervisorPendingReports?: Array<{
+    myTeamReports?: Array<{
         id: number;
         refNo: string;
         status: string;
         createdAt: string;
         reporter: { firstName: string; lastName: string };
-    }>;
-    supervisorApprovedReports?: Array<{
-        id: number;
-        refNo: string;
-        status: string;
-        createdAt: string;
-        supervisorApprovedAt?: string;
     }>;
 }
 

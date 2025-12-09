@@ -14,7 +14,6 @@ import {
 import { useSession } from 'next-auth/react';
 import AdminDashboard from './AdminDashboard';
 import EmployeeDashboard from './EmployeeDashboard';
-import HODDashboard from './HODDashboard';
 import QIDashboard from './QIDashboard';
 import SupervisorDashboard from './SupervisorDashboard';
 
@@ -73,10 +72,6 @@ export default function DashboardPage() {
 
   if (primaryRole === APP_ROLES.QUALITY_MANAGER || primaryRole === APP_ROLES.QUALITY_ANALYST) {
     return <QIDashboard stats={stats} session={session} />;
-  }
-
-  if (primaryRole === APP_ROLES.DEPARTMENT_HEAD || primaryRole === APP_ROLES.ASSISTANT_DEPT_HEAD) {
-    return <HODDashboard stats={stats} session={session} />;
   }
 
   if (primaryRole === APP_ROLES.SUPERVISOR || primaryRole === APP_ROLES.TEAM_LEAD) {
