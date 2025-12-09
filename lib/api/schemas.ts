@@ -1,8 +1,10 @@
 import {
   locations,
   ovrComments,
-  ovrInvestigators,
+  ovrCorrectiveActions,
+  ovrInvestigations,
   ovrReports,
+  ovrSharedAccess,
   severityLevelEnum,
   users,
 } from '@/db/schema';
@@ -44,13 +46,17 @@ export const locationMinimalSchema = locationSelectSchema.pick({
   floor: true,
 });
 
-// Investigator schemas (auto-generated from DB)
-export const investigatorSelectSchema = createSelectSchema(ovrInvestigators);
-export const investigatorInsertSchema = createInsertSchema(ovrInvestigators);
+// Investigation schemas (auto-generated from DB)
+export const investigationSelectSchema = createSelectSchema(ovrInvestigations);
+export const investigationInsertSchema = createInsertSchema(ovrInvestigations);
 
-export const investigatorWithUserSchema = investigatorSelectSchema.extend({
-  investigator: userPublicSchema,
-});
+// Corrective Action schemas (auto-generated from DB)
+export const correctiveActionSelectSchema = createSelectSchema(ovrCorrectiveActions);
+export const correctiveActionInsertSchema = createInsertSchema(ovrCorrectiveActions);
+
+// Shared Access schemas (auto-generated from DB)
+export const sharedAccessSelectSchema = createSelectSchema(ovrSharedAccess);
+export const sharedAccessInsertSchema = createInsertSchema(ovrSharedAccess);
 
 // Comment schemas (auto-generated from DB)
 export const commentSelectSchema = createSelectSchema(ovrComments);
@@ -123,13 +129,6 @@ export const incidentRelations = {
       lastName: true,
     },
   },
-  departmentHead: {
-    columns: {
-      id: true,
-      firstName: true,
-      lastName: true,
-    },
-  },
   involvedPerson: {
     columns: {
       id: true,
@@ -138,16 +137,14 @@ export const incidentRelations = {
       email: true,
     },
   },
-  investigators: {
-    with: {
-      investigator: {
-        columns: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
-      },
+  investigation: true,
+  correctiveActions: true,
+  sharedAccess: {
+    columns: {
+      id: true,
+      email: true,
+      role: true,
+      status: true,
     },
   },
 } as const;
@@ -157,9 +154,24 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   reporter: userPublicSchema.optional(),
   location: locationMinimalSchema.optional(),
   supervisor: userMinimalSchema.optional(),
-  departmentHead: userMinimalSchema.optional(),
   involvedPerson: userPublicSchema.optional(),
-  investigators: z.array(investigatorWithUserSchema).optional(),
+  investigation: z.object({
+    id: z.number(),
+    findings: z.string().nullable(),
+    submittedAt: z.string().nullable(),
+  }).optional(),
+  correctiveActions: z.array(z.object({
+    id: z.number(),
+    title: z.string(),
+    status: z.string(),
+    dueDate: z.string(),
+  })).optional(),
+  sharedAccess: z.array(z.object({
+    id: z.number(),
+    email: z.string(),
+    role: z.string(),
+    status: z.string(),
+  })).optional(),
   comments: z.array(commentWithUserSchema).optional(),
 });
 
@@ -189,9 +201,14 @@ export type Location = z.infer<typeof locationSelectSchema>;
 export type LocationInsert = z.infer<typeof locationInsertSchema>;
 export type LocationMinimal = z.infer<typeof locationMinimalSchema>;
 
-export type Investigator = z.infer<typeof investigatorSelectSchema>;
-export type InvestigatorInsert = z.infer<typeof investigatorInsertSchema>;
-export type InvestigatorWithUser = z.infer<typeof investigatorWithUserSchema>;
+export type Investigation = z.infer<typeof investigationSelectSchema>;
+export type InvestigationInsert = z.infer<typeof investigationInsertSchema>;
+
+export type CorrectiveAction = z.infer<typeof correctiveActionSelectSchema>;
+export type CorrectiveActionInsert = z.infer<typeof correctiveActionInsertSchema>;
+
+export type SharedAccess = z.infer<typeof sharedAccessSelectSchema>;
+export type SharedAccessInsert = z.infer<typeof sharedAccessInsertSchema>;
 
 export type Comment = z.infer<typeof commentSelectSchema>;
 export type CommentInsert = z.infer<typeof commentInsertSchema>;
@@ -256,7 +273,6 @@ export const incidentListQuerySchema = z.object({
   status: z.string().nullish(),
   category: z.string().nullish(),
   reporterId: z.coerce.number().nullish(),
-  departmentHeadId: z.coerce.number().nullish(),
   supervisorId: z.coerce.number().nullish(),
   dateFrom: z.iso.datetime().nullish(),
   dateTo: z.iso.datetime().nullish(),
@@ -268,24 +284,46 @@ export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 
 // ============================================
 // INPUT VALIDATION SCHEMAS (with custom rules)
-// Refine the auto-generated schemas with validation rules
+// Comprehensive validation with conditional logic based on UI form requirements
 // ============================================
+
+/**
+ * Helper function to check if physician saw patient
+ * Used for conditional validation of physician-related fields
+ */
+const requiresPhysicianDetails = (data: any): boolean => {
+  return Boolean(data.physicianSawPatient);
+};
+
+/**
+ * Helper function to check if hospitalized or transferred
+ * Used for conditional validation of hospitalization details
+ */
+const requiresHospitalizationDetails = (data: any): boolean => {
+  const types = data.treatmentTypes || [];
+  return types.includes('hospitalized') || types.includes('transferred');
+};
 
 export const createIncidentSchema = ovrReportInsertSchema
   .omit({
-    id: true, // Auto-generated as OVR-YYYY-NNN
+    // Auto-generated fields
+    id: true, // Auto-generated as OVR-YYYY-MM-NNN
     reporterId: true,
     createdAt: true,
     updatedAt: true,
     submittedAt: true,
     resolvedAt: true,
-    closedAt: true,
-    supervisorActionDate: true,
-    supervisorApprovedAt: true,
+
+    // QI workflow fields (set by backend)
     qiReceivedBy: true,
     qiReceivedDate: true,
     qiAssignedBy: true,
     qiAssignedDate: true,
+    qiApprovedBy: true,
+    qiApprovedAt: true,
+    qiRejectionReason: true,
+
+    // QI final assessment fields (set during review)
     qiFeedback: true,
     qiFormComplete: true,
     qiProperCauseIdentified: true,
@@ -293,22 +331,41 @@ export const createIncidentSchema = ovrReportInsertSchema
     qiActionCompliesStandards: true,
     qiEffectiveCorrectiveAction: true,
     severityLevel: true,
-    departmentHeadId: true,
-    hodAssignedAt: true,
-    investigationFindings: true,
-    problemsIdentified: true,
-    causeClassification: true,
-    causeDetails: true,
-    preventionRecommendation: true,
-    hodActionDate: true,
-    hodSubmittedAt: true,
+
+    // Final case closure fields (set by QI at close)
+    caseReview: true,
+    reporterFeedback: true,
+    closedBy: true,
+    closedAt: true,
+  })
+  // ============================================
+  // BASIC REQUIRED FIELDS
+  // ============================================
+  .refine((data) => data.occurrenceDate !== undefined && data.occurrenceDate !== null, {
+    message: 'Occurrence date is required',
+    path: ['occurrenceDate'],
+  })
+  .refine((data) => data.occurrenceTime !== undefined && data.occurrenceTime !== null, {
+    message: 'Occurrence time is required',
+    path: ['occurrenceTime'],
+  })
+  .refine((data) => data.locationId !== undefined && data.locationId !== null, {
+    message: 'Location is required',
+    path: ['locationId'],
+  })
+  // ============================================
+  // PERSON INVOLVED VALIDATION
+  // ============================================
+  .refine((data) => data.personInvolved !== undefined, {
+    message: 'Person involved type is required',
+    path: ['personInvolved'],
   })
   .refine((data) => data.involvedPersonName && data.involvedPersonName.trim().length > 0, {
-    message: 'Person involved name is required',
+    message: 'Person name is required',
     path: ['involvedPersonName'],
   })
+  // MRN is required only for patients
   .refine((data) => {
-    // MRN is required only for patients
     if (data.personInvolved === 'patient') {
       return data.involvedPersonMRN && data.involvedPersonMRN.trim().length > 0;
     }
@@ -317,9 +374,68 @@ export const createIncidentSchema = ovrReportInsertSchema
     message: 'Patient MRN is required',
     path: ['involvedPersonMRN'],
   })
+  // ============================================
+  // CLASSIFICATION & DESCRIPTION
+  // ============================================
+  .refine((data) => data.occurrenceCategory && data.occurrenceCategory.trim().length > 0, {
+    message: 'Occurrence category is required',
+    path: ['occurrenceCategory'],
+  })
+  .refine((data) => data.occurrenceSubcategory && data.occurrenceSubcategory.trim().length > 0, {
+    message: 'Occurrence subcategory is required',
+    path: ['occurrenceSubcategory'],
+  })
   .refine((data) => data.description && data.description.trim().length >= 10, {
     message: 'Description must be at least 10 characters',
     path: ['description'],
+  })
+  .refine((data) => data.levelOfHarm && data.levelOfHarm.trim().length > 0, {
+    message: 'Level of harm is required',
+    path: ['levelOfHarm'],
+  })
+  // ============================================
+  // PHYSICIAN FOLLOW-UP VALIDATION
+  // Conditional: If physician saw patient, certain fields are required
+  // ============================================
+  .refine((data) => {
+    if (requiresPhysicianDetails(data)) {
+      return data.physicianName && data.physicianName.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: 'Physician name is required when patient was seen by physician',
+    path: ['physicianName'],
+  })
+  .refine((data) => {
+    if (requiresPhysicianDetails(data)) {
+      return data.physicianId && data.physicianId.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: 'Physician ID is required when patient was seen by physician',
+    path: ['physicianId'],
+  })
+  .refine((data) => {
+    if (requiresPhysicianDetails(data)) {
+      return data.treatmentProvided && data.treatmentProvided.trim().length >= 10;
+    }
+    return true;
+  }, {
+    message: 'Physician response/treatment notes are required (min 10 characters)',
+    path: ['treatmentProvided'],
+  })
+  // ============================================
+  // HOSPITALIZATION DETAILS
+  // Conditional: Required if treatment type includes hospitalized/transferred
+  // ============================================
+  .refine((data) => {
+    if (requiresHospitalizationDetails(data)) {
+      return data.hospitalizedDetails && data.hospitalizedDetails.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: 'Hospitalization/transfer details are required',
+    path: ['hospitalizedDetails'],
   });
 
 export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;
@@ -331,32 +447,143 @@ export type UpdateIncidentInput = z.infer<typeof updateIncidentSchema>;
 
 // ============================================
 // WORKFLOW ACTION SCHEMAS
+// New QI-led investigation workflow
 // ============================================
 
-export const supervisorApprovalSchema = z.object({
-  action: z.string().min(1, 'Supervisor action/comments are required'),
+/**
+ * QI Review - Approve or reject submitted incident
+ */
+export const qiReviewSchema = z.object({
+  approved: z.boolean(),
+  rejectionReason: z.string().optional().refine((val) => {
+    // If provided, must be at least 20 characters
+    if (val !== undefined && val !== null && val.trim().length > 0) {
+      return val.trim().length >= 20;
+    }
+    return true;
+  }, {
+    message: 'Rejection reason must be at least 20 characters',
+  }),
+}).refine((data) => {
+  // If rejected (approved === false), rejection reason is required
+  if (data.approved === false) {
+    return data.rejectionReason && data.rejectionReason.trim().length >= 20;
+  }
+  return true;
+}, {
+  message: 'Rejection reason is required when rejecting',
+  path: ['rejectionReason'],
 });
 
-export const qiAssignHODSchema = z.object({
-  departmentHeadId: z.number().int().positive('Department Head ID is required'),
+export type QIReviewInput = z.infer<typeof qiReviewSchema>;
+
+/**
+ * Investigation Management - Create/update investigation
+ */
+export const createInvestigationSchema = z.object({
+  ovrReportId: z.string().min(1, 'OVR Report ID is required'),
 });
 
-export const assignInvestigatorSchema = z.object({
-  investigatorId: z.number().int().positive('Investigator ID is required'),
+export const updateInvestigationSchema = z.object({
+  findings: z.string().optional(),
+  problemsIdentified: z.string().optional(),
+  causeClassification: z.string().optional(),
+  causeDetails: z.string().optional(),
+  correctiveActionPlan: z.string().optional(), // JSON string
+  rcaAnalysis: z.string().optional(),
+  fishboneAnalysis: z.string().optional(),
+}).refine((data) => {
+  // At least one field must be provided for update
+  return Object.values(data).some(val => val !== undefined && val !== null);
+}, {
+  message: 'At least one field must be provided',
 });
 
-export const submitFindingsSchema = z.object({
-  findings: z.string().min(50, 'Findings must be at least 50 characters'),
-});
-
-export const hodSubmissionSchema = z.object({
-  investigationFindings: z.string().min(100, 'Investigation findings must be at least 100 characters'),
+export const submitInvestigationSchema = z.object({
+  findings: z.string().min(100, 'Findings must be at least 100 characters'),
   problemsIdentified: z.string().min(50, 'Problems identified must be at least 50 characters'),
   causeClassification: z.string().min(1, 'Cause classification is required'),
   causeDetails: z.string().min(50, 'Cause details must be at least 50 characters'),
-  preventionRecommendation: z.string().min(50, 'Prevention recommendation must be at least 50 characters'),
 });
 
+export type CreateInvestigationInput = z.infer<typeof createInvestigationSchema>;
+export type UpdateInvestigationInput = z.infer<typeof updateInvestigationSchema>;
+export type SubmitInvestigationInput = z.infer<typeof submitInvestigationSchema>;
+
+/**
+ * Corrective Actions - Create/update action items
+ */
+export const createCorrectiveActionSchema = z.object({
+  ovrReportId: z.string().min(1, 'OVR Report ID is required'),
+  title: z.string().min(5, 'Title must be at least 5 characters').max(255, 'Title too long'),
+  description: z.string().min(20, 'Description must be at least 20 characters'),
+  dueDate: z.string().datetime('Invalid date format'),
+  checklist: z.string().refine((val) => {
+    // Must be valid JSON array
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) && parsed.length > 0;
+    } catch {
+      return false;
+    }
+  }, {
+    message: 'Checklist must be a valid JSON array with at least one item',
+  }),
+});
+
+export const updateCorrectiveActionSchema = z.object({
+  checklist: z.string().optional(),
+  actionTaken: z.string().optional(),
+  evidenceFiles: z.string().optional(), // JSON string
+});
+
+export type CreateCorrectiveActionInput = z.infer<typeof createCorrectiveActionSchema>;
+export type UpdateCorrectiveActionInput = z.infer<typeof updateCorrectiveActionSchema>;
+
+/**
+ * Shared Access - Google Forms style sharing
+ */
+export const createSharedAccessSchema = z.object({
+  resourceType: z.enum(['investigation', 'corrective_action']),
+  resourceId: z.number().int().positive(),
+  ovrReportId: z.string().min(1),
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['investigator', 'action_handler', 'viewer']),
+  tokenExpiresAt: z.string().datetime().optional(),
+});
+
+export const bulkCreateSharedAccessSchema = z.object({
+  resourceType: z.enum(['investigation', 'corrective_action']),
+  resourceId: z.number().int().positive(),
+  ovrReportId: z.string().min(1),
+  invitations: z.array(z.object({
+    email: z.string().email('Invalid email address'),
+    role: z.enum(['investigator', 'action_handler', 'viewer']),
+  })).min(1, 'At least one invitation is required'),
+  tokenExpiresAt: z.string().datetime().optional(),
+});
+
+export const revokeSharedAccessSchema = z.object({
+  accessId: z.number().int().positive(),
+});
+
+export type CreateSharedAccessInput = z.infer<typeof createSharedAccessSchema>;
+export type BulkCreateSharedAccessInput = z.infer<typeof bulkCreateSharedAccessSchema>;
+export type RevokeSharedAccessInput = z.infer<typeof revokeSharedAccessSchema>;
+
+/**
+ * Close Incident - Final case closure
+ */
+export const closeIncidentSchema = z.object({
+  caseReview: z.string().min(100, 'Case review must be at least 100 characters'),
+  reporterFeedback: z.string().min(50, 'Reporter feedback must be at least 50 characters'),
+});
+
+export type CloseIncidentInput = z.infer<typeof closeIncidentSchema>;
+
+/**
+ * QI Feedback (legacy - kept for backward compatibility)
+ */
 export const qiFeedbackSchema = z.object({
   feedback: z.string().min(50, 'Feedback must be at least 50 characters'),
   formComplete: z.boolean(),
