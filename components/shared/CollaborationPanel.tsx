@@ -82,22 +82,16 @@ export function CollaborationPanel({
     const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
 
     // Note: Using incident comments temporarily - will create dedicated endpoint
-    const { comments, addComment, updateComment, deleteComment, isLoading } = useComments(
+    const { comments, addComment, updateComment, deleteComment } = useComments(
         `${resourceType}-${resourceId}`
     );
+    const isLoading = false; // Placeholder
 
     const handleAddComment = async () => {
         if (!newComment.trim()) return;
 
         try {
-            await addComment({
-                content: newComment.trim(),
-                // Metadata for filtering later
-                metadata: JSON.stringify({
-                    resourceType,
-                    resourceId,
-                }),
-            });
+            await addComment(newComment.trim());
             setNewComment('');
         } catch (error) {
             console.error('Failed to add comment:', error);
@@ -108,7 +102,7 @@ export function CollaborationPanel({
         if (!editText.trim()) return;
 
         try {
-            await updateComment(commentId, { content: editText.trim() });
+            await updateComment(commentId, editText.trim());
             setEditingId(null);
             setEditText('');
         } catch (error) {
@@ -139,7 +133,7 @@ export function CollaborationPanel({
 
     const startEdit = (comment: Comment) => {
         setEditingId(comment.id);
-        setEditText(comment.content);
+        setEditText(comment.comment);
         handleMenuClose();
     };
 
@@ -223,7 +217,7 @@ export function CollaborationPanel({
                 ) : (
                     <List sx={{ p: 0 }}>
                         {comments.map((comment, index) => {
-                            const isOwnComment = comment.userId === session?.user?.id;
+                            const isOwnComment = comment.userId === Number(session?.user?.id);
                             const isEditing = editingId === comment.id;
 
                             return (
@@ -297,7 +291,7 @@ export function CollaborationPanel({
                                                         variant="body2"
                                                         sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}
                                                     >
-                                                        {comment.content}
+                                                        {comment.comment}
                                                     </Typography>
                                                 )
                                             }
