@@ -463,7 +463,8 @@ export default function UsersManagementPage() {
                                       }}
                                     />
                                   );
-                                })}\n                              </Stack>
+                                })}
+                              </Stack>
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2">
