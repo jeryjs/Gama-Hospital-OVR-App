@@ -76,6 +76,7 @@ export function useInvestigations(
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
+            suspense: false,
         }
     );
 

@@ -8,5 +8,4 @@ export type {
   OVRReportWithRelations,
   Comment,
   CommentWithUser,
-  InvestigatorWithUser,
 } from '@/lib/types';

@@ -13,10 +13,6 @@ export type {
   Location,
   LocationMinimal,
 
-  // Investigator types
-  Investigator,
-  InvestigatorWithUser,
-
   // Comment types
   Comment,
   CommentWithUser,

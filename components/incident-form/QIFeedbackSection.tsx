@@ -39,7 +39,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
 
   const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
 
-  const canSubmit = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []) && incident.status === 'qi_final_review';
+  const canSubmit = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []) && incident.status === 'qi_final_actions';
   const isClosed = incident.status === 'closed';
 
   const handleSubmit = async () => {
@@ -48,7 +48,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
       return;
     }
 
-    const result = await performAction('qi-close', {
+    const result = await performAction('close-incident', {
       feedback,
       formComplete,
       causeIdentified,

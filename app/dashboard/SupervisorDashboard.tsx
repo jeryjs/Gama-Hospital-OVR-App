@@ -113,13 +113,9 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                     transition={{ delay: index * 0.1 }}
                   >
                     <Card
-                      onClick={stat.action}
                       sx={{
                         height: '100%',
                         transition: 'all 0.3s',
-                        border: stat.urgent ? 2 : 0,
-                        borderColor: stat.urgent ? stat.color : 'transparent',
-                        cursor: stat.action ? 'pointer' : 'default',
                         '&:hover': {
                           transform: 'translateY(-4px)',
                           boxShadow: 6,
@@ -139,14 +135,15 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                             >
                               {stat.icon}
                             </Box>
-                            {stat.urgent && (
-                              <Chip
-                                label="ACTION NEEDED"
-                                size="small"
-                                color="warning"
-                                sx={{ fontWeight: 700, fontSize: '0.65rem' }}
-                              />
-                            )}
+                            <Chip
+                              label={stat.value}
+                              sx={{
+                                bgcolor: (theme) => alpha(theme.palette[stat.color.split('.')[0] as 'primary'].main, 0.1),
+                                color: stat.color,
+                                fontWeight: 700,
+                                fontSize: '0.875rem',
+                              }}
+                            />
                           </Stack>
                           <Box>
                             <Typography variant="body2" color="text.secondary" gutterBottom>

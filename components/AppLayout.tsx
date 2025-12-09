@@ -105,12 +105,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           //   badge: { content: 3, tooltip: 'Found 3 reports pending approval' }
           // },
           {
-            title: 'Investigation',
-            path: '/incidents/hod/review',
-            roles: ['department_head', 'assistant_dept_head', 'super_admin', 'developer'],
-            badge: { content: 0, tooltip: 'Found 1 incidents requiring investigation' }
-          },
-          {
             title: 'QI Review',
             path: '/incidents/qi/review',
             roles: ['quality_manager', 'quality_analyst', 'super_admin', 'developer'],

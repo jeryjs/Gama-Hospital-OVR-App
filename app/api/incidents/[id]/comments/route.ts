@@ -14,7 +14,7 @@ export async function GET(
     const { id } = await params;
 
     const comments = await db.query.ovrComments.findMany({
-      where: eq(ovrComments.ovrReportId, parseInt(id)),
+      where: eq(ovrComments.ovrReportId, id),
       with: {
         user: {
           columns: {
@@ -48,7 +48,7 @@ export async function POST(
     const newComment = await db
       .insert(ovrComments)
       .values({
-        ovrReportId: parseInt(id),
+        ovrReportId: id,
         userId: parseInt(session.user.id),
         comment: body.comment.trim(),
       })

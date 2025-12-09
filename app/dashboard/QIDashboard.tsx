@@ -44,18 +44,18 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
   const statusColors: Record<string, string> = {
     draft: '#6B7280',
     submitted: '#3B82F6',
-    supervisor_approved: '#10B981',
-    hod_assigned: '#F59E0B',
-    qi_final_review: '#EC4899',
+    qi_review: '#10B981',
+    investigating: '#F59E0B',
+    qi_final_actions: '#EC4899',
     closed: '#059669',
   };
 
   const statusLabels: Record<string, string> = {
     draft: 'Draft',
     submitted: 'Submitted',
-    supervisor_approved: 'Needs HOD Assignment',
-    hod_assigned: 'Under Investigation',
-    qi_final_review: 'Awaiting QI Review',
+    qi_review: 'QI Review',
+    investigating: 'Investigating',
+    qi_final_actions: 'Final Actions',
     closed: 'Closed',
   };
 
@@ -69,16 +69,16 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
       subtitle: 'All time',
     },
     {
-      title: 'Needs HOD Assignment',
-      value: stats.byStatus.supervisor_approved,
+      title: 'Needs Investigation Assignment',
+      value: stats.byStatus.qi_review,
       icon: <AssignmentInd fontSize="large" />,
       color: 'warning.main',
       subtitle: 'Awaiting action',
       urgent: true,
     },
     {
-      title: 'Awaiting QI Review',
-      value: stats.byStatus.qi_final_review,
+      title: 'Awaiting Final Actions',
+      value: stats.byStatus.qi_final_actions,
       icon: <Feedback fontSize="large" />,
       color: 'secondary.main',
       subtitle: 'Needs feedback',
@@ -96,25 +96,25 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
   // Action items for QI
   const actionItems = [
     {
-      title: 'Assign HOD',
-      count: stats.byStatus.supervisor_approved,
-      description: 'Incidents need HOD assignment',
-      color: '#F59E0B',
-      action: () => router.push('/incidents?status=supervisor_approved'),
+      title: 'Assign Investigation',
+      count: stats.byStatus.qi_review,
+      description: 'Incidents need investigation assignment',
+      color: '#10B981',
+      action: () => router.push('/incidents/qi/review'),
     },
     {
-      title: 'Provide Feedback',
-      count: stats.byStatus.qi_final_review,
-      description: 'Awaiting final QI review',
+      title: 'Review Actions',
+      count: stats.byStatus.qi_final_actions,
+      description: 'Corrective actions need review',
       color: '#EC4899',
-      action: () => router.push('/incidents?status=qi_final_review'),
+      action: () => router.push('/actions'),
     },
     {
       title: 'Under Investigation',
-      count: stats.byStatus.hod_assigned,
-      description: 'Being investigated by HODs',
+      count: stats.byStatus.investigating,
+      description: 'Active investigations in progress',
       color: '#3B82F6',
-      action: () => router.push('/incidents?status=hod_assigned'),
+      action: () => router.push('/investigations'),
     },
   ];
 
@@ -261,9 +261,9 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                   <Stack spacing={2} mt={2}>
                     {[
                       { status: 'submitted', label: 'New Submissions', icon: <Assignment /> },
-                      { status: 'supervisor_approved', label: 'Pending HOD Assignment', icon: <AssignmentInd /> },
-                      { status: 'hod_assigned', label: 'Under Investigation', icon: <PendingActions /> },
-                      { status: 'qi_final_review', label: 'Awaiting Your Review', icon: <Feedback /> },
+                      { status: 'qi_review', label: 'Pending HOD Assignment', icon: <AssignmentInd /> },
+                      { status: 'investigating', label: 'Under Investigation', icon: <PendingActions /> },
+                      { status: 'qi_final_actions', label: 'Awaiting Your Review', icon: <Feedback /> },
                       { status: 'closed', label: 'Resolved & Closed', icon: <CheckCircle /> },
                     ].map((workflow) => {
                       const count = stats.byStatus[workflow.status as keyof typeof stats.byStatus];
@@ -320,7 +320,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                   </Stack>
                   <List>
                     {stats.recentIncidents
-                      .filter((inc) => ['supervisor_approved', 'qi_final_review'].includes(inc.status))
+                      .filter((inc) => ['qi_review', 'qi_final_actions'].includes(inc.status))
                       .slice(0, 6)
                       .map((incident, index) => (
                         <Box key={incident.id}>
@@ -343,7 +343,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                                   color: statusColors[incident.status],
                                 }}
                               >
-                                {incident.status === 'supervisor_approved' ? (
+                                {incident.status === 'qi_review' ? (
                                   <AssignmentInd fontSize="small" />
                                 ) : (
                                   <Feedback fontSize="small" />
@@ -356,7 +356,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                                   <Typography variant="body2" fontWeight={600}>
                                     {incident.refNo}
                                   </Typography>
-                                  {incident.status === 'supervisor_approved' && (
+                                  {incident.status === 'qi_review' && (
                                     <Chip
                                       label="ASSIGN HOD"
                                       size="small"
@@ -364,7 +364,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                                       sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
                                     />
                                   )}
-                                  {incident.status === 'qi_final_review' && (
+                                  {incident.status === 'qi_final_actions' && (
                                     <Chip
                                       label="REVIEW NEEDED"
                                       size="small"
@@ -391,7 +391,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                       ))}
                   </List>
 
-                  {stats.recentIncidents.filter((inc) => ['supervisor_approved', 'qi_final_review'].includes(inc.status)).length === 0 && (
+                  {stats.recentIncidents.filter((inc) => ['qi_review', 'qi_final_actions'].includes(inc.status)).length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 4 }}>
                       <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary">
@@ -425,19 +425,19 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                       fullWidth
                       variant="outlined"
                       startIcon={<AssignmentInd />}
-                      onClick={() => router.push('/incidents?status=supervisor_approved')}
+                      onClick={() => router.push('/incidents?status=qi_review')}
                       sx={{ justifyContent: 'flex-start', py: 1.5 }}
                     >
-                      Assign HODs ({stats.byStatus.supervisor_approved})
+                      Assign HODs ({stats.byStatus.qi_review})
                     </Button>
                     <Button
                       fullWidth
                       variant="outlined"
                       startIcon={<Feedback />}
-                      onClick={() => router.push('/incidents?status=qi_final_review')}
+                      onClick={() => router.push('/incidents?status=qi_final_actions')}
                       sx={{ justifyContent: 'flex-start', py: 1.5 }}
                     >
-                      Review & Close ({stats.byStatus.qi_final_review})
+                      Review & Close ({stats.byStatus.qi_final_actions})
                     </Button>
                   </Stack>
                 </Paper>
@@ -484,7 +484,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                           Pending Items
                         </Typography>
                         <Typography variant="h6" fontWeight={700} color="warning.main">
-                          {stats.byStatus.supervisor_approved + stats.byStatus.qi_final_review}
+                          {stats.byStatus.qi_review + stats.byStatus.qi_final_actions}
                         </Typography>
                       </Stack>
                     </Box>

@@ -95,6 +95,7 @@ export function useCorrectiveActions(
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
+            suspense: false,
         }
     );
 

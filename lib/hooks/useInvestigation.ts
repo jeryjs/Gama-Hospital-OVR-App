@@ -8,6 +8,7 @@
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 import type { UpdateInvestigationInput, SubmitInvestigationInput } from '@/lib/api/schemas';
+import type { SharedAccessInvitation } from './useSharedAccess';
 
 export interface Investigation {
     id: number;
@@ -28,20 +29,12 @@ export interface Investigation {
     submittedAt: Date | null;
 }
 
-export interface SharedAccessInfo {
-    id: number;
-    email: string;
-    userId: number | null;
-    role: 'investigator' | 'action_handler' | 'viewer';
-    status: 'pending' | 'accepted' | 'revoked';
-    accessToken: string | null;
-    invitedAt: Date;
-    lastAccessedAt: Date | null;
-}
+// Re-export SharedAccessInvitation as SharedAccessInfo for backward compatibility
+export type SharedAccessInfo = SharedAccessInvitation;
 
 export interface UseInvestigationReturn {
     investigation: Investigation | null;
-    sharedAccess: SharedAccessInfo[];
+    sharedAccess: SharedAccessInvitation[];
     isLoading: boolean;
     error: ParsedError | undefined;
     mutate: () => Promise<void>;

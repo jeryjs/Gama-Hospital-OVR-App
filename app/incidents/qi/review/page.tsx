@@ -5,7 +5,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncidents } from '@/lib/hooks';
 import { getStatusColor, getStatusLabel } from '@/lib/utils/status';
-import { CheckCircle, Close, FilterList, Visibility } from '@/lib/icons';
+import { CheckCircle, Close, Visibility } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   LinearProgress,
   MenuItem,
   Paper,
@@ -31,49 +30,7 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
-} from '@mui/material';
-import { format } from 'date-fns';
-import { motion } from 'framer-motion';
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-'use client';
-
-import { AppLayout } from '@/components/AppLayout';
-import { ACCESS_CONTROL } from '@/lib/access-control';
-import { formatErrorForAlert } from '@/lib/client/error-handler';
-import { useIncidents } from '@/lib/hooks';
-import { getStatusColor, getStatusLabel } from '@/lib/utils/status';
-import { CheckCircle, Close, FilterList, Visibility } from '@mui/icons-material';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  IconButton,
-  LinearProgress,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
+  Typography
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -116,7 +73,7 @@ export default function QIReviewPage() {
   const { incidents, pagination, isLoading, error, mutate } = useIncidents({
     status: 'submitted',
     search: searchTerm || undefined,
-    occurrenceCategory: categoryFilter || undefined,
+    category: categoryFilter || undefined,
     page: 1,
     limit: 20,
     sortBy: 'createdAt',

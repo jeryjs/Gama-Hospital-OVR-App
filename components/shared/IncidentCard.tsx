@@ -110,47 +110,51 @@ export function IncidentCard({
                             Occurred: {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
                         </Typography>
                     )}
-
-                    <Box sx={{ mt: isCompact ? 1 : 2 }}>
-                        {actions}
-                    </Box>
+                </Stack>
             )}
 
-                    {/* Default View Action */}
-                    {!actions && !isDetail && (
-                        <Button
-                            component={Link}
-                            href={`/incidents/view/${incident.id}`}
-                            size={isCompact ? 'small' : 'medium'}
-                            startIcon={<Visibility />}
-                            sx={{ mt: isCompact ? 1 : 2 }}
-                        >
-                            View Details
-                        </Button>
-                    )}
-                </>
-            );
+            {/* Actions */}
+            {actions && (
+                <Box sx={{ mt: isCompact ? 1 : 2 }}>
+                    {actions}
+                </Box>
+            )}
 
-            // Render without card for detail variant
-            if (isDetail) {
+            {/* Default View Action */}
+            {!actions && !isDetail && (
+                <Button
+                    component={Link}
+                    href={`/incidents/view/${incident.id}`}
+                    size={isCompact ? 'small' : 'medium'}
+                    startIcon={<Visibility />}
+                    sx={{ mt: isCompact ? 1 : 2 }}
+                >
+                    View Details
+                </Button>
+            )}
+        </>
+    );
+
+    // Render without card for detail variant
+    if (isDetail) {
         return <Box sx={{ p: 2 }}>{cardContent}</Box>;
     }
 
-            return (
-            <Card
-                elevation={isCompact ? 1 : 2}
-                sx={{
-                    cursor: onClick ? 'pointer' : 'default',
-                    transition: 'all 0.2s',
-                    '&:hover': onClick ? {
-                        elevation: 4,
-                        transform: 'translateY(-2px)',
-                    } : {},
-                }}
-            >
-                <CardContent sx={{ p: isCompact ? 2 : 3 }}>
-                    {cardContent}
-                </CardContent>
-            </Card>
-            );
+    return (
+        <Card
+            elevation={isCompact ? 1 : 2}
+            sx={{
+                cursor: onClick ? 'pointer' : 'default',
+                transition: 'all 0.2s',
+                '&:hover': onClick ? {
+                    elevation: 4,
+                    transform: 'translateY(-2px)',
+                } : {},
+            }}
+        >
+            <CardContent sx={{ p: isCompact ? 2 : 3 }}>
+                {cardContent}
+            </CardContent>
+        </Card>
+    );
 }

@@ -7,7 +7,10 @@
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 import type { UpdateCorrectiveActionInput } from '@/lib/api/schemas';
-import type { SharedAccessInfo } from './useInvestigation';
+import type { SharedAccessInvitation } from './useSharedAccess';
+
+// Re-export for convenience
+export type SharedAccessInfo = SharedAccessInvitation;
 
 export interface CorrectiveAction {
     id: number;
@@ -32,7 +35,7 @@ export interface CorrectiveAction {
 
 export interface UseCorrectiveActionReturn {
     action: CorrectiveAction | null;
-    sharedAccess: SharedAccessInfo[];
+    sharedAccess: SharedAccessInvitation[];
     isLoading: boolean;
     error: ParsedError | undefined;
     mutate: () => Promise<void>;

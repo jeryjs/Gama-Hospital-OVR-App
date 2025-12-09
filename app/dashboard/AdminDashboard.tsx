@@ -81,7 +81,7 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
     },
     {
       title: 'Pending Review',
-      value: stats.byStatus.qi_final_review + stats.byStatus.supervisor_approved,
+      value: stats.byStatus.qi_review + stats.byStatus.qi_final_actions,
       icon: <PendingActions fontSize="large" />,
       color: 'warning.main',
       trend: '-3%',

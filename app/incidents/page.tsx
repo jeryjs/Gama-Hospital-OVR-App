@@ -47,9 +47,19 @@ export default function IncidentsPage() {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
-  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'refNo' | 'status'>('createdAt');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'status'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+  // Status labels mapping
+  const statusLabels = {
+    draft: 'Draft',
+    submitted: 'Submitted',
+    qi_review: 'QI Review',
+    investigating: 'Investigating',
+    qi_final_actions: 'Final Actions',
+    closed: 'Closed',
+  };
 
   const { incidents, pagination, isLoading, error } = useIncidents({
     page,
@@ -183,11 +193,8 @@ export default function IncidentsPage() {
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
-                      <TableCell
-                        onClick={() => handleSort('refNo')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Reference # {sortBy === 'refNo' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        Reference #
                       </TableCell>
                       <TableCell
                         onClick={() => handleSort('occurrenceDate')}
