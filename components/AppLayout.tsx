@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [navItemsOpen, setNavItemsOpen] = useState<Record<string, boolean>>(() => ({
     Incidents: pathname.startsWith('/incidents'),
-    Administration: pathname.startsWith('/users'),
+    Administration: pathname.startsWith('/users') || pathname.startsWith('/administration'),
   }));
 
   // Handle proper logout with Azure AD session cleanup
@@ -107,6 +107,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               tooltip: `${qiReviewCount} incident${qiReviewCount !== 1 ? 's' : ''} pending QI review`
             } : undefined
           },
+          {
+            title: 'Analytics',
+            path: '/incidents/analytics',
+            badge: { content: 'WIP', tooltip: 'New analytics features is under development' }
+          }
         ],
       },
     ];
