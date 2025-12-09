@@ -51,109 +51,156 @@ export class NotFoundError extends ApiError {
 }
 
 // ============================================
+// STANDARD ERROR RESPONSE FORMAT
+// ============================================
+
+/**
+ * Standard error response structure
+ * ALL API errors must follow this format for consistent client handling
+ */
+export interface StandardErrorResponse {
+  error: string; // User-friendly error message
+  code: string; // Machine-readable error code
+  message?: string; // Additional context
+  details?: Array<{
+    path: string; // Field path (e.g., "email", "nested.field")
+    message: string; // Specific field error
+  }>;
+  timestamp?: string; // Error timestamp for debugging
+}
+
+// ============================================
 // ERROR HANDLER
 // ============================================
 
 /**
  * Centralized API error handler
- * Converts various error types to consistent JSON responses
+ * Converts various error types to STANDARD JSON responses
+ * 
+ * Security: Never expose stack traces or internal details in production
+ * Consistency: Always return StandardErrorResponse format
  */
 export function handleApiError(error: unknown): NextResponse {
-  // Log the full error for debugging
+  // Log the full error for debugging (server-side only)
   console.error('API Error:', error);
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const timestamp = new Date().toISOString();
 
   // Known API errors
   if (error instanceof ApiError) {
-    const response: Record<string, unknown> = {
+    const response: StandardErrorResponse = {
       error: error.message,
-      code: error.code,
+      code: error.code || 'API_ERROR',
+      timestamp,
     };
+
+    // Add details if provided
     if (error.details) {
-      response.details = error.details;
+      if (Array.isArray(error.details)) {
+        response.details = error.details;
+      } else {
+        response.message = JSON.stringify(error.details);
+      }
     }
+
     return NextResponse.json(response, { status: error.statusCode });
   }
 
-  // Zod validation errors - format nicely
+  // Zod validation errors - format nicely for client
   if (error instanceof z.ZodError) {
     const details = error.issues.map((issue) => ({
       path: issue.path.join('.'),
       message: issue.message,
     }));
 
-    return NextResponse.json(
-      {
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-        details,
-      },
-      { status: 400 }
-    );
+    const response: StandardErrorResponse = {
+      error: 'Validation failed',
+      code: 'VALIDATION_ERROR',
+      message: `${details.length} validation error(s) found`,
+      details,
+      timestamp,
+    };
+
+    return NextResponse.json(response, { status: 400 });
   }
 
-  // Database/Drizzle errors - extract useful info
+  // Database/Drizzle errors - extract useful info, hide internals
   if (error instanceof Error) {
     const message = error.message;
 
-    // Check for common database errors
+    // Column doesn't exist
     if (message.includes('column') && message.includes('does not exist')) {
       const columnMatch = message.match(/column "([^"]+)" does not exist/);
       return NextResponse.json(
         {
-          error: 'Database schema mismatch',
+          error: 'Database schema error',
           code: 'DB_SCHEMA_ERROR',
           message: columnMatch
-            ? `Column "${columnMatch[1]}" not found. Database migration may be needed.`
-            : 'A database column is missing. Please run migrations.',
-        },
+            ? `Database field "${columnMatch[1]}" not found. Please contact support.`
+            : 'A database field is missing. Please contact support.',
+          timestamp,
+        } satisfies StandardErrorResponse,
         { status: 500 }
       );
     }
 
+    // Table doesn't exist
     if (message.includes('relation') && message.includes('does not exist')) {
       return NextResponse.json(
         {
           error: 'Database table not found',
           code: 'DB_SCHEMA_ERROR',
-          message: 'A required database table is missing. Please run migrations.',
-        },
+          message: 'A required database table is missing. Please contact support.',
+          timestamp,
+        } satisfies StandardErrorResponse,
         { status: 500 }
       );
     }
 
+    // Duplicate entry
     if (message.includes('duplicate key') || message.includes('unique constraint')) {
       return NextResponse.json(
         {
           error: 'Duplicate entry',
           code: 'DUPLICATE_ERROR',
           message: 'A record with this value already exists.',
-        },
+          timestamp,
+        } satisfies StandardErrorResponse,
         { status: 409 }
       );
     }
 
+    // Foreign key constraint
     if (message.includes('foreign key constraint')) {
       return NextResponse.json(
         {
           error: 'Reference error',
           code: 'REFERENCE_ERROR',
           message: 'Cannot complete this action due to existing references.',
-        },
+          timestamp,
+        } satisfies StandardErrorResponse,
         { status: 400 }
       );
     }
   }
 
-  // Unknown error
-  return NextResponse.json(
-    {
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: error instanceof Error ? error.message : 'An unexpected error occurred',
-      stack: error instanceof Error ? error.stack : undefined,
-    },
-    { status: 500 }
-  );
+  // Unknown error - hide details in production
+  const response: StandardErrorResponse = {
+    error: 'Internal server error',
+    code: 'INTERNAL_ERROR',
+    message: isDevelopment && error instanceof Error
+      ? error.message
+      : 'An unexpected error occurred. Please try again or contact support.',
+    timestamp,
+  };
+
+  // Only include stack in development
+  if (isDevelopment && error instanceof Error) {
+    (response as any).stack = error.stack;
+  }
+
+  return NextResponse.json(response, { status: 500 });
 }
 
 // ============================================

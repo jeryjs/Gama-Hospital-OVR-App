@@ -18,23 +18,23 @@
  * // => "john@example.com,jane@example.com"
  */
 export function emailsToCsv(emails: string[]): string {
-  if (!emails || emails.length === 0) {
-    return '';
-  }
-
-  // Validate and normalize emails
-  const normalized = emails.map(email => {
-    const trimmed = email.trim().toLowerCase();
-    if (!isValidEmail(trimmed)) {
-      throw new Error(`Invalid email address: ${email}`);
+    if (!emails || emails.length === 0) {
+        return '';
     }
-    return trimmed;
-  });
 
-  // Remove duplicates
-  const unique = [...new Set(normalized)];
+    // Validate and normalize emails
+    const normalized = emails.map(email => {
+        const trimmed = email.trim().toLowerCase();
+        if (!isValidEmail(trimmed)) {
+            throw new Error(`Invalid email address: ${email}`);
+        }
+        return trimmed;
+    });
 
-  return unique.join(',');
+    // Remove duplicates
+    const unique = [...new Set(normalized)];
+
+    return unique.join(',');
 }
 
 /**
@@ -48,14 +48,14 @@ export function emailsToCsv(emails: string[]): string {
  * // => ['john@example.com', 'jane@example.com']
  */
 export function csvToEmails(csv: string | null | undefined): string[] {
-  if (!csv || csv.trim().length === 0) {
-    return [];
-  }
+    if (!csv || csv.trim().length === 0) {
+        return [];
+    }
 
-  return csv
-    .split(',')
-    .map(email => email.trim().toLowerCase())
-    .filter(email => email.length > 0);
+    return csv
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(email => email.length > 0);
 }
 
 /**
@@ -67,9 +67,9 @@ export function csvToEmails(csv: string | null | undefined): string[] {
  * @returns true if email is in the CSV
  */
 export function emailExistsInCsv(csv: string | null | undefined, email: string): boolean {
-  const emails = csvToEmails(csv);
-  const normalized = email.trim().toLowerCase();
-  return emails.includes(normalized);
+    const emails = csvToEmails(csv);
+    const normalized = email.trim().toLowerCase();
+    return emails.includes(normalized);
 }
 
 /**
@@ -80,18 +80,18 @@ export function emailExistsInCsv(csv: string | null | undefined, email: string):
  * @returns Updated CSV string
  */
 export function addEmailToCsv(csv: string | null | undefined, email: string): string {
-  const emails = csvToEmails(csv);
-  const normalized = email.trim().toLowerCase();
-  
-  if (!isValidEmail(normalized)) {
-    throw new Error(`Invalid email address: ${email}`);
-  }
+    const emails = csvToEmails(csv);
+    const normalized = email.trim().toLowerCase();
 
-  if (!emails.includes(normalized)) {
-    emails.push(normalized);
-  }
+    if (!isValidEmail(normalized)) {
+        throw new Error(`Invalid email address: ${email}`);
+    }
 
-  return emails.join(',');
+    if (!emails.includes(normalized)) {
+        emails.push(normalized);
+    }
+
+    return emails.join(',');
 }
 
 /**
@@ -102,11 +102,11 @@ export function addEmailToCsv(csv: string | null | undefined, email: string): st
  * @returns Updated CSV string
  */
 export function removeEmailFromCsv(csv: string | null | undefined, email: string): string {
-  const emails = csvToEmails(csv);
-  const normalized = email.trim().toLowerCase();
-  
-  const filtered = emails.filter(e => e !== normalized);
-  return filtered.join(',');
+    const emails = csvToEmails(csv);
+    const normalized = email.trim().toLowerCase();
+
+    const filtered = emails.filter(e => e !== normalized);
+    return filtered.join(',');
 }
 
 /**
@@ -116,8 +116,8 @@ export function removeEmailFromCsv(csv: string | null | undefined, email: string
  * @returns true if email format is valid
  */
 function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 /**
@@ -127,5 +127,5 @@ function isValidEmail(email: string): boolean {
  * @returns Number of emails
  */
 export function getEmailCount(csv: string | null | undefined): number {
-  return csvToEmails(csv).length;
+    return csvToEmails(csv).length;
 }

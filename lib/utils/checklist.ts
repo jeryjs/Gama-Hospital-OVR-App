@@ -6,11 +6,11 @@
  */
 
 export interface ChecklistItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  completedAt?: string | null;
-  completedBy?: number | null;
+    id: string;
+    text: string;
+    completed: boolean;
+    completedAt?: string | null;
+    completedBy?: number | null;
 }
 
 /**
@@ -26,49 +26,49 @@ export interface ChecklistItem {
  * items.forEach(item => console.log(item.text, item.completed));
  */
 export function parseChecklist(json: string | null | undefined): ChecklistItem[] {
-  if (!json || json.trim().length === 0) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(json);
-
-    if (!Array.isArray(parsed)) {
-      throw new Error('Checklist must be an array');
+    if (!json || json.trim().length === 0) {
+        return [];
     }
 
-    // Validate each item
-    return parsed.map((item, index) => {
-      if (!item || typeof item !== 'object') {
-        throw new Error(`Invalid checklist item at index ${index}`);
-      }
+    try {
+        const parsed = JSON.parse(json);
 
-      if (!item.id || typeof item.id !== 'string') {
-        throw new Error(`Checklist item ${index} missing valid id`);
-      }
+        if (!Array.isArray(parsed)) {
+            throw new Error('Checklist must be an array');
+        }
 
-      if (!item.text || typeof item.text !== 'string') {
-        throw new Error(`Checklist item ${index} missing valid text`);
-      }
+        // Validate each item
+        return parsed.map((item, index) => {
+            if (!item || typeof item !== 'object') {
+                throw new Error(`Invalid checklist item at index ${index}`);
+            }
 
-      if (typeof item.completed !== 'boolean') {
-        throw new Error(`Checklist item ${index} missing valid completed status`);
-      }
+            if (!item.id || typeof item.id !== 'string') {
+                throw new Error(`Checklist item ${index} missing valid id`);
+            }
 
-      return {
-        id: item.id,
-        text: item.text,
-        completed: item.completed,
-        completedAt: item.completedAt || null,
-        completedBy: item.completedBy || null,
-      };
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to parse checklist: ${error.message}`);
+            if (!item.text || typeof item.text !== 'string') {
+                throw new Error(`Checklist item ${index} missing valid text`);
+            }
+
+            if (typeof item.completed !== 'boolean') {
+                throw new Error(`Checklist item ${index} missing valid completed status`);
+            }
+
+            return {
+                id: item.id,
+                text: item.text,
+                completed: item.completed,
+                completedAt: item.completedAt || null,
+                completedBy: item.completedBy || null,
+            };
+        });
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(`Failed to parse checklist: ${error.message}`);
+        }
+        throw new Error('Failed to parse checklist');
     }
-    throw new Error('Failed to parse checklist');
-  }
 }
 
 /**
@@ -84,7 +84,7 @@ export function parseChecklist(json: string | null | undefined): ChecklistItem[]
  * ]);
  */
 export function stringifyChecklist(items: ChecklistItem[]): string {
-  return JSON.stringify(items);
+    return JSON.stringify(items);
 }
 
 /**
@@ -94,13 +94,13 @@ export function stringifyChecklist(items: ChecklistItem[]): string {
  * @returns true if all items are completed
  */
 export function isChecklistComplete(json: string | null | undefined): boolean {
-  const items = parseChecklist(json);
-  
-  if (items.length === 0) {
-    return false; // Empty checklist = not complete
-  }
+    const items = parseChecklist(json);
 
-  return items.every(item => item.completed);
+    if (items.length === 0) {
+        return false; // Empty checklist = not complete
+    }
+
+    return items.every(item => item.completed);
 }
 
 /**
@@ -120,26 +120,26 @@ export function isChecklistComplete(json: string | null | undefined): boolean {
  * );
  */
 export function toggleChecklistItem(
-  json: string | null | undefined,
-  itemId: string,
-  userId?: number
+    json: string | null | undefined,
+    itemId: string,
+    userId?: number
 ): string {
-  const items = parseChecklist(json);
+    const items = parseChecklist(json);
 
-  const updated = items.map(item => {
-    if (item.id === itemId) {
-      const newCompleted = !item.completed;
-      return {
-        ...item,
-        completed: newCompleted,
-        completedAt: newCompleted ? new Date().toISOString() : null,
-        completedBy: newCompleted ? (userId || null) : null,
-      };
-    }
-    return item;
-  });
+    const updated = items.map(item => {
+        if (item.id === itemId) {
+            const newCompleted = !item.completed;
+            return {
+                ...item,
+                completed: newCompleted,
+                completedAt: newCompleted ? new Date().toISOString() : null,
+                completedBy: newCompleted ? (userId || null) : null,
+            };
+        }
+        return item;
+    });
 
-  return stringifyChecklist(updated);
+    return stringifyChecklist(updated);
 }
 
 /**
@@ -151,20 +151,20 @@ export function toggleChecklistItem(
  * @returns Updated JSON string
  */
 export function updateChecklistItem(
-  json: string | null | undefined,
-  itemId: string,
-  updates: Partial<ChecklistItem>
+    json: string | null | undefined,
+    itemId: string,
+    updates: Partial<ChecklistItem>
 ): string {
-  const items = parseChecklist(json);
+    const items = parseChecklist(json);
 
-  const updated = items.map(item => {
-    if (item.id === itemId) {
-      return { ...item, ...updates };
-    }
-    return item;
-  });
+    const updated = items.map(item => {
+        if (item.id === itemId) {
+            return { ...item, ...updates };
+        }
+        return item;
+    });
 
-  return stringifyChecklist(updated);
+    return stringifyChecklist(updated);
 }
 
 /**
@@ -174,14 +174,14 @@ export function updateChecklistItem(
  * @returns Percentage completed (0-100)
  */
 export function getChecklistProgress(json: string | null | undefined): number {
-  const items = parseChecklist(json);
-  
-  if (items.length === 0) {
-    return 0;
-  }
+    const items = parseChecklist(json);
 
-  const completed = items.filter(item => item.completed).length;
-  return Math.round((completed / items.length) * 100);
+    if (items.length === 0) {
+        return 0;
+    }
+
+    const completed = items.filter(item => item.completed).length;
+    return Math.round((completed / items.length) * 100);
 }
 
 /**
@@ -199,13 +199,13 @@ export function getChecklistProgress(json: string | null | undefined): number {
  * ]);
  */
 export function createChecklist(texts: string[]): string {
-  const items: ChecklistItem[] = texts.map((text, index) => ({
-    id: `item-${Date.now()}-${index}`,
-    text: text.trim(),
-    completed: false,
-    completedAt: null,
-    completedBy: null,
-  }));
+    const items: ChecklistItem[] = texts.map((text, index) => ({
+        id: `item-${Date.now()}-${index}`,
+        text: text.trim(),
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+    }));
 
-  return stringifyChecklist(items);
+    return stringifyChecklist(items);
 }

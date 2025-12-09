@@ -18,7 +18,7 @@ import { randomBytes } from 'crypto';
  * // => "a3f2c1d4e5f6g7h8..."
  */
 export function generateAccessToken(): string {
-  return randomBytes(32).toString('hex');
+    return randomBytes(32).toString('hex');
 }
 
 /**
@@ -38,26 +38,26 @@ export function generateAccessToken(): string {
  * );
  */
 export function validateToken(
-  providedToken: string | undefined | null,
-  storedToken: string,
-  expiresAt: Date | string | null
+    providedToken: string | undefined | null,
+    storedToken: string,
+    expiresAt: Date | string | null
 ): boolean {
-  // Reject invalid inputs
-  if (!providedToken || !storedToken) {
-    return false;
-  }
+    // Reject invalid inputs
+    if (!providedToken || !storedToken) {
+        return false;
+    }
 
-  // Check token match (constant-time comparison)
-  if (!constantTimeCompare(providedToken, storedToken)) {
-    return false;
-  }
+    // Check token match (constant-time comparison)
+    if (!constantTimeCompare(providedToken, storedToken)) {
+        return false;
+    }
 
-  // Check expiration
-  if (expiresAt && isTokenExpired(expiresAt)) {
-    return false;
-  }
+    // Check expiration
+    if (expiresAt && isTokenExpired(expiresAt)) {
+        return false;
+    }
 
-  return true;
+    return true;
 }
 
 /**
@@ -67,12 +67,12 @@ export function validateToken(
  * @returns true if token has expired
  */
 export function isTokenExpired(expiresAt: Date | string | null): boolean {
-  if (!expiresAt) {
-    return false; // No expiration set = never expires
-  }
+    if (!expiresAt) {
+        return false; // No expiration set = never expires
+    }
 
-  const expirationDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
-  return expirationDate.getTime() < Date.now();
+    const expirationDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+    return expirationDate.getTime() < Date.now();
 }
 
 /**
@@ -82,9 +82,9 @@ export function isTokenExpired(expiresAt: Date | string | null): boolean {
  * @returns Date object for token expiration
  */
 export function createTokenExpiration(daysFromNow: number = 30): Date {
-  const expiration = new Date();
-  expiration.setDate(expiration.getDate() + daysFromNow);
-  return expiration;
+    const expiration = new Date();
+    expiration.setDate(expiration.getDate() + daysFromNow);
+    return expiration;
 }
 
 /**
@@ -96,16 +96,16 @@ export function createTokenExpiration(daysFromNow: number = 30): Date {
  * @returns true if strings match
  */
 function constantTimeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
+    if (a.length !== b.length) {
+        return false;
+    }
 
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
 
-  return result === 0;
+    return result === 0;
 }
 
 /**
@@ -115,11 +115,11 @@ function constantTimeCompare(a: string, b: string): boolean {
  * @returns Object with token and expiration date
  */
 export function generateSharedAccessToken(daysValid: number = 30): {
-  token: string;
-  expiresAt: Date;
+    token: string;
+    expiresAt: Date;
 } {
-  return {
-    token: generateAccessToken(),
-    expiresAt: createTokenExpiration(daysValid),
-  };
+    return {
+        token: generateAccessToken(),
+        expiresAt: createTokenExpiration(daysValid),
+    };
 }
