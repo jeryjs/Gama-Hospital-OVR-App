@@ -13,9 +13,9 @@ import {
   getListColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
+import { buildIncidentVisibilityFilter } from '@/lib/utils';
 import { generateOVRId } from '@/lib/generate-ovr-id';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
-import { ACCESS_CONTROL } from '@/lib/access-control';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -46,34 +46,15 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = [];
 
-    // Role-based access control using centralized config
-    const canViewAll = ACCESS_CONTROL.api.incidents.canViewAll(session.user.roles);
-    const canViewDept = ACCESS_CONTROL.api.incidents.canViewDepartment(session.user.roles);
-    const canViewTeam = ACCESS_CONTROL.api.incidents.canViewTeam(session.user.roles);
+    // Role-based access control using security utility
+    const visibilityFilter = buildIncidentVisibilityFilter({
+      userId,
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
-    if (!canViewAll) {
-      // Restrict visibility based on role scope
-      if (canViewDept) {
-        // Department-level users: show reports where they are departmentHead OR reporter OR supervisor
-        conditions.push(
-          or(
-            eq(ovrReports.departmentHeadId, userId),
-            eq(ovrReports.reporterId, userId),
-            eq(ovrReports.supervisorId, userId)
-          ) as any
-        );
-      } else if (canViewTeam) {
-        // Team-level users: show reports they supervise or reported
-        conditions.push(
-          or(
-            eq(ovrReports.supervisorId, userId),
-            eq(ovrReports.reporterId, userId)
-          ) as any
-        );
-      } else {
-        // Regular employees: only own reports
-        conditions.push(eq(ovrReports.reporterId, userId));
-      }
+    if (visibilityFilter) {
+      conditions.push(visibilityFilter);
     }
 
     // Apply filters
@@ -87,10 +68,6 @@ export async function GET(request: NextRequest) {
 
     if (query.reporterId) {
       conditions.push(eq(ovrReports.reporterId, query.reporterId));
-    }
-
-    if (query.departmentHeadId) {
-      conditions.push(eq(ovrReports.departmentHeadId, query.departmentHeadId));
     }
 
     if (query.supervisorId) {
@@ -222,8 +199,8 @@ export async function POST(request: NextRequest) {
         reporterDepartment: body.reporterDepartment || session.user.department,
         reporterPosition: body.reporterPosition || session.user.position,
 
-        // Status - Skip supervisor approval, go directly to QI (hod_assigned)
-        status: body.status === 'draft' ? 'draft' : 'hod_assigned',
+        // Status - New workflow: draft or submitted (goes to QI review)
+        status: body.status === 'draft' ? 'draft' : 'submitted',
         submittedAt: body.status !== 'draft' ? new Date() : null,
       })
       .returning();

@@ -4,7 +4,6 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
   AuthorizationError,
   handleApiError,
-  NotFoundError,
   requireAuth,
   validateBody,
 } from '@/lib/api/middleware';
@@ -13,6 +12,7 @@ import {
   getDetailColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
+import { getIncidentSecure, canEditIncident } from '@/lib/utils';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -24,34 +24,21 @@ export async function GET(
     const session = await requireAuth(request);
     const { id } = await params;
 
-    // Get all columns and relations for detail view
-    const incident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, id), // String ID now
-      columns: getDetailColumns(), // undefined = all columns
-      with: incidentRelations, // all relations
+    // Use security utility - automatically filters by permissions
+    const incident = await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
     });
 
-    if (!incident) {
-      throw new NotFoundError('Incident');
-    }
+    // Fetch full details with relations
+    const fullIncident = await db.query.ovrReports.findFirst({
+      where: eq(ovrReports.id, id),
+      columns: getDetailColumns(),
+      with: incidentRelations,
+    });
 
-    // Check permissions
-    const userId = parseInt(session.user.id);
-    const isOwner = incident.reporterId === userId;
-    const isSupervisor = incident.supervisorId === userId;
-    const isHOD = incident.departmentHeadId === userId;
-    const isInvestigator = incident.investigators?.some(inv => inv.investigatorId === userId);
-    const canViewAll = ACCESS_CONTROL.api.incidents.canViewAll(session.user.roles);
-    const canViewDept = ACCESS_CONTROL.api.incidents.canViewDepartment(session.user.roles);
-    const canViewTeam = ACCESS_CONTROL.api.incidents.canViewTeam(session.user.roles);
-
-    const hasAccess = isOwner || isSupervisor || isHOD || isInvestigator || canViewAll || (canViewDept && isHOD) || (canViewTeam && isSupervisor);
-
-    if (!hasAccess) {
-      throw new AuthorizationError('You do not have permission to view this incident');
-    }
-
-    return NextResponse.json(incident);
+    return NextResponse.json(fullIncident);
   } catch (error) {
     return handleApiError(error);
   }
@@ -65,21 +52,22 @@ export async function PATCH(
     const session = await requireAuth(request);
     const { id } = await params;
 
-    const existingIncident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, id), // String ID now
+    // Get incident with security check
+    const existingIncident = await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
     });
 
-    if (!existingIncident) {
-      throw new NotFoundError('Incident');
-    }
+    // Check if user can edit (own draft or QI role)
+    const canEdit = canEditIncident(existingIncident, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
-    // Check permissions - only owner can edit draft
-    if (existingIncident.status !== 'draft') {
-      throw new AuthorizationError('Cannot edit submitted reports');
-    }
-
-    if (existingIncident.reporterId.toString() !== session.user.id) {
-      throw new AuthorizationError('You can only edit your own reports');
+    if (!canEdit) {
+      throw new AuthorizationError('You can only edit draft reports or have QI permissions');
     }
 
     // Validate request body
@@ -90,15 +78,15 @@ export async function PATCH(
       updatedAt: new Date(),
     };
 
-    // Skip supervisor approval - go directly to hod_assigned when submitting
-    if (body.status === 'hod_assigned' && existingIncident.status === 'draft') {
+    // New workflow: draft -> submitted
+    if (body.status === 'submitted' && existingIncident.status === 'draft') {
       updateData.submittedAt = new Date();
     }
 
     const updatedIncident = await db
       .update(ovrReports)
       .set(updateData)
-      .where(eq(ovrReports.id, id)) // String ID
+      .where(eq(ovrReports.id, id))
       .returning();
 
     return NextResponse.json(updatedIncident[0]);
@@ -115,26 +103,35 @@ export async function DELETE(
     const session = await requireAuth(request);
     const { id } = await params;
 
-    const incident = await db.query.ovrReports.findFirst({
-      where: eq(ovrReports.id, id), // String ID
+    // Get incident with security check
+    const incident = await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
     });
 
-    if (!incident) {
-      throw new NotFoundError('Incident');
-    }
-
-    // Only owner (if draft) or privileged roles can delete
-    const isOwner = incident.reporterId.toString() === session.user.id;
+    // Check if user can delete
+    const userId = parseInt(session.user.id);
+    const isOwner = incident.reporterId === userId;
     const isDraft = incident.status === 'draft';
-    const canDelete = ACCESS_CONTROL.api.incidents.canDelete(session.user.roles, isOwner, isDraft);
+    const canDelete = ACCESS_CONTROL.api.incidents.canDelete(
+      session.user.roles,
+      isOwner,
+      isDraft
+    );
 
     if (!canDelete) {
-      throw new AuthorizationError('You can only delete draft reports or have elevated permissions');
+      throw new AuthorizationError(
+        'You can only delete your own draft reports or have elevated permissions'
+      );
     }
 
-    await db.delete(ovrReports).where(eq(ovrReports.id, id)); // String ID
+    await db.delete(ovrReports).where(eq(ovrReports.id, id));
 
-    return NextResponse.json({ success: true, message: 'Incident deleted successfully' });
+    return NextResponse.json({
+      success: true,
+      message: 'Incident deleted successfully',
+    });
   } catch (error) {
     return handleApiError(error);
   }
