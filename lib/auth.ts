@@ -143,11 +143,11 @@ export const authOptions: NextAuthOptions = {
         roles: (user as any).roles,
       });
 
-      // Skip domain check in development mode
-      if (!user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
-        console.log('❌ Sign in rejected: Invalid domain for', user.email);
-        return false;
-      }
+      // Temp: Skip domain check while in preview
+      // if (!user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
+      //   console.log('❌ Sign in rejected: Invalid domain for', user.email);
+      //   return false;
+      // }
 
       try {
         const existingUser = await db.query.users.findFirst({

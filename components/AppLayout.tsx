@@ -214,7 +214,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <List component="div" disablePadding>
                     {item.children?.map((child) => {
                       // Determine if child is active with support for search params
-                      const isChildActive = pathname === child.path || pathname.startsWith(`${child.path}/`);
+                      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : '';
+                      const isChildActive = `${pathname}${searchParams.toString() ? `?${searchParams}` : ''}`.replace(/\/?\??$/, '') === child.path;
 
                       return (
                         <ListItemButton
