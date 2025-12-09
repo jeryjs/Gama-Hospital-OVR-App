@@ -45,7 +45,7 @@ import { useEffect, useState } from 'react';
  * Corrective Action Detail Page
  * Supports both authenticated QI users and token-based external handlers
  */
-export default function ActionDetailPage() {
+export default function CorrectiveActionDetailPage() {
     const params = useParams();
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { data: session } = useSession();
@@ -136,7 +136,7 @@ export default function ActionDetailPage() {
             });
 
             alert('Action closed successfully!');
-            router.push('/actions');
+            router.push('/incidents/corrective-actions');
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to close action');
         } finally {
@@ -183,7 +183,7 @@ export default function ActionDetailPage() {
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
                         {isQIUser && (
-                            <IconButton component={Link} href="/actions" size="small">
+                            <IconButton component={Link} href="/incidents/corrective-actions" size="small">
                                 <ArrowBack />
                             </IconButton>
                         )}

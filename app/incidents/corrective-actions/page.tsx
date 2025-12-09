@@ -266,7 +266,7 @@ export default function CorrectiveActionsPage() {
                                                         <TableCell align="right">
                                                             <Button
                                                                 component={Link}
-                                                                href={`/actions/${action.id}`}
+                                                                href={`/incidents/corrective-actions/${action.id}`}
                                                                 size="small"
                                                                 startIcon={<Visibility />}
                                                             >
