@@ -189,7 +189,7 @@ export function handleApiError(error: unknown): NextResponse {
   const response: StandardErrorResponse = {
     error: 'Internal server error',
     code: 'INTERNAL_ERROR',
-    message: isDevelopment && error instanceof Error
+    message: error instanceof Error
       ? error.message
       : 'An unexpected error occurred. Please try again or contact support.',
     timestamp,

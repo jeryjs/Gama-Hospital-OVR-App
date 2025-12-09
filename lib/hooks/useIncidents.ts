@@ -35,7 +35,6 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
     status,
     category,
     reporterId,
-    departmentHeadId,
     supervisorId,
     dateFrom,
     dateTo,
@@ -55,7 +54,6 @@ export function useIncidents(options: UseIncidentsOptions = {}): UseIncidentsRet
   if (status) params.append('status', status);
   if (category) params.append('category', category);
   if (reporterId) params.append('reporterId', reporterId.toString());
-  if (departmentHeadId) params.append('departmentHeadId', departmentHeadId.toString());
   if (supervisorId) params.append('supervisorId', supervisorId.toString());
   if (dateFrom) params.append('dateFrom', dateFrom);
   if (dateTo) params.append('dateTo', dateTo);

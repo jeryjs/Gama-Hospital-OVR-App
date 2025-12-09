@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { locations, ovrReports, users, ovrInvestigators as investigators } from '@/db/schema';
+import { locations, ovrReports, users, ovrInvestigations, ovrCorrectiveActions } from '@/db/schema';
 import { authOptions } from '@/lib/auth';
 import { and, count, eq, sql, desc, gte } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
@@ -67,10 +67,10 @@ async function getStatusCounts() {
 
   const byStatus = {
     draft: 0,
-    // submitted: 0, // REMOVED: No longer used
-    // supervisor_approved: 0, // REMOVED: Supervisor approval eliminated
-    hod_assigned: 0,
-    qi_final_review: 0,
+    submitted: 0,
+    qi_review: 0,
+    investigating: 0,
+    qi_final_actions: 0,
     closed: 0,
   };
 
@@ -137,7 +137,7 @@ async function getUserReportCounts(userId: number) {
     .select({
       total: sql<number>`COUNT(*)::int`,
       drafts: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} = 'draft')::int`,
-      inProgress: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} IN ('submitted', 'supervisor_approved', 'hod_assigned', 'qi_final_review'))::int`,
+      inProgress: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} IN ('submitted', 'qi_review', 'investigating', 'qi_final_actions'))::int`,
       resolved: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} = 'closed')::int`,
     })
     .from(ovrReports)
@@ -226,84 +226,7 @@ async function getQualityManagerStats() {
   };
 }
 
-async function getDepartmentHeadStats(userId: number) {
-  // OPTIMIZED: Single query with JOINs and aggregations
-  const assignedIncidents = await db
-    .select({
-      id: ovrReports.id, // String ID now
-      occurrenceCategory: ovrReports.occurrenceCategory,
-      status: ovrReports.status,
-      createdAt: ovrReports.createdAt,
-      reporterId: ovrReports.reporterId,
-      reporterFirstName: users.firstName,
-      reporterLastName: users.lastName,
-      investigatorCount: sql<number>`COALESCE(COUNT(${investigators.id}), 0)::int`,
-    })
-    .from(ovrReports)
-    .leftJoin(users, eq(ovrReports.reporterId, users.id))
-    .leftJoin(investigators, eq(ovrReports.id, investigators.ovrReportId))
-    .where(eq(ovrReports.departmentHeadId, userId))
-    .groupBy(
-      ovrReports.id,
-      ovrReports.occurrenceCategory,
-      ovrReports.status,
-      ovrReports.createdAt,
-      ovrReports.reporterId,
-      users.firstName,
-      users.lastName
-    )
-    .orderBy(desc(ovrReports.createdAt));
-
-  const myAssignedIncidents = assignedIncidents.map((incident) => ({
-    id: incident.id, // String ID
-    refNo: incident.id, // For backward compatibility
-    occurrenceCategory: incident.occurrenceCategory,
-    status: incident.status,
-    createdAt: incident.createdAt,
-    reporterId: incident.reporterId,
-    reporter: {
-      firstName: incident.reporterFirstName || 'Unknown',
-      lastName: incident.reporterLastName || '',
-    },
-    needsInvestigator: incident.status === 'hod_assigned' && incident.investigatorCount === 0,
-    needsFindings: incident.status === 'hod_assigned' && incident.investigatorCount > 0,
-  }));
-
-  const myActiveInvestigations = myAssignedIncidents.filter(
-    (i) => i.status === 'hod_assigned' && !i.needsInvestigator
-  ).length;
-
-  const myCompletedInvestigations = myAssignedIncidents.filter(
-    (i) => i.status === 'qi_final_review' || i.status === 'closed'
-  ).length;
-
-  const myNeedingFindings = myAssignedIncidents.filter((i) => i.needsFindings).length;
-
-  return {
-    total: 0,
-    drafts: 0,
-    submitted: 0,
-    resolved: 0,
-    byStatus: {
-      draft: 0,
-      submitted: 0,
-      supervisor_approved: 0,
-      hod_assigned: 0,
-      qi_final_review: 0,
-      closed: 0,
-    },
-    byDepartment: [],
-    recentIncidents: [],
-    activeUsers: 0,
-    avgResolutionTime: 0,
-    assignedToMe: assignedIncidents.length,
-    myPendingInvestigations: myAssignedIncidents.filter((i) => i.needsInvestigator).length,
-    myActiveInvestigations,
-    myCompletedInvestigations,
-    myNeedingFindings,
-    myAssignedIncidents: myAssignedIncidents.slice(0, 10),
-  };
-}
+// getDepartmentHeadStats removed - HOD role eliminated
 
 async function getSupervisorStats(userId: number) {
   // OPTIMIZED: Parallel queries where possible
@@ -332,19 +255,14 @@ async function getSupervisorStats(userId: number) {
     drafts: 0,
     submitted: 0,
     resolved: 0,
-    byStatus: { draft: 0, hod_assigned: 0, qi_final_review: 0, closed: 0 },
+    byStatus: { draft: 0, submitted: 0, qi_review: 0, investigating: 0, qi_final_actions: 0, closed: 0 },
     byDepartment: [],
     recentIncidents: [],
     activeUsers: 0,
     avgResolutionTime: 0,
     myReports,
     myRecentReports,
-    // REMOVED: Supervisor approval stats - no longer applicable
-    supervisorPending: 0,
-    supervisorApproved: 0,
     teamReports: teamReportsResult?.count || 0,
-    supervisorPendingReports: [],
-    supervisorApprovedReports: [],
   };
 }
 
@@ -372,9 +290,9 @@ async function getEmployeeStats(userId: number) {
     byStatus: {
       draft: 0,
       submitted: 0,
-      supervisor_approved: 0,
-      hod_assigned: 0,
-      qi_final_review: 0,
+      qi_review: 0,
+      investigating: 0,
+      qi_final_actions: 0,
       closed: 0,
     },
     byDepartment: [],
@@ -391,11 +309,10 @@ type Stats = Awaited<
   ReturnType<
     typeof getAdminStats |
     typeof getQualityManagerStats |
-    typeof getDepartmentHeadStats |
     typeof getSupervisorStats |
     typeof getEmployeeStats
   >
-> & { combinedView?: boolean };
+>;
 
 /**
  * Ordered handlers that decide which stats to return based on roles.
@@ -415,22 +332,7 @@ const STATS_HANDLERS: { predicate: (roles: AppRole[]) => boolean; handler: (user
   {
     // Quality managers/analysts see QI workflow stats
     predicate: (roles) => ACCESS_CONTROL.api.stats.canViewQIStats(roles),
-    handler: async (userId, roles) => {
-      let stats = await getQualityManagerStats() as any;
-
-      // If user also has HOD role, merge department stats
-      if (hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD])) {
-        const hodStats = await getDepartmentHeadStats(userId);
-        stats = { ...stats, ...hodStats, combinedView: true } as Stats;
-      }
-
-      return stats;
-    },
-  },
-  {
-    // Department heads see their department's incidents
-    predicate: (roles) => ACCESS_CONTROL.api.stats.canViewDepartmentStats(roles),
-    handler: async (userId) => getDepartmentHeadStats(userId),
+    handler: async () => getQualityManagerStats(),
   },
   {
     // Supervisors see team incidents

@@ -67,7 +67,7 @@ export async function GET(
         }
 
         // Also fetch shared access list if user has permission
-        let sharedAccess = [];
+        let sharedAccess: any[] = [];
         if (ACCESS_CONTROL.api.investigations.canCreate(session.user.roles)) {
             sharedAccess = await db
                 .select()
