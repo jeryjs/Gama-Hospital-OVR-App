@@ -5,6 +5,8 @@ import { LoadingFallback } from '@/components/LoadingFallback';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncidents } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
+import { getStatusColor, getStatusLabel, STATUS_CONFIG } from '@/lib/utils/status';
+import type { OVRStatus } from '@/lib/utils/status';
 import {
   Add,
   Close,
@@ -13,7 +15,6 @@ import {
 } from '@mui/icons-material';
 import {
   Alert,
-  alpha,
   Box,
   Button,
   Chip,
@@ -38,26 +39,6 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-
-const statusColors: Record<string, string> = {
-  draft: '#6B7280',
-  submitted: '#3B82F6',
-  supervisor_approved: '#10B981',
-  qi_review: '#8B5CF6',
-  hod_assigned: '#EC4899',
-  qi_final_review: '#10B981',
-  closed: '#059669',
-};
-
-const statusLabels: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
-  supervisor_approved: 'Supervisor Approved',
-  qi_review: 'QI Review',
-  hod_assigned: 'Investigation',
-  qi_final_review: 'QI Final Review',
-  closed: 'Closed',
-};
 
 export default function IncidentsPage() {
   const searchParams = useSearchParams();
@@ -295,14 +276,10 @@ export default function IncidentsPage() {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              label={statusLabels[incident.status] || incident.status}
+                              label={getStatusLabel(incident.status)}
+                              color={getStatusColor(incident.status) as any}
                               size="small"
                               sx={{
-                                bgcolor: alpha(
-                                  statusColors[incident.status] || '#6B7280',
-                                  0.15
-                                ),
-                                color: statusColors[incident.status] || '#6B7280',
                                 fontWeight: 600,
                                 borderRadius: 1.5,
                               }}

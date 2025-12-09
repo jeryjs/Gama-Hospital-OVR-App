@@ -1,4 +1,5 @@
 import { OVRReportListItem } from '@/lib/types';
+import { getStatusChipProps, getStatusColor, getStatusLabel } from '@/lib/utils/status';
 import { ArrowBack, Download, Print } from '@mui/icons-material';
 import { Box, Chip, IconButton, Paper, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
@@ -8,27 +9,9 @@ interface Props {
   incident: OVRReportListItem;
 }
 
-const statusColors: Record<string, string> = {
-  draft: '#6B7280',
-  submitted: '#3B82F6',
-  supervisor_approved: '#10B981',
-  qi_review: '#8B5CF6',
-  hod_assigned: '#F59E0B',
-  qi_final_review: '#EC4899',
-  closed: '#059669',
-};
-
-const statusLabels: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
-  supervisor_approved: 'Supervisor Approved',
-  qi_review: 'QI Review',
-  hod_assigned: 'Investigation Phase',
-  qi_final_review: 'Final QI Review',
-  closed: 'Closed',
-};
-
 export function IncidentHeader({ incident }: Props) {
+  const statusColor = getStatusColor(incident.status);
+
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
       <Stack direction="row" alignItems="center" spacing={2}>
@@ -38,7 +21,7 @@ export function IncidentHeader({ incident }: Props) {
 
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" fontWeight={700}>
-            {incident.refNo}
+            {incident.id}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Reported by {incident.reporter?.firstName} {incident.reporter?.lastName} on{' '}
@@ -47,10 +30,9 @@ export function IncidentHeader({ incident }: Props) {
         </Box>
 
         <Chip
-          label={statusLabels[incident.status] || incident.status}
+          label={getStatusLabel(incident.status)}
+          color={statusColor as any}
           sx={{
-            bgcolor: `${statusColors[incident.status]}20`,
-            color: statusColors[incident.status],
             fontWeight: 600,
             fontSize: '0.875rem',
             px: 2,

@@ -5,6 +5,23 @@
  * Organized by category for easy imports
  */
 
+// Status utilities
+export {
+    STATUS_CONFIG,
+    canEditIncident as canEditIncidentByStatus,
+    formatStatus,
+    getNextStatus,
+    getStatusChipProps,
+    getStatusColor,
+    getStatusConfig,
+    getStatusDescription,
+    getStatusLabel,
+    getWorkflowProgress,
+    isActiveStatus,
+    isClosedStatus,
+    type OVRStatus,
+} from './status';
+
 // Token management
 export {
     generateAccessToken,
