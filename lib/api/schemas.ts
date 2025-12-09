@@ -481,6 +481,8 @@ export type QIReviewInput = z.infer<typeof qiReviewSchema>;
  */
 export const createInvestigationSchema = z.object({
   ovrReportId: z.string().min(1, 'OVR Report ID is required'),
+  // Optional: server will default to current user if not provided
+  investigators: z.array(z.number().int().positive()).min(1, 'At least one investigator is required').optional(),
 });
 
 export const updateInvestigationSchema = z.object({
@@ -514,6 +516,8 @@ export type SubmitInvestigationInput = z.infer<typeof submitInvestigationSchema>
  */
 export const createCorrectiveActionSchema = z.object({
   ovrReportId: z.string().min(1, 'OVR Report ID is required'),
+  // Optional: server will default to creator if not provided
+  assignedTo: z.array(z.number().int().positive()).min(1, 'At least one assignee is required').optional(),
   title: z.string().min(5, 'Title must be at least 5 characters').max(255, 'Title too long'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   dueDate: z.string().datetime('Invalid date format'),

@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
             .insert(ovrInvestigations)
             .values({
                 ovrReportId: body.ovrReportId,
+                investigators: body.investigators && body.investigators.length > 0
+                    ? body.investigators
+                    : [parseInt(session.user.id)],
                 createdBy: parseInt(session.user.id),
             })
             .returning();

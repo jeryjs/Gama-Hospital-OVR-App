@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
                 title: body.title,
                 description: body.description,
                 dueDate: new Date(body.dueDate),
+                assignedTo: body.assignedTo && body.assignedTo.length > 0
+                    ? body.assignedTo
+                    : [parseInt(session.user.id)],
                 checklist: body.checklist,
                 createdBy: parseInt(session.user.id),
             })

@@ -218,6 +218,7 @@ export const ovrReports = pgTable('ovr_reports', {
 export const ovrInvestigations = pgTable('ovr_investigations', {
   id: serial('id').primaryKey(),
   ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  investigators: integer('investigator_ids').array().notNull(), // Array of user ids
 
   // Investigation Content
   findings: text('findings'), // Markdown format
@@ -243,6 +244,7 @@ export const ovrInvestigations = pgTable('ovr_investigations', {
 export const ovrCorrectiveActions = pgTable('ovr_corrective_actions', {
   id: serial('id').primaryKey(),
   ovrReportId: varchar('ovr_report_id', { length: 20 }).notNull().references(() => ovrReports.id, { onDelete: 'cascade' }),
+  assignedTo: integer('assigned_to').array().notNull(), // Array of user ids
 
   // Action Details
   title: varchar('title', { length: 255 }).notNull(),
