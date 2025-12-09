@@ -47,9 +47,9 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
 
   const quickActions = [
     { label: 'New Incident Report', icon: <Add />, href: '/incidents/new' },
-    { label: 'Manage Users', icon: <Groups />, href: '/users' },
-    { label: 'Manage Departments', icon: <Business />, href: '/departments' },
-    { label: 'View Analytics', icon: <TrendingUp />, href: '/analytics' },
+    { label: 'Manage Users', icon: <Groups />, href: '/administration/users' },
+    { label: 'Manage Departments', icon: <Business />, href: '/administration/departments' },
+    { label: 'View Analytics', icon: <TrendingUp />, href: '/incidents/analytics' },
   ];
 
   const recentIncidents = stats.recentIncidents.slice(0, 5).map((inc) => ({

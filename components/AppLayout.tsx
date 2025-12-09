@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [navItemsOpen, setNavItemsOpen] = useState<Record<string, boolean>>(() => ({
     Incidents: pathname.startsWith('/incidents'),
-    Administration: pathname.startsWith('/users') || pathname.startsWith('/administration'),
+    Administration: pathname.startsWith('/administration'),
   }));
 
   // Handle proper logout with Azure AD session cleanup
@@ -125,7 +125,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         children: [
           {
             title: 'User Management',
-            path: '/users',
+            path: '/administration/users',
             roles: ['super_admin', 'tech_admin', 'developer']
           },
           {
