@@ -32,7 +32,6 @@ export interface CorrectiveActionListItem {
     // Relations
     incident?: {
         id: string;
-        refNo?: string;
         occurrenceCategory?: string;
     };
     handlerCount: number;

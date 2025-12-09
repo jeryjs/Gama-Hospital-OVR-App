@@ -24,7 +24,6 @@ export interface DashboardStats {
 
     recentIncidents: Array<{
         id: number;
-        refNo: string;
         occurrenceCategory: string;
         status: string;
         createdAt: string;
@@ -45,7 +44,6 @@ export interface DashboardStats {
 
     myRecentReports?: Array<{
         id: number;
-        refNo: string;
         occurrenceCategory: string;
         status: string;
         createdAt: string;
@@ -55,7 +53,6 @@ export interface DashboardStats {
     teamReports?: number;
     myTeamReports?: Array<{
         id: number;
-        refNo: string;
         status: string;
         createdAt: string;
         reporter: { firstName: string; lastName: string };

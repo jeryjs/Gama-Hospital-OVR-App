@@ -275,7 +275,7 @@ export default function IncidentsPage() {
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {incident.refNo}
+                              {incident.id}
                             </Typography>
                           </TableCell>
                           <TableCell>

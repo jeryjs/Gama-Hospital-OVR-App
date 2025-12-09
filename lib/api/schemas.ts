@@ -80,7 +80,7 @@ export const ovrReportInsertSchema = createInsertSchema(ovrReports);
 const ovrColumns = getTableColumns(ovrReports);
 
 // Extract column keys programmatically - single source of truth!
-const LIST_COLUMN_KEYS = ['id', 'refNo', 'status', 'occurrenceDate', 'occurrenceCategory', 'createdAt'] as const;
+const LIST_COLUMN_KEYS = ['id', 'status', 'occurrenceDate', 'occurrenceCategory', 'createdAt'] as const;
 
 /**
  * Column selections for list view
@@ -178,14 +178,12 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
 // OVR Report list item (minimal - auto-extends from ovrReportSelectSchema)
 export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
   id: true, // Now string format: OVR-YYYY-NNN
-  // refNo removed - id IS the refNo
   status: true,
   occurrenceDate: true,
   occurrenceCategory: true,
   createdAt: true,
 }).extend({
   reporter: userPublicSchema.optional(),
-  refNo: z.string().optional(), // For backward compatibility in UI
 });
 
 // ============================================
@@ -268,7 +266,7 @@ export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export const incidentListQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).catch(1),
   limit: z.coerce.number().min(1).max(100).default(10).catch(10),
-  sortBy: z.enum(['createdAt', 'occurrenceDate', 'id', 'status']).default('createdAt').catch('createdAt'), // Changed refNo to id
+  sortBy: z.enum(['createdAt', 'occurrenceDate', 'id', 'status']).default('createdAt').catch('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
   status: z.string().nullish(),
   category: z.string().nullish(),

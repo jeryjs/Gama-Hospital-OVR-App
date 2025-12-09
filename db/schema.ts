@@ -99,7 +99,6 @@ export const locations = pgTable('locations', {
 // ============================================
 export const ovrReports = pgTable('ovr_reports', {
   id: varchar('id', { length: 20 }).primaryKey(), // Format: OVR-YYYY-MM-NNN
-  // refNo removed - id IS the refNo now
 
   // Basic Information
   occurrenceDate: date('occurrence_date').notNull(),

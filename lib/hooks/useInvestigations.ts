@@ -16,7 +16,6 @@ import type { Investigation } from './useInvestigation';
 export interface InvestigationListItem extends Omit<Investigation, 'rcaAnalysis' | 'fishboneAnalysis'> {
     incident?: {
         id: string;
-        refNo?: string;
         occurrenceCategory?: string;
     };
     investigatorCount: number;

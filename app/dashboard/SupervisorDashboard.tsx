@@ -250,7 +250,7 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
                               primary={
                                 <Stack direction="row" spacing={1} alignItems="center">
                                   <Typography variant="body2" fontWeight={600}>
-                                    {report.refNo}
+                                    {report.id}
                                   </Typography>
                                 </Stack>
                               }

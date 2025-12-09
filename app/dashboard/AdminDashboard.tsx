@@ -326,7 +326,7 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText
-                            primary={incident.refNo}
+                            primary={incident.id}
                             secondary={`${incident.reporter.firstName} ${incident.reporter.lastName} • ${format(new Date(incident.createdAt), 'MMM dd, HH:mm')}`}
                             primaryTypographyProps={{ fontWeight: 600 }}
                           />

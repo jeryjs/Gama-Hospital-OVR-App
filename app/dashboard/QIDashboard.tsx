@@ -354,7 +354,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                               primary={
                                 <Stack direction="row" spacing={1} alignItems="center">
                                   <Typography variant="body2" fontWeight={600}>
-                                    {incident.refNo}
+                                    {incident.id}
                                   </Typography>
                                   {incident.status === 'qi_review' && (
                                     <Chip

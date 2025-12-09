@@ -90,7 +90,6 @@ async function getRecentIncidents(limit = 10, whereClause?: any) {
   const query = db
     .select({
       id: ovrReports.id,
-      // refNo removed - id IS the refNo now
       occurrenceCategory: ovrReports.occurrenceCategory,
       status: ovrReports.status,
       createdAt: ovrReports.createdAt,
@@ -106,8 +105,7 @@ async function getRecentIncidents(limit = 10, whereClause?: any) {
   const incidents = whereClause ? await query.where(whereClause) : await query;
 
   return incidents.map((incident) => ({
-    id: incident.id, // Already a string
-    refNo: incident.id, // For backward compatibility in UI
+    id: incident.id,
     occurrenceCategory: incident.occurrenceCategory,
     status: incident.status,
     createdAt: incident.createdAt,
@@ -236,8 +234,7 @@ async function getSupervisorStats(userId: number) {
 
     db
       .select({
-        id: ovrReports.id, // String ID now
-        refNo: ovrReports.id, // For backward compatibility
+        id: ovrReports.id,
         occurrenceCategory: ovrReports.occurrenceCategory,
         status: ovrReports.status,
         createdAt: ovrReports.createdAt,
@@ -271,8 +268,7 @@ async function getEmployeeStats(userId: number) {
 
   const myRecentReports = await db
     .select({
-      id: ovrReports.id, // String ID
-      refNo: ovrReports.id, // For backward compatibility
+      id: ovrReports.id,
       occurrenceCategory: ovrReports.occurrenceCategory,
       status: ovrReports.status,
       createdAt: ovrReports.createdAt,

@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     const sortColumn = {
       createdAt: ovrReports.createdAt,
       occurrenceDate: ovrReports.occurrenceDate,
-      id: ovrReports.id, // Changed from refNo to id
+      id: ovrReports.id,
       status: ovrReports.status,
     }[query.sortBy];
 
