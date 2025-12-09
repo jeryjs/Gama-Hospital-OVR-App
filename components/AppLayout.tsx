@@ -35,7 +35,7 @@ import { User } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AppRole } from '@/lib/constants';
 import { useDashboardStats } from '@/lib/hooks';
@@ -63,31 +63,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [navItemsOpen, setNavItemsOpen] = useState<Record<string, boolean>>(() => ({
+    Incidents: pathname.startsWith('/incidents'),
+    Administration: pathname.startsWith('/users'),
+  }));
 
   // Handle proper logout with Azure AD session cleanup
   const handleLogout = async () => {
-    // Get the tenant ID for Azure AD logout
-    // const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
-
     // Sign out from NextAuth (clears local session)
     await signOut({ callbackUrl: '/login' });
-
-    // Redirect to Azure AD logout endpoint to clear SSO session
-    // This ensures user is fully logged out from Microsoft
-    // const logoutUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin + '/login')}`;
-
-    // window.location.href = logoutUrl;
   };
 
-  const [navItems, setNavItems] = useState<NavItem[]>(() => {
+  // Build nav items with real stats data
+  const navItems = React.useMemo(() => {
     const userRoles = session?.user.roles || [];
+    const qiReviewCount = stats?.byStatus?.qi_review || 0;
 
     const items: NavItem[] = [
       { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
       {
         title: 'Incidents',
         icon: <Description />,
-        open: pathname.startsWith('/incidents'),
+        open: navItemsOpen.Incidents,
         children: [
           {
             title: 'My Reports',
@@ -98,18 +95,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               tooltip: 'Report New incident'
             }
           },
-          // REMOVED: Pending Approval menu item - no longer applicable
-          // {
-          //   title: 'Pending Approval',
-          //   path: '/incidents?status=submitted',
-          //   roles: ['supervisor', 'team_lead', 'employee'],
-          //   badge: { content: 3, tooltip: 'Found 3 reports pending approval' }
-          // },
           {
             title: 'QI Review',
             path: '/incidents/qi/review',
             roles: ['quality_manager', 'quality_analyst', 'super_admin', 'developer'],
-            badge: { content: 1, tooltip: 'Found 1 QI reviews pending' }
+            badge: qiReviewCount > 0 ? {
+              content: qiReviewCount,
+              tooltip: `${qiReviewCount} incident${qiReviewCount !== 1 ? 's' : ''} pending QI review`
+            } : undefined
           },
         ],
       },
@@ -120,7 +113,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       items.push({
         title: 'Administration',
         icon: <AccountCircle />,
-        open: pathname.startsWith('/users'),
+        open: navItemsOpen.Administration,
         children: [
           {
             title: 'User Management',
@@ -143,15 +136,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
 
     return items;
-  });
+  }, [session?.user.roles, stats?.byStatus, navItemsOpen]);
 
   const handleMenuItemClick = (item: NavItem) => {
     if (item.children) {
-      setNavItems((prevItems) =>
-        prevItems.map((navItem) =>
-          navItem.title === item.title ? { ...navItem, open: !navItem.open } : navItem
-        )
-      );
+      setNavItemsOpen(prev => ({
+        ...prev,
+        [item.title]: !prev[item.title]
+      }));
     } else if (item.path) {
       setMobileOpen(false);
     }
