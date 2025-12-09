@@ -878,9 +878,9 @@ function SupervisorSelector({
   value: string | number | undefined;
   onChange: (value: number) => void;
 }) {
-  const { users, isError } = useUsers({ role: 'supervisor' });
+  const { users, error } = useUsers({ role: 'supervisor' });
 
-  if (isError) {
+  if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
         Failed to load supervisors. Please try again.

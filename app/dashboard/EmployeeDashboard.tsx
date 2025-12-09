@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { EmptyState, QuickActionsPanel, RecentIncidentsList, StatCard } from '@/components/shared';
 import type { DashboardStats } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
 import {
@@ -9,83 +10,35 @@ import {
   Description,
   Edit,
   PendingActions,
-  Visibility
+  Visibility,
 } from '@mui/icons-material';
-import {
-  alpha,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { format } from 'date-fns';
+import { alpha, Box, Button, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function EmployeeDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
   const router = useRouter();
 
-  const statusColors: Record<string, string> = {
-    draft: '#6B7280',
-    submitted: '#3B82F6',
-    qi_review: '#F59E0B',
-    investigating: '#8B5CF6',
-    qi_final_actions: '#EC4899',
-    closed: '#059669',
-  };
-
-  const statusLabels: Record<string, string> = {
-    draft: 'Draft',
-    submitted: 'Submitted',
-    qi_review: 'QI Review',
-    investigating: 'Investigating',
-    qi_final_actions: 'Final Actions',
-    closed: 'Closed',
-  };
-
   const statCards = [
-    {
-      title: 'Total Reports',
-      value: stats.myReports?.total || 0,
-      icon: <Description fontSize="large" />,
-      color: 'primary.main',
-      subtitle: 'All time',
-    },
-    {
-      title: 'Drafts',
-      value: stats.myReports?.drafts || 0,
-      icon: <Edit fontSize="large" />,
-      color: 'warning.main',
-      subtitle: 'Not submitted',
-      action: () => router.push('/incidents?status=draft&mine=true'),
-    },
-    {
-      title: 'In Progress',
-      value: stats.myReports?.inProgress || 0,
-      icon: <PendingActions fontSize="large" />,
-      color: 'info.main',
-      subtitle: 'Being reviewed',
-    },
-    {
-      title: 'Resolved',
-      value: stats.myReports?.resolved || 0,
-      icon: <CheckCircle fontSize="large" />,
-      color: 'success.main',
-      subtitle: 'Completed',
-    },
+    { title: 'Total Reports', value: stats.myReports?.total || 0, icon: <Description fontSize="large" />, color: 'primary' as const, subtitle: 'All time' },
+    { title: 'Drafts', value: stats.myReports?.drafts || 0, icon: <Edit fontSize="large" />, color: 'warning' as const, subtitle: 'Not submitted', onClick: () => router.push('/incidents?status=draft&mine=true') },
+    { title: 'In Progress', value: stats.myReports?.inProgress || 0, icon: <PendingActions fontSize="large" />, color: 'info' as const, subtitle: 'Being reviewed' },
+    { title: 'Resolved', value: stats.myReports?.resolved || 0, icon: <CheckCircle fontSize="large" />, color: 'success' as const, subtitle: 'Completed' },
   ];
+
+  const quickActions = [
+    { label: 'Report New Incident', icon: <Add />, href: '/incidents/new' },
+    { label: `Continue Draft (${stats.myReports?.drafts || 0})`, icon: <Edit />, href: '/incidents?status=draft&mine=true', count: stats.myReports?.drafts },
+    { label: 'View All My Reports', icon: <Visibility />, href: '/incidents?mine=true' },
+  ];
+
+  const myRecentReports = (stats.myRecentReports || []).slice(0, 5).map((report) => ({
+    id: String(report.id),
+    status: report.status,
+    reporter: session?.user?.name || 'You',
+    createdAt: report.createdAt,
+    occurrenceCategory: report.occurrenceCategory?.replace(/_/g, ' ') || 'Uncategorized',
+  }));
 
   return (
     <AppLayout>
@@ -104,53 +57,9 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
 
             {/* Primary Stats */}
             <Grid container spacing={3}>
-              {statCards.map((stat, index) => (
+              {statCards.map((stat) => (
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={stat.title}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card
-                      onClick={stat.action}
-                      sx={{
-                        height: '100%',
-                        transition: 'all 0.3s',
-                        cursor: stat.action ? 'pointer' : 'default',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: 6,
-                        },
-                      }}
-                    >
-                      <CardContent>
-                        <Stack spacing={2}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              bgcolor: (theme) => alpha(theme.palette[stat.color.split('.')[0] as 'primary'].main, 0.1),
-                              color: stat.color,
-                              alignSelf: 'flex-start',
-                            }}
-                          >
-                            {stat.icon}
-                          </Box>
-                          <Box>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                              {stat.title}
-                            </Typography>
-                            <Typography variant="h3" fontWeight={700} mb={0.5}>
-                              {stat.value}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {stat.subtitle}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                  <StatCard {...stat} />
                 </Grid>
               ))}
             </Grid>
@@ -159,39 +68,7 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
               {/* Quick Actions */}
               <Grid size={{ xs: 12, md: 4 }}>
                 <Paper sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Quick Actions
-                  </Typography>
-                  <Stack spacing={2} mt={2}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      startIcon={<Add />}
-                      onClick={() => router.push('/incidents/new')}
-                      sx={{ justifyContent: 'flex-start', py: 2 }}
-                    >
-                      Report New Incident
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Edit />}
-                      onClick={() => router.push('/incidents?status=draft&mine=true')}
-                      sx={{ justifyContent: 'flex-start', py: 1.5 }}
-                    >
-                      Continue Draft ({stats.myReports?.drafts || 0})
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Visibility />}
-                      onClick={() => router.push('/incidents?mine=true')}
-                      sx={{ justifyContent: 'flex-start', py: 1.5 }}
-                    >
-                      View All My Reports
-                    </Button>
-                  </Stack>
+                  <QuickActionsPanel title="Quick Actions" actions={quickActions} />
 
                   <Divider sx={{ my: 3 }} />
 
@@ -216,102 +93,30 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
 
               {/* My Recent Reports */}
               <Grid size={{ xs: 12, md: 8 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6" fontWeight={600}>
+                {myRecentReports.length > 0 ? (
+                  <RecentIncidentsList
+                    incidents={myRecentReports}
+                    title="My Recent Reports"
+                    showViewAll
+                    onViewAll={() => router.push('/incidents?mine=true')}
+                  />
+                ) : (
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" fontWeight={600} gutterBottom>
                       My Recent Reports
                     </Typography>
-                    <Button
-                      size="small"
-                      onClick={() => router.push('/incidents?mine=true')}
-                    >
-                      View All
-                    </Button>
-                  </Stack>
-
-                  {stats.myRecentReports && stats.myRecentReports.length > 0 ? (
-                    <List>
-                      {stats.myRecentReports.slice(0, 5).map((report, index) => (
-                        <Box key={report.id}>
-                          <ListItem
-                            component={Link}
-                            href={`/incidents/view/${report.id}`}
-                            sx={{
-                              borderRadius: 1,
-                              mb: 1,
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                              },
-                            }}
-                          >
-                            <ListItemAvatar>
-                              <Avatar
-                                sx={{
-                                  bgcolor: (theme) => alpha(statusColors[report.status], 0.2),
-                                  color: statusColors[report.status],
-                                }}
-                              >
-                                {report.status === 'draft' ? (
-                                  <Edit fontSize="small" />
-                                ) : report.status === 'closed' ? (
-                                  <CheckCircle fontSize="small" />
-                                ) : (
-                                  <PendingActions fontSize="small" />
-                                )}
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <Typography variant="body2" fontWeight={600}>
-                                    {report.id}
-                                  </Typography>
-                                  {report.status === 'draft' && (
-                                    <Chip
-                                      label="DRAFT"
-                                      size="small"
-                                      color="warning"
-                                      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                                    />
-                                  )}
-                                </Stack>
-                              }
-                              secondary={`${format(new Date(report.createdAt), 'MMM dd, yyyy HH:mm')} • ${report.occurrenceCategory?.replace(/_/g, ' ') || 'Uncategorized'}`}
-                            />
-                            <Chip
-                              label={statusLabels[report.status]}
-                              size="small"
-                              sx={{
-                                bgcolor: (theme) => alpha(statusColors[report.status], 0.1),
-                                color: statusColors[report.status],
-                                fontWeight: 600,
-                              }}
-                            />
-                          </ListItem>
-                          {index < 4 && <Divider />}
-                        </Box>
-                      ))}
-                    </List>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <Description sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary" gutterBottom>
-                        No reports yet
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" mb={3}>
-                        Report your first incident to get started
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => router.push('/incidents/new')}
-                      >
-                        Create First Report
-                      </Button>
-                    </Box>
-                  )}
-                </Paper>
+                    <EmptyState
+                      icon={<Description sx={{ fontSize: 64 }} />}
+                      title="No reports yet"
+                      description="Report your first incident to get started"
+                      action={
+                        <Button variant="contained" startIcon={<Add />} onClick={() => router.push('/incidents/new')}>
+                          Create First Report
+                        </Button>
+                      }
+                    />
+                  </Paper>
+                )}
               </Grid>
 
               {/* Reporting Guidelines */}
@@ -321,46 +126,23 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                     📋 Reporting Guidelines
                   </Typography>
                   <Grid container spacing={2} mt={1}>
-                    <Grid size={{ xs: 12, md: 3 }}>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
-                          What to Report
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Any incident, near-miss, or safety concern that could affect patients or staff
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 3 }}>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
-                          When to Report
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          As soon as possible after the incident occurs or is discovered
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 3 }}>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
-                          Confidentiality
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          All reports are confidential and used for quality improvement only
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 3 }}>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
-                          Non-Punitive
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Reporting helps improve safety - no blame or punishment
-                        </Typography>
-                      </Box>
-                    </Grid>
+                    {[
+                      { title: 'What to Report', text: 'Any incident, near-miss, or safety concern that could affect patients or staff' },
+                      { title: 'When to Report', text: 'As soon as possible after the incident occurs or is discovered' },
+                      { title: 'Confidentiality', text: 'All reports are confidential and used for quality improvement only' },
+                      { title: 'Non-Punitive', text: 'Reporting helps improve safety - no blame or punishment' },
+                    ].map((item) => (
+                      <Grid size={{ xs: 12, md: 3 }} key={item.title}>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
+                            {item.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.text}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
                   </Grid>
                 </Paper>
               </Grid>

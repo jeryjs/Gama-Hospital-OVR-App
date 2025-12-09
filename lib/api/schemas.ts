@@ -1,4 +1,5 @@
 import {
+  departments,
   locations,
   ovrComments,
   ovrCorrectiveActions,
@@ -44,6 +45,36 @@ export const locationMinimalSchema = locationSelectSchema.pick({
   name: true,
   building: true,
   floor: true,
+});
+
+// Location CRUD schemas
+export const locationCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  departmentId: z.number().int().positive(),
+  building: z.string().max(100).optional(),
+  floor: z.string().max(50).optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const locationUpdateSchema = locationCreateSchema.partial();
+
+// Department schemas (auto-generated from DB)
+export const departmentSelectSchema = createSelectSchema(departments);
+export const departmentInsertSchema = createInsertSchema(departments);
+
+// Department CRUD schemas
+export const departmentCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  code: z.string().min(1).max(20),
+  headId: z.number().int().positive().optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const departmentUpdateSchema = departmentCreateSchema.partial();
+
+export const departmentWithLocationsSchema = departmentSelectSchema.extend({
+  locations: z.array(locationMinimalSchema).optional(),
+  head: userMinimalSchema.optional(),
 });
 
 // Investigation schemas (auto-generated from DB)
@@ -198,6 +229,14 @@ export type UserMinimal = z.infer<typeof userMinimalSchema>;
 export type Location = z.infer<typeof locationSelectSchema>;
 export type LocationInsert = z.infer<typeof locationInsertSchema>;
 export type LocationMinimal = z.infer<typeof locationMinimalSchema>;
+export type LocationCreate = z.infer<typeof locationCreateSchema>;
+export type LocationUpdate = z.infer<typeof locationUpdateSchema>;
+
+export type Department = z.infer<typeof departmentSelectSchema>;
+export type DepartmentInsert = z.infer<typeof departmentInsertSchema>;
+export type DepartmentCreate = z.infer<typeof departmentCreateSchema>;
+export type DepartmentUpdate = z.infer<typeof departmentUpdateSchema>;
+export type DepartmentWithLocations = z.infer<typeof departmentWithLocationsSchema>;
 
 export type Investigation = z.infer<typeof investigationSelectSchema>;
 export type InvestigationInsert = z.infer<typeof investigationInsertSchema>;

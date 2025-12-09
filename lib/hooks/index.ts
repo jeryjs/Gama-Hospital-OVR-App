@@ -14,8 +14,12 @@ export { useSharedAccess } from './useSharedAccess';
 export { useComments } from './useComments';
 export { useUsers } from './useUsers';
 export { useLocations } from './useLocations';
+export { useLocationManagement } from './useLocationManagement';
+export { useDepartments, useDepartmentsWithLocations } from './useDepartments';
+export { useDepartmentManagement } from './useDepartmentManagement';
 export { useDashboardStats } from './useDashboardStats';
 export { useUserManagement } from './useUserManagement';
+export { useReportData, useIncidentTrends, useLocationComparison } from './useReportData';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
@@ -54,5 +58,27 @@ export type { UseUsersOptions, UseUsersReturn } from './useUsers';
 export type { UseLocationsReturn } from './useLocations';
 export type { UseDashboardStatsReturn, DashboardStats } from './useDashboardStats';
 
+// Location & Department management types (re-exported from schemas)
+export type {
+    Location,
+    LocationCreate,
+    LocationUpdate,
+    Department,
+    DepartmentCreate,
+    DepartmentUpdate,
+    DepartmentWithLocations,
+} from '@/lib/api/schemas';
+
 // User list management types
 export type { User, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
+
+// Report data types
+export type {
+    DateRange as ReportDateRange,
+    ReportFilters,
+    ReportData,
+    TrendDataPoint,
+    StatusDistribution,
+    LocationStats,
+    DepartmentStats,
+} from './useReportData';

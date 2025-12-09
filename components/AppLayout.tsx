@@ -3,10 +3,13 @@
 import {
   AccountCircle,
   Add,
+  Business,
   Dashboard,
   Description,
   ExpandLess,
   ExpandMore,
+  Groups,
+  LocationOn,
   Logout,
   Menu as MenuIcon
 } from '@mui/icons-material';
@@ -119,6 +122,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             title: 'User Management',
             path: '/users',
             roles: ['super_admin', 'tech_admin', 'developer']
+          },
+          {
+            title: 'Locations',
+            path: '/administration/locations',
+            roles: ['super_admin', 'tech_admin', 'facility_manager', 'developer']
+          },
+          {
+            title: 'Departments',
+            path: '/administration/departments',
+            roles: ['super_admin', 'tech_admin', 'facility_manager', 'developer']
           },
         ],
       });

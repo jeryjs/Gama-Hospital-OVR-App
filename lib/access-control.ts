@@ -260,6 +260,7 @@ export const ACCESS_CONTROL = {
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.TECH_ADMIN,
                     APP_ROLES.FACILITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
                 ]),
 
             showQIReview: (roles: AppRole[]) =>

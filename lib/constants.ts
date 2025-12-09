@@ -75,6 +75,14 @@ export const ROLE_METADATA: Record<AppRole, { label: string; color: string; desc
 };
 
 /**
+ * Role labels for quick access (derived from ROLE_METADATA)
+ * Use ROLE_METADATA for full metadata including colors and descriptions
+ */
+export const ROLE_LABELS: Record<string, string> = Object.fromEntries(
+    Object.entries(ROLE_METADATA).map(([key, value]) => [key, value.label])
+);
+
+/**
  * Azure AD Security Group to App Role mapping
  * Uses Group Object IDs (not display names) for reliable mapping
  * Update these IDs to match your Azure AD security groups

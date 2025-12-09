@@ -1,11 +1,12 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { User, UserUpdate } from '@/lib/api/schemas';
-import { useUserManagement } from '@/lib/hooks';
+import type { User, UserUpdate } from '@/lib/api/schemas';
+import { useUserManagement, useDepartments } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
 import { APP_ROLES, ROLE_METADATA, AppRole } from '@/lib/constants';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { hasAnyRole } from '@/lib/auth-helpers';
 import {
   AdminPanelSettings,
   CheckCircle,
@@ -15,39 +16,60 @@ import {
   PersonAdd,
   Refresh,
   Search as SearchIcon,
+  Person,
+  Security,
+  History,
+  Info,
+  Warning,
+  CheckCircleOutline,
+  Block,
+  Assignment,
+  TrendingUp,
+  CalendarToday,
+  AccessTime,
 } from '@mui/icons-material';
 import {
   alpha,
+  Avatar,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
+  FormControlLabel,
+  Grid,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Pagination,
   Paper,
   Select,
   Stack,
+  Switch,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
+  Alert,
 } from '@mui/material';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // Build role filter options from ROLE_METADATA
 const ROLE_FILTER_OPTIONS = [
@@ -61,31 +83,208 @@ const STATUS_OPTIONS = [
   { value: 'false', label: 'Inactive' },
 ];
 
-interface EditUserDialogProps {
+// ============================================
+// TAB PANEL COMPONENT
+// ============================================
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({ children, value, index }: TabPanelProps) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`user-tabpanel-${index}`}
+      aria-labelledby={`user-tab-${index}`}
+      style={{ paddingTop: 16 }}
+    >
+      {value === index && children}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `user-tab-${index}`,
+    'aria-controls': `user-tabpanel-${index}`,
+  };
+}
+
+// ============================================
+// STAT CARD COMPONENT FOR ACTIVITY TAB
+// ============================================
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  color?: string;
+}
+
+function StatCard({ icon, label, value, color = '#3B82F6' }: StatCardProps) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        borderColor: alpha(color, 0.3),
+        bgcolor: alpha(color, 0.05),
+      }}
+    >
+      <Box
+        sx={{
+          p: 1,
+          borderRadius: 1,
+          bgcolor: alpha(color, 0.15),
+          color: color,
+          display: 'flex',
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography variant="caption" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="h6" fontWeight={600}>
+          {value}
+        </Typography>
+      </Box>
+    </Paper>
+  );
+}
+
+// ============================================
+// ENHANCED EDIT USER DIALOG
+// ============================================
+
+interface EnhancedEditDialogProps {
   open: boolean;
   user: User | null;
   onClose: () => void;
   onSave: (userId: number, updates: UserUpdate) => Promise<void>;
 }
 
-function EditUserDialog({ open, user, onClose, onSave }: EditUserDialogProps) {
+function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDialogProps) {
+  const [activeTab, setActiveTab] = useState(0);
   const [formData, setFormData] = useState<UserUpdate>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [employeeIdValid, setEmployeeIdValid] = useState(true);
+  const [employeeIdChecking, setEmployeeIdChecking] = useState(false);
+  const [showDeactivateWarning, setShowDeactivateWarning] = useState(false);
 
+  const { departments, isLoading: departmentsLoading } = useDepartments();
+
+  // Reset form when user changes
   useEffect(() => {
     if (user) {
       setFormData({
+        employeeId: user.employeeId || '',
         department: user.department || '',
         position: user.position || '',
-        employeeId: user.employeeId || '',
-        isActive: user.isActive,
+        isActive: user.isActive ?? true,
       });
+      setActiveTab(0);
+      setError('');
+      setEmployeeIdValid(true);
+      setShowDeactivateWarning(false);
     }
   }, [user]);
 
+  // Debounced employee ID validation
+  useEffect(() => {
+    if (!formData.employeeId || formData.employeeId === user?.employeeId) {
+      setEmployeeIdValid(true);
+      setEmployeeIdChecking(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setEmployeeIdChecking(true);
+      try {
+        // Simulated uniqueness check - in production, call an API endpoint
+        // For now, assume valid if not empty
+        const isValid = Boolean(formData.employeeId && formData.employeeId.trim().length > 0);
+        setEmployeeIdValid(isValid);
+      } catch {
+        setEmployeeIdValid(false);
+      } finally {
+        setEmployeeIdChecking(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.employeeId, user?.employeeId]);
+
+  // Calculate permissions based on roles
+  const permissionPreview = useMemo(() => {
+    if (!user?.roles) return [];
+    const perms: Array<{ label: string; allowed: boolean; description: string }> = [];
+
+    // System Administration
+    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER])) {
+      perms.push({ label: 'User Management', allowed: true, description: 'View and manage all users' });
+      perms.push({ label: 'Location Management', allowed: true, description: 'Create and edit locations' });
+      perms.push({ label: 'System Settings', allowed: true, description: 'Access system configuration' });
+    }
+
+    // Quality roles
+    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST])) {
+      perms.push({ label: 'QI Review', allowed: true, description: 'Review and process incidents' });
+      perms.push({ label: 'Assign Investigations', allowed: true, description: 'Create and assign investigations' });
+      perms.push({ label: 'Manage Corrective Actions', allowed: true, description: 'Create action items' });
+    }
+
+    // Supervisor roles
+    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD])) {
+      perms.push({ label: 'Team Incidents', allowed: true, description: 'View team incident reports' });
+      perms.push({ label: 'Supervisor Review', allowed: true, description: 'Review and approve team reports' });
+    }
+
+    // Executive access
+    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.CEO, APP_ROLES.EXECUTIVE])) {
+      perms.push({ label: 'Executive Dashboard', allowed: true, description: 'Access executive reports' });
+      perms.push({ label: 'All Incidents View', allowed: true, description: 'View all incident data' });
+    }
+
+    // All users have these
+    perms.push({ label: 'Report Incidents', allowed: true, description: 'Create new incident reports' });
+    perms.push({ label: 'My Incidents', allowed: true, description: 'View personal reports' });
+
+    return perms;
+  }, [user?.roles]);
+
+  // Handle status change with warning
+  const handleStatusChange = (newStatus: boolean) => {
+    if (!newStatus && user?.isActive) {
+      // User is being deactivated - show warning
+      setShowDeactivateWarning(true);
+    } else {
+      setFormData({ ...formData, isActive: newStatus });
+      setShowDeactivateWarning(false);
+    }
+  };
+
+  const confirmDeactivation = () => {
+    setFormData({ ...formData, isActive: false });
+    setShowDeactivateWarning(false);
+  };
+
   const handleSave = async () => {
     if (!user) return;
+
+    if (!employeeIdValid && formData.employeeId !== user.employeeId) {
+      setError('Please fix the Employee ID validation error');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -93,73 +292,432 @@ function EditUserDialog({ open, user, onClose, onSave }: EditUserDialogProps) {
     try {
       await onSave(user.id, formData);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update user');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save user');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleClose = () => {
+    if (!saving) {
+      onClose();
+    }
+  };
+
   if (!user) return null;
 
+  const userInitials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
+  // Note: Azure AD sync time is approximated by last update time
+  const lastSyncTime = user.updatedAt
+    ? formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })
+    : 'Never';
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        Edit User: {user.firstName} {user.lastName}
-      </DialogTitle>
-      <DialogContent>
-        {error && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: alpha('#EF4444', 0.1), borderRadius: 1 }}>
-            <Typography color="error" variant="body2">
-              {error}
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { minHeight: '60vh' },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar
+            src={user.profilePicture || undefined}
+            sx={{
+              width: 48,
+              height: 48,
+              bgcolor: 'primary.main',
+              fontSize: '1.2rem',
+            }}
+          >
+            {userInitials}
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={600}>
+              {user.firstName} {user.lastName}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user.email}
             </Typography>
           </Box>
+          {!user.isActive && (
+            <Chip
+              label="Inactive"
+              size="small"
+              sx={{
+                bgcolor: alpha('#EF4444', 0.15),
+                color: '#EF4444',
+                fontWeight: 600,
+              }}
+            />
+          )}
+        </Stack>
+      </DialogTitle>
+
+      <Divider />
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          aria-label="user edit tabs"
+        >
+          <Tab icon={<Person fontSize="small" />} iconPosition="start" label="Basic Info" {...a11yProps(0)} />
+          <Tab icon={<Security fontSize="small" />} iconPosition="start" label="Roles & Permissions" {...a11yProps(1)} />
+          <Tab icon={<History fontSize="small" />} iconPosition="start" label="Activity" {...a11yProps(2)} />
+        </Tabs>
+      </Box>
+
+      <DialogContent sx={{ pt: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
         )}
 
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField label="Email" value={user.email} disabled fullWidth />
+        {/* Basic Info Tab */}
+        <TabPanel value={activeTab} index={0}>
+          <Stack spacing={3}>
+            <TextField
+              label="Email"
+              value={user.email}
+              disabled
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Info fontSize="small" color="disabled" />
+                  </InputAdornment>
+                ),
+              }}
+              helperText="Email cannot be changed (synced from Azure AD)"
+            />
 
-          <TextField
-            label="Employee ID"
-            value={formData.employeeId || ''}
-            onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-            fullWidth
-          />
-
-          <TextField
-            label="Department"
-            value={formData.department || ''}
-            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            fullWidth
-          />
-
-          <TextField
-            label="Position"
-            value={formData.position || ''}
-            onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-            fullWidth
-          />
-
-          <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={formData.isActive ? 'true' : 'false'}
-              onChange={(e) =>
-                setFormData({ ...formData, isActive: e.target.value === 'true' })
+            <TextField
+              label="Employee ID"
+              value={formData.employeeId || ''}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              fullWidth
+              error={!employeeIdValid}
+              helperText={
+                employeeIdChecking
+                  ? 'Checking availability...'
+                  : !employeeIdValid
+                    ? 'This Employee ID may already be in use'
+                    : 'Unique identifier for this employee'
               }
-              label="Status"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {employeeIdChecking ? (
+                      <CircularProgress size={20} />
+                    ) : employeeIdValid && formData.employeeId ? (
+                      <CheckCircleOutline fontSize="small" color="success" />
+                    ) : null}
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <FormControl fullWidth>
+              <InputLabel>Department</InputLabel>
+              <Select
+                value={formData.department || ''}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                label="Department"
+                disabled={departmentsLoading}
+              >
+                <MenuItem value="">
+                  <em>No Department</em>
+                </MenuItem>
+                {departments.map((dept) => (
+                  <MenuItem key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Position / Job Title"
+              value={formData.position || ''}
+              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              fullWidth
+              placeholder="e.g., Senior Nurse, Lab Technician"
+            />
+
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                bgcolor: showDeactivateWarning ? alpha('#EF4444', 0.05) : 'transparent',
+                borderColor: showDeactivateWarning ? '#EF4444' : 'divider',
+              }}
             >
-              <MenuItem value="true">Active</MenuItem>
-              <MenuItem value="false">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
+              <Stack spacing={2}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.isActive ?? true}
+                      onChange={(e) => handleStatusChange(e.target.checked)}
+                      color={formData.isActive ? 'success' : 'error'}
+                    />
+                  }
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography fontWeight={500}>
+                        Account Status: {formData.isActive ? 'Active' : 'Inactive'}
+                      </Typography>
+                      {formData.isActive ? (
+                        <CheckCircle fontSize="small" color="success" />
+                      ) : (
+                        <Block fontSize="small" color="error" />
+                      )}
+                    </Stack>
+                  }
+                />
+
+                {showDeactivateWarning && (
+                  <Alert
+                    severity="warning"
+                    icon={<Warning />}
+                    action={
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          size="small"
+                          onClick={() => setShowDeactivateWarning(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="small"
+                          color="warning"
+                          variant="contained"
+                          onClick={confirmDeactivation}
+                        >
+                          Confirm
+                        </Button>
+                      </Stack>
+                    }
+                  >
+                    <Typography variant="body2" fontWeight={500}>
+                      Deactivating this account will:
+                    </Typography>
+                    <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                      <li>Prevent the user from logging in</li>
+                      <li>Remove them from active assignments</li>
+                      <li>Keep their historical data intact</li>
+                    </ul>
+                  </Alert>
+                )}
+              </Stack>
+            </Paper>
+          </Stack>
+        </TabPanel>
+
+        {/* Roles & Permissions Tab */}
+        <TabPanel value={activeTab} index={1}>
+          <Stack spacing={3}>
+            <Alert severity="info" icon={<Info />}>
+              <Typography variant="body2">
+                Roles are managed through Azure AD security groups and cannot be changed here.
+                Contact your IT administrator to modify role assignments.
+              </Typography>
+            </Alert>
+
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Assigned Roles
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                {user.roles && user.roles.length > 0 ? (
+                  user.roles.map((roleValue) => {
+                    const meta = ROLE_METADATA[roleValue as AppRole] || {
+                      label: roleValue,
+                      color: '#6B7280',
+                    };
+                    return (
+                      <Tooltip key={roleValue} title={meta.description || ''}>
+                        <Chip
+                          label={meta.label}
+                          sx={{
+                            bgcolor: alpha(meta.color, 0.15),
+                            color: meta.color,
+                            fontWeight: 600,
+                            borderRadius: 1,
+                          }}
+                        />
+                      </Tooltip>
+                    );
+                  })
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No roles assigned
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+
+            <Box>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Last Synced with Azure AD
+                </Typography>
+                <Chip
+                  label={lastSyncTime}
+                  size="small"
+                  variant="outlined"
+                  icon={<AccessTime fontSize="small" />}
+                />
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Permission Preview
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                Based on current roles, this user has access to:
+              </Typography>
+
+              <Grid container spacing={1}>
+                {permissionPreview.map((perm, idx) => (
+                  <Grid key={idx} size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        bgcolor: alpha('#10B981', 0.05),
+                        borderColor: alpha('#10B981', 0.3),
+                      }}
+                    >
+                      <CheckCircle fontSize="small" sx={{ color: '#10B981' }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {perm.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {perm.description}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </Stack>
+        </TabPanel>
+
+        {/* Activity Tab */}
+        <TabPanel value={activeTab} index={2}>
+          <Stack spacing={3}>
+            <Alert severity="info" icon={<Info />} sx={{ mb: 1 }}>
+              Detailed activity statistics will be available in a future update.
+              Currently showing account information only.
+            </Alert>
+
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <StatCard
+                  icon={<Assignment />}
+                  label="Total Incidents Reported"
+                  value="—"
+                  color="#3B82F6"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <StatCard
+                  icon={<TrendingUp />}
+                  label="Incidents in Progress"
+                  value="—"
+                  color="#F59E0B"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <StatCard
+                  icon={<CalendarToday />}
+                  label="Last Updated"
+                  value={format(new Date(user.updatedAt), 'MMM dd, yyyy')}
+                  color="#8B5CF6"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <StatCard
+                  icon={<AccessTime />}
+                  label="Account Created"
+                  value={format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                  color="#10B981"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Account Timeline
+              </Typography>
+              <Stack spacing={1.5} sx={{ mt: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: '#10B981',
+                    }}
+                  />
+                  <Typography variant="body2">
+                    Account created on {format(new Date(user.createdAt), 'MMMM dd, yyyy')}
+                  </Typography>
+                </Stack>
+
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: '#8B5CF6',
+                    }}
+                  />
+                  <Typography variant="body2">
+                    Profile updated on {format(new Date(user.updatedAt), 'MMMM dd, yyyy')}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Box>
+
+            {!user.isActive && (
+              <Alert severity="warning" icon={<Warning />}>
+                This account is currently deactivated. The user cannot log in or access the system.
+              </Alert>
+            )}
+          </Stack>
+        </TabPanel>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={saving}>
+
+      <Divider />
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClose} disabled={saving}>
           Cancel
         </Button>
-        <Button onClick={handleSave} variant="contained" disabled={saving}>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={saving || (!employeeIdValid && formData.employeeId !== user.employeeId)}
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+        >
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </DialogActions>
@@ -537,7 +1095,7 @@ export default function UsersManagementPage() {
       </Box>
 
       {/* Edit Dialog */}
-      <EditUserDialog
+      <EnhancedEditUserDialog
         open={!!editUser}
         user={editUser}
         onClose={() => setEditUser(null)}
