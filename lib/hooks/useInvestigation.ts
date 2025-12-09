@@ -104,7 +104,7 @@ export function useInvestigation(
 
         const { error } = await apiCall(updateUrl, {
             method: 'PATCH',
-            body: updateData,
+            body: JSON.stringify(updateData),
         });
 
         if (error) {
@@ -127,7 +127,7 @@ export function useInvestigation(
 
         const { error } = await apiCall(submitUrl, {
             method: 'POST',
-            body: submitData,
+            body: JSON.stringify(submitData),
         });
 
         if (error) {
@@ -143,7 +143,7 @@ export function useInvestigation(
         sharedAccess: data?.sharedAccess || [],
         isLoading,
         error,
-        mutate,
+        mutate: async () => { await mutate(); },
         update,
         submit,
     };

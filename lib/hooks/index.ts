@@ -7,7 +7,9 @@
 export { useIncidents } from './useIncidents';
 export { useIncident, useIncidentActions } from './useIncident';
 export { useInvestigation } from './useInvestigation';
+export { useInvestigations } from './useInvestigations';
 export { useCorrectiveAction } from './useCorrectiveAction';
+export { useCorrectiveActions } from './useCorrectiveActions';
 export { useSharedAccess } from './useSharedAccess';
 export { useComments } from './useComments';
 export { useUsers } from './useUsers';
@@ -30,9 +32,19 @@ export type {
     UseInvestigationReturn,
 } from './useInvestigation';
 export type {
+    InvestigationListItem,
+    UseInvestigationsParams,
+    UseInvestigationsReturn,
+} from './useInvestigations';
+export type {
     CorrectiveAction,
     UseCorrectiveActionReturn,
 } from './useCorrectiveAction';
+export type {
+    CorrectiveActionListItem,
+    UseCorrectiveActionsParams,
+    UseCorrectiveActionsReturn,
+} from './useCorrectiveActions';
 export type {
     SharedAccessInvitation,
     UseSharedAccessReturn,

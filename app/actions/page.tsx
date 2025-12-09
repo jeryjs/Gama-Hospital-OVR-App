@@ -11,6 +11,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { StatusDisplay } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
+import { useCorrectiveActions } from '@/lib/hooks';
+import type { CorrectiveActionListItem } from '@/lib/hooks';
 import { Search, Visibility, Warning } from '@mui/icons-material';
 import {
     Alert,
@@ -59,14 +61,10 @@ export default function CorrectiveActionsPage() {
     }, [session, router]);
 
     // Fetch actions
-    // TODO: Implement useCorrectiveActions hook
-    const actions: any[] = [];
-    const isLoading = false;
-    const error = null;
-    // const { actions, isLoading, error } = useCorrectiveActions({
-    //     search: searchTerm || undefined,
-    //     status: statusFilter === 'all' ? undefined : statusFilter,
-    // });
+    const { actions, isLoading, error } = useCorrectiveActions({
+        search: searchTerm || undefined,
+        status: statusFilter,
+    });
 
     if (isLoading) {
         return (
@@ -87,10 +85,10 @@ export default function CorrectiveActionsPage() {
     }
 
     const totalCount = actions?.length || 0;
-    const openCount = actions?.filter((action) => action.status === 'open').length || 0;
-    const closedCount = actions?.filter((action) => action.status === 'closed').length || 0;
+    const openCount = actions?.filter((action: CorrectiveActionListItem) => action.status === 'open').length || 0;
+    const closedCount = actions?.filter((action: CorrectiveActionListItem) => action.status === 'closed').length || 0;
     const overdueCount = actions?.filter(
-        (action) => action.status === 'open' && isPast(new Date(action.dueDate))
+        (action: CorrectiveActionListItem) => action.status === 'open' && isPast(new Date(action.dueDate))
     ).length || 0;
 
     return (
@@ -215,7 +213,7 @@ export default function CorrectiveActionsPage() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            actions.map((action) => {
+                                            actions.map((action: CorrectiveActionListItem) => {
                                                 const isOverdue = action.status === 'open' && isPast(new Date(action.dueDate));
 
                                                 return (
@@ -242,7 +240,7 @@ export default function CorrectiveActionsPage() {
                                                         </TableCell>
                                                         <TableCell>
                                                             <Chip
-                                                                label={`${action.assignedTo?.split(',').length || 0} assigned`}
+                                                                label={`${action.handlerCount || 0} assigned`}
                                                                 size="small"
                                                                 variant="outlined"
                                                             />

@@ -320,7 +320,7 @@ export default function InvestigationDetailPage() {
                                     resourceType="investigation"
                                     resourceId={investigation.id}
                                     ovrReportId={investigation.ovrReportId}
-                                    invitations={[]}
+                                    invitations={sharedAccess || []}
                                 />
                             )}
 

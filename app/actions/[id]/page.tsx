@@ -55,7 +55,7 @@ export default function ActionDetailPage() {
     const accessToken = searchParams.get('token');
 
     // Fetch action (with token support)
-    const { action, isLoading, error, update } = useCorrectiveAction(
+    const { action, sharedAccess, isLoading, error, update } = useCorrectiveAction(
         actionId,
         accessToken
     );
@@ -367,7 +367,7 @@ export default function ActionDetailPage() {
                                     resourceType="corrective_action"
                                     resourceId={action.id}
                                     ovrReportId={action.ovrReportId}
-                                    invitations={[]}
+                                    invitations={sharedAccess || []}
                                 />
                             )}
 

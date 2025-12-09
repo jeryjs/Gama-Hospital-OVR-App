@@ -11,6 +11,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { IncidentCard, StatusDisplay } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
+import { useInvestigations } from '@/lib/hooks';
+import type { InvestigationListItem } from '@/lib/hooks';
 import { Add, FilterList, Search, Visibility } from '@mui/icons-material';
 import {
     Alert,
@@ -59,14 +61,10 @@ export default function InvestigationsPage() {
     }, [session, router]);
 
     // Fetch investigations
-    // TODO: Implement useInvestigations hook
-    const investigations: any[] = [];
-    const isLoading = false;
-    const error = null;
-    // const { investigations, isLoading, error } = useInvestigations({
-    //     search: searchTerm || undefined,
-    //     status: statusFilter === 'all' ? undefined : statusFilter,
-    // });
+    const { investigations, isLoading, error } = useInvestigations({
+        search: searchTerm || undefined,
+        status: statusFilter,
+    });
 
     if (isLoading) {
         return (
@@ -87,8 +85,8 @@ export default function InvestigationsPage() {
     }
 
     const totalCount = investigations?.length || 0;
-    const pendingCount = investigations?.filter((inv) => !inv.submittedAt).length || 0;
-    const completedCount = investigations?.filter((inv) => inv.submittedAt).length || 0;
+    const pendingCount = investigations?.filter((inv: InvestigationListItem) => !inv.submittedAt).length || 0;
+    const completedCount = investigations?.filter((inv: InvestigationListItem) => inv.submittedAt).length || 0;
 
     return (
         <AppLayout>
@@ -199,7 +197,7 @@ export default function InvestigationsPage() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            investigations.map((investigation) => (
+                                            investigations.map((investigation: InvestigationListItem) => (
                                                 <TableRow key={investigation.id} hover>
                                                     <TableCell>
                                                         <Typography variant="body2" fontWeight={600}>
@@ -218,7 +216,7 @@ export default function InvestigationsPage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Chip
-                                                            label={`${investigation.investigators?.split(',').length || 0} assigned`}
+                                                            label={`${investigation.investigatorCount || 0} assigned`}
                                                             size="small"
                                                             variant="outlined"
                                                         />

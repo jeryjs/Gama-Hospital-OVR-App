@@ -100,7 +100,7 @@ export function useSharedAccess(
             accessUrl: string;
         }>('/api/shared-access', {
             method: 'POST',
-            body: data,
+            body: JSON.stringify(data),
         });
 
         if (error) {
@@ -123,7 +123,7 @@ export function useSharedAccess(
             invitations: Array<SharedAccessInvitation & { accessUrl: string }>;
         }>('/api/shared-access', {
             method: 'PUT',
-            body: data,
+            body: JSON.stringify(data),
         });
 
         if (error) {

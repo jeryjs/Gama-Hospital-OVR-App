@@ -7,6 +7,7 @@
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 import type { UpdateCorrectiveActionInput } from '@/lib/api/schemas';
+import type { SharedAccessInfo } from './useInvestigation';
 
 export interface CorrectiveAction {
     id: number;
@@ -31,6 +32,7 @@ export interface CorrectiveAction {
 
 export interface UseCorrectiveActionReturn {
     action: CorrectiveAction | null;
+    sharedAccess: SharedAccessInfo[];
     isLoading: boolean;
     error: ParsedError | undefined;
     mutate: () => Promise<void>;
@@ -64,7 +66,10 @@ export function useCorrectiveAction(
 
     // Fetcher function
     const fetcher = async (url: string) => {
-        const { data, error } = await apiCall<CorrectiveAction>(url);
+        const { data, error } = await apiCall<{
+            action: CorrectiveAction;
+            sharedAccess: SharedAccessInfo[];
+        }>(url);
 
         if (error) {
             throw error;
@@ -90,7 +95,7 @@ export function useCorrectiveAction(
 
         const { error } = await apiCall(updateUrl, {
             method: 'PATCH',
-            body: updateData,
+            body: JSON.stringify(updateData),
         });
 
         if (error) {
@@ -120,10 +125,11 @@ export function useCorrectiveAction(
     };
 
     return {
-        action: data || null,
+        action: data?.action || null,
+        sharedAccess: data?.sharedAccess || [],
         isLoading,
         error,
-        mutate,
+        mutate: async () => { await mutate(); },
         update,
         close,
     };
