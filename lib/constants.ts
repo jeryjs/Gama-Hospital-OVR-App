@@ -26,10 +26,6 @@ export const APP_ROLES = {
     QUALITY_MANAGER: 'quality_manager',
     QUALITY_ANALYST: 'quality_analyst',
 
-    // Department Management
-    DEPARTMENT_HEAD: 'department_head',
-    ASSISTANT_DEPT_HEAD: 'assistant_dept_head',
-
     // Team Management
     SUPERVISOR: 'supervisor',
     TEAM_LEAD: 'team_lead',
@@ -55,8 +51,6 @@ export const ROLE_PRIORITY: AppRole[] = [
     APP_ROLES.TECH_ADMIN,
     APP_ROLES.QUALITY_MANAGER,
     APP_ROLES.QUALITY_ANALYST,
-    APP_ROLES.DEPARTMENT_HEAD,
-    APP_ROLES.ASSISTANT_DEPT_HEAD,
     APP_ROLES.SUPERVISOR,
     APP_ROLES.TEAM_LEAD,
     APP_ROLES.FACILITY_MANAGER,
@@ -74,8 +68,6 @@ export const ROLE_METADATA: Record<AppRole, { label: string; color: string; desc
     [APP_ROLES.EXECUTIVE]: { label: 'Executive', color: '#4F46E5', description: 'Executive level access' },
     [APP_ROLES.QUALITY_MANAGER]: { label: 'Quality Manager', color: '#8B5CF6', description: 'QI workflow management' },
     [APP_ROLES.QUALITY_ANALYST]: { label: 'Quality Analyst', color: '#A78BFA', description: 'Quality assurance support' },
-    [APP_ROLES.DEPARTMENT_HEAD]: { label: 'Department Head', color: '#EC4899', description: 'Department leadership' },
-    [APP_ROLES.ASSISTANT_DEPT_HEAD]: { label: 'Assistant Head', color: '#F472B6', description: 'Department support' },
     [APP_ROLES.SUPERVISOR]: { label: 'Supervisor', color: '#3B82F6', description: 'Team supervision' },
     [APP_ROLES.TEAM_LEAD]: { label: 'Team Lead', color: '#60A5FA', description: 'Team coordination' },
     [APP_ROLES.FACILITY_MANAGER]: { label: 'Facility Manager', color: '#F59E0B', description: 'Facility management' },
@@ -100,10 +92,6 @@ export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> = {
     // Quality & Safety
     '42e686a5-1f6a-46bd-98e3-cdb19020a999': [APP_ROLES.QUALITY_MANAGER], // SG-OVR-QualityManagers
     'QUALITY_ANALYST_GROUP_ID_PLACEHOLDER': [APP_ROLES.QUALITY_ANALYST],
-
-    // Department Management
-    'fd2f96d7-072e-4941-ab27-59505db59c39': [APP_ROLES.DEPARTMENT_HEAD],    // SG-OVR-DepartmentHeads
-    '8149fa15-e119-4d5e-a97b-1a68e71fd0bd': [APP_ROLES.ASSISTANT_DEPT_HEAD], // SG-OVR-AssistantHeads
 
     // Team Management
     '6ed1d31f-e276-46ae-8bb3-da64c9efb8fe': [APP_ROLES.SUPERVISOR], // SG-OVR-Supervisors

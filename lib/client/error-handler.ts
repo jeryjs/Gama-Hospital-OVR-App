@@ -43,19 +43,33 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   physicianName: 'Physician Name',
   physicianId: 'Physician ID',
 
-  // Workflow
-  action: 'Action/Comments',
-  departmentHeadId: 'Department Head',
+  // Workflow - New QI-led investigation
   investigatorId: 'Investigator',
   findings: 'Investigation Findings',
-  investigationFindings: 'Investigation Findings',
   problemsIdentified: 'Problems Identified',
   causeClassification: 'Cause Classification',
   causeDetails: 'Cause Details',
-  preventionRecommendation: 'Prevention Recommendation',
+  correctiveActionPlan: 'Corrective Action Plan',
+  rcaAnalysis: 'Root Cause Analysis',
+  fishboneAnalysis: 'Fishbone Analysis',
   feedback: 'QI Feedback',
+  rejectionReason: 'Rejection Reason',
+  caseReview: 'Case Review',
+  reporterFeedback: 'Reporter Feedback',
   severityLevel: 'Severity Level',
   comment: 'Comment',
+
+  // Corrective Actions
+  title: 'Title',
+  dueDate: 'Due Date',
+  checklist: 'Checklist',
+  actionTaken: 'Action Taken',
+  evidenceFiles: 'Evidence Files',
+
+  // Shared Access
+  email: 'Email Address',
+  role: 'Role',
+  accessToken: 'Access Token',
 };
 
 // ============================================

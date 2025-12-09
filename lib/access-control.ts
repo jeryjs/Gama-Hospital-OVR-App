@@ -75,13 +75,14 @@ export const ACCESS_CONTROL = {
                     APP_ROLES.DEVELOPER,
                 ]),
 
-            canViewDepartment: (roles: AppRole[]) =>
-                hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD]),
-
             canViewTeam: (roles: AppRole[]) =>
                 hasAnyRole(roles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD]),
 
             canCreate: () => true, // All users can create incidents
+
+            canEdit: (roles: AppRole[], isOwner: boolean, isDraft: boolean) =>
+                (isDraft && isOwner) ||
+                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.QUALITY_MANAGER, APP_ROLES.DEVELOPER]),
 
             canDelete: (roles: AppRole[], isOwner: boolean, isDraft: boolean) =>
                 (isDraft && isOwner) ||
@@ -89,37 +90,11 @@ export const ACCESS_CONTROL = {
         },
 
         /**
-         * /api/incidents/[id]/supervisor-approve permissions
-         * DEPRECATED: Supervisor approval step eliminated
+         * /api/incidents/[id]/qi-review permissions
+         * QI reviews submitted incidents and approves/rejects
          */
-        supervisorApproval: {
-            canApprove: (roles: AppRole[]) =>
-                false, // DISABLED: No longer used - incidents go directly to QI
-            // hasAnyRole(roles, [
-            //     APP_ROLES.SUPER_ADMIN,
-            //     APP_ROLES.SUPERVISOR,
-            //     APP_ROLES.TEAM_LEAD,
-            //     APP_ROLES.DEPARTMENT_HEAD,
-            //     APP_ROLES.DEVELOPER,
-            // ]),
-        },
-
-        /**
-         * /api/incidents/[id]/qi-* permissions
-         */
-        qualityInspection: {
-            canAssignHOD: (roles: AppRole[]) =>
-                hasAnyRole(roles, [
-                    APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.QUALITY_MANAGER,
-                    APP_ROLES.QUALITY_ANALYST,
-                    APP_ROLES.DEVELOPER,
-                ]),
-
-            canCloseIncident: (roles: AppRole[]) =>
-                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.QUALITY_MANAGER, APP_ROLES.DEVELOPER]),
-
-            canProvideFeedback: (roles: AppRole[]) =>
+        qiReview: {
+            canReview: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
@@ -129,27 +104,118 @@ export const ACCESS_CONTROL = {
         },
 
         /**
-         * /api/incidents/[id]/hod-submit permissions
+         * /api/investigations permissions
+         * QI creates and manages investigations
          */
-        hodInvestigation: {
-            canSubmit: (roles: AppRole[], isAssignedHOD: boolean) =>
-                isAssignedHOD ||
+        investigations: {
+            canCreate: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.ASSISTANT_DEPT_HEAD,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canUpdate: (roles: AppRole[], hasAccess: boolean) =>
+                hasAccess || // User has shared access via token
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canSubmit: (roles: AppRole[], hasAccess: boolean) =>
+                hasAccess || // Investigator with token can submit
+                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.DEVELOPER]),
+
+            canView: (roles: AppRole[], hasAccess: boolean) =>
+                hasAccess ||
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
                     APP_ROLES.DEVELOPER,
                 ]),
         },
 
         /**
-         * /api/incidents/[id]/assign-investigator permissions
+         * /api/corrective-actions permissions
+         * QI creates action items, handlers complete them
          */
-        investigatorAssignment: {
-            canAssign: (roles: AppRole[]) =>
+        correctiveActions: {
+            canCreate: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
-                    APP_ROLES.DEPARTMENT_HEAD,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canUpdate: (roles: AppRole[], hasAccess: boolean) =>
+                hasAccess || // Action handler with token
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canClose: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canView: (roles: AppRole[], hasAccess: boolean) =>
+                hasAccess ||
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+        },
+
+        /**
+         * /api/shared-access permissions
+         * QI manages shared access (Google Forms style)
+         */
+        sharedAccess: {
+            canCreate: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canRevoke: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canViewAll: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+        },
+
+        /**
+         * /api/incidents/[id]/close permissions
+         * Final case closure by QI
+         */
+        closeIncident: {
+            canClose: (roles: AppRole[], allActionsClosed: boolean) =>
+                allActionsClosed &&
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.DEVELOPER,
                 ]),
         },
@@ -166,9 +232,6 @@ export const ACCESS_CONTROL = {
 
             canViewQIStats: (roles: AppRole[]) =>
                 hasAnyRole(roles, [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST]),
-
-            canViewDepartmentStats: (roles: AppRole[]) =>
-                hasAnyRole(roles, [APP_ROLES.DEPARTMENT_HEAD, APP_ROLES.ASSISTANT_DEPT_HEAD]),
 
             canViewTeamStats: (roles: AppRole[]) =>
                 hasAnyRole(roles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD]),
@@ -207,20 +270,20 @@ export const ACCESS_CONTROL = {
                     APP_ROLES.DEVELOPER,
                 ]),
 
-            showHODReview: (roles: AppRole[]) =>
+            showInvestigations: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.DEPARTMENT_HEAD,
-                    APP_ROLES.ASSISTANT_DEPT_HEAD,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
                     APP_ROLES.DEVELOPER,
                 ]),
 
-            showPendingApproval: (roles: AppRole[]) =>
+            showCorrectiveActions: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
-                    APP_ROLES.SUPERVISOR,
-                    APP_ROLES.TEAM_LEAD,
-                    APP_ROLES.DEPARTMENT_HEAD,
-                    APP_ROLES.EMPLOYEE,
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
                 ]),
         },
 
@@ -228,12 +291,11 @@ export const ACCESS_CONTROL = {
          * Incident form section permissions
          */
         incidentForm: {
-            canEditSupervisorSection: (roles: AppRole[]) =>
+            canViewQIReviewSection: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.SUPERVISOR,
-                    APP_ROLES.TEAM_LEAD,
-                    APP_ROLES.DEPARTMENT_HEAD,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
                     APP_ROLES.DEVELOPER,
                 ]),
 
@@ -245,15 +307,25 @@ export const ACCESS_CONTROL = {
                     APP_ROLES.DEVELOPER,
                 ]),
 
-            canEditInvestigationSection: (roles: AppRole[], isAssignedHOD: boolean) =>
-                isAssignedHOD ||
-                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.ASSISTANT_DEPT_HEAD, APP_ROLES.DEVELOPER]),
+            canManageInvestigations: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
+                ]),
 
-            canAssignHOD: (roles: AppRole[]) =>
+            canManageCorrectiveActions: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            canCloseCaseWithReview: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.DEVELOPER,
                 ]),
         },

@@ -312,7 +312,6 @@ export const createIncidentSchema = ovrReportInsertSchema
     createdAt: true,
     updatedAt: true,
     submittedAt: true,
-    resolvedAt: true,
 
     // QI workflow fields (set by backend)
     qiReceivedBy: true,

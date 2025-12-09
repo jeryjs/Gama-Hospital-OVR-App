@@ -210,7 +210,6 @@ export const ovrReports = pgTable('ovr_reports', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   submittedAt: timestamp('submitted_at'),
-  resolvedAt: timestamp('resolved_at'),
 });
 
 // ============================================
