@@ -17,7 +17,7 @@ export function SWRProvider({ children }: SWRProviderProps) {
         revalidateOnReconnect: true, // Revalidate when network reconnects
         shouldRetryOnError: false, // Don't retry failed requests
         keepPreviousData: true, // Keep previous data while revalidating
-        suspense: true, // Enable Suspense mode for declarative loading states
+        suspense: false, // Enable Suspense mode for declarative loading states
       }}
     >
       {children}

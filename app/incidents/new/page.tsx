@@ -47,7 +47,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 // ============================================
@@ -1323,14 +1323,21 @@ function FormActions({
 
 export default function NewIncidentPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const draftId = searchParams.get('draft');
+  const [draftId, setDraftId] = useState<string | null>(null);
   const { data: session } = useSession();
 
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
+
+  // Read draft id from URL once on client (avoid useSearchParams)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const draft = params.get('draft');
+    if (draft) setDraftId(draft);
+  }, []);
 
   // Initialize draft on mount
   useEffect(() => {

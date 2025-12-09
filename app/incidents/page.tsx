@@ -38,15 +38,14 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function IncidentsPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'status'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
@@ -88,6 +87,14 @@ export default function IncidentsPage() {
   };
 
   const hasActiveFilters = searchTerm || statusFilter;
+
+  // Initialize filters from URL once on client (avoid useSearchParams)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status') || '';
+    setStatusFilter(status);
+  }, []);
 
   if (!!error) {
     return (

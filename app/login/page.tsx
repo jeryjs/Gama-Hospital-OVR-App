@@ -14,33 +14,35 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize error state from URL params directly
-  const errorParam = searchParams.get('error');
-  const [error, setError] = useState<string | null>(() => {
+  // Initialize error state from URL params safely on client
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
     if (errorParam === 'AccessDenied') {
-      return 'Access denied. Please ensure you are using a @gamahospital.com email address.';
+      setError('Access denied. Please ensure you are using a @gamahospital.com email address.');
     } else if (errorParam === 'Configuration') {
-      return 'Authentication configuration error. Please contact support.';
+      setError('Authentication configuration error. Please contact support.');
     } else if (errorParam) {
-      return 'An authentication error occurred. Please try again.';
+      setError('An authentication error occurred. Please try again.');
     }
-    return null;
-  });
+  }, []);
 
   useEffect(() => {
     // Redirect if already authenticated
     if (session) {
+      if (typeof window === 'undefined') return;
       // Get callback URL, but sanitize it to prevent redirect loops
-      let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+      let callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/dashboard';
 
       // Prevent redirect loops by checking if callback contains /login
       if (callbackUrl.includes('/login') || callbackUrl.includes('%2Flogin')) {
@@ -54,7 +56,7 @@ export default function LoginPage() {
 
       router.replace(callbackUrl);
     }
-  }, [session, searchParams, router]);
+  }, [session, router]);
 
   const handleSignIn = async () => {
     if (isSigningIn) return; // Prevent spam clicking
@@ -63,8 +65,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (typeof window === 'undefined') return;
       // Get callback URL and sanitize it
-      let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+      let callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/dashboard';
 
       // Prevent redirect loops
       if (callbackUrl.includes('/login') || callbackUrl.includes('%2Flogin')) {

@@ -34,10 +34,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { User } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AppRole } from '@/lib/constants';
+import { useDashboardStats } from '@/lib/hooks';
 
 const DRAWER_WIDTH = 280;
 
@@ -56,8 +57,8 @@ interface NavItem {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status: sessionStatus, update: setSession } = useSession();
+  const { stats, isLoading: isStatsLoading, error: statsError } = useDashboardStats();  // Used to populate nav badges
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -66,10 +67,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // Handle proper logout with Azure AD session cleanup
   const handleLogout = async () => {
     // Get the tenant ID for Azure AD logout
-    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
+    // const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
 
     // Sign out from NextAuth (clears local session)
-    await signOut({ redirect: false });
+    await signOut({ callbackUrl: '/login' });
 
     // Redirect to Azure AD logout endpoint to clear SSO session
     // This ensures user is fully logged out from Microsoft
@@ -213,7 +214,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <List component="div" disablePadding>
                     {item.children?.map((child) => {
                       // Determine if child is active with support for search params
-                      const isChildActive = `${pathname}${searchParams.toString() ? `?${searchParams}` : ''}`.replace(/\/?\??$/, '') === child.path;
+                      const isChildActive = pathname === child.path || pathname.startsWith(`${child.path}/`);
 
                       return (
                         <ListItemButton
@@ -230,16 +231,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                           <ListItemText primary={child.title} />
                           {child.badge && (
-                            <Tooltip title={child.badge.tooltip} arrow placement='right'>
-                              <Chip
-                                component="button"
-                                onClick={_ => child.badge?.link && router.push(child.badge.link)}
-                                label={child.badge.content}
-                                size="small"
-                                color="primary"
-                                sx={{ height: 20, fontSize: '0.7rem' }}
+                            isStatsLoading ? (
+                              <Box
+                                sx={{
+                                  width: 32,
+                                  height: 20,
+                                  borderRadius: 1,
+                                  background: (theme) => `linear-gradient(90deg, ${theme.palette.action.hover} 25%, ${theme.palette.action.selected} 50%, ${theme.palette.action.hover} 75%)`,
+                                  backgroundSize: '200% 100%',
+                                  animation: 'shimmer 1.2s ease-in-out infinite',
+                                  '@keyframes shimmer': {
+                                    '0%': { backgroundPosition: '200% 0' },
+                                    '100%': { backgroundPosition: '-200% 0' },
+                                  },
+                                }}
                               />
-                            </Tooltip>
+                            ) : (
+                              <Tooltip title={child.badge.tooltip} arrow placement='right'>
+                                <Chip
+                                  component="button"
+                                  onClick={_ => child.badge?.link && router.push(child.badge.link)}
+                                  label={child.badge.content}
+                                  size="small"
+                                  color="primary"
+                                  sx={{ height: 20, fontSize: '0.7rem' }}
+                                />
+                              </Tooltip>
+                            )
                           )}
                         </ListItemButton>
                       );

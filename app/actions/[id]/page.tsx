@@ -38,8 +38,8 @@ import {
 import { format, isPast } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 /**
  * Corrective Action Detail Page
@@ -47,12 +47,17 @@ import { useState } from 'react';
  */
 export default function ActionDetailPage() {
     const params = useParams();
-    const searchParams = useSearchParams();
+    const [accessToken, setAccessToken] = useState<string | null>(null);
     const { data: session } = useSession();
     const router = useRouter();
 
     const actionId = Number(params.id);
-    const accessToken = searchParams.get('token');
+    // Read token from URL on client without using useSearchParams (avoids prerender bailouts)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        setAccessToken(params.get('token'));
+    }, []);
 
     // Fetch action (with token support)
     const { action, sharedAccess, isLoading, error, update } = useCorrectiveAction(
