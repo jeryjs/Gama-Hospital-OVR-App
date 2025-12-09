@@ -120,7 +120,7 @@ export default function InvestigationDetailPage() {
 
             alert('Investigation submitted successfully!');
             if (isQIUser) {
-                router.push('/investigations');
+                router.push('/incidents/investigations');
             }
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to submit investigation');
@@ -164,7 +164,7 @@ export default function InvestigationDetailPage() {
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
                         {isQIUser && (
-                            <IconButton component={Link} href="/investigations" size="small">
+                            <IconButton component={Link} href="/incidents/investigations" size="small">
                                 <ArrowBack />
                             </IconButton>
                         )}

@@ -228,7 +228,7 @@ export function InvestigationManagement({
                                                         size="small"
                                                         onClick={() =>
                                                             handleCopyLink(
-                                                                `${window.location.origin}/investigations/${investigationId}?token=${access.accessToken || ''}`
+                                                                `${window.location.origin}/incidents/investigations/${investigationId}?token=${access.accessToken || ''}`
                                                             )
                                                         }
                                                     >

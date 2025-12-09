@@ -42,7 +42,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
   const actionItems = [
     { title: 'Assign Investigation', count: stats.byStatus.qi_review, description: 'Incidents need investigation assignment', color: '#10B981', action: () => router.push('/incidents/qi/review') },
     { title: 'Review Actions', count: stats.byStatus.qi_final_actions, description: 'Corrective actions need review', color: '#EC4899', action: () => router.push('/actions') },
-    { title: 'Under Investigation', count: stats.byStatus.investigating, description: 'Active investigations in progress', color: '#3B82F6', action: () => router.push('/investigations') },
+    { title: 'Under Investigation', count: stats.byStatus.investigating, description: 'Active investigations in progress', color: '#3B82F6', action: () => router.push('/incidents/investigations') },
   ];
 
   const workflowStatuses = [
