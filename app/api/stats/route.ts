@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { locations, ovrReports, users, ovrInvestigations, ovrCorrectiveActions } from '@/db/schema';
 import { authOptions } from '@/lib/auth';
-import { and, count, eq, sql, desc, gte } from 'drizzle-orm';
+import { and, count, eq, sql, desc, gte, ne } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
@@ -55,6 +55,7 @@ async function getAvgResolutionTime() {
 
 /**
  * Get status counts grouped by status
+ * EXCLUDES drafts from all counts (drafts are private)
  */
 async function getStatusCounts() {
   const statusResults = await db
@@ -63,10 +64,11 @@ async function getStatusCounts() {
       count: sql<number>`COUNT(*)::int`,
     })
     .from(ovrReports)
+    .where(sql`${ovrReports.status} != 'draft'`) // Exclude drafts from stats
     .groupBy(ovrReports.status);
 
   const byStatus = {
-    draft: 0,
+    draft: 0, // Always 0 in public stats
     submitted: 0,
     qi_review: 0,
     investigating: 0,
@@ -75,7 +77,7 @@ async function getStatusCounts() {
   };
 
   statusResults.forEach((result) => {
-    if (result.status in byStatus) {
+    if (result.status in byStatus && result.status !== 'draft') {
       byStatus[result.status as keyof typeof byStatus] = result.count;
     }
   });
@@ -85,9 +87,16 @@ async function getStatusCounts() {
 
 /**
  * Get recent incidents with reporter information
+ * EXCLUDES drafts (drafts are private to their reporters)
  */
 async function getRecentIncidents(limit = 10, whereClause?: any) {
-  const query = db
+  // Build where clause that always excludes drafts
+  const draftExclusionClause = sql`${ovrReports.status} != 'draft'`;
+  const finalWhereClause = whereClause
+    ? and(whereClause, draftExclusionClause)
+    : draftExclusionClause;
+
+  const incidents = await db
     .select({
       id: ovrReports.id,
       occurrenceCategory: ovrReports.occurrenceCategory,
@@ -99,10 +108,9 @@ async function getRecentIncidents(limit = 10, whereClause?: any) {
     })
     .from(ovrReports)
     .leftJoin(users, eq(ovrReports.reporterId, users.id))
+    .where(finalWhereClause)
     .orderBy(desc(ovrReports.createdAt))
     .limit(limit);
-
-  const incidents = whereClause ? await query.where(whereClause) : await query;
 
   return incidents.map((incident) => ({
     id: incident.id,
@@ -154,16 +162,21 @@ async function getUserReportCounts(userId: number) {
 // ============================================
 
 async function getAdminStats() {
-  const [totalResult] = await db.select({ count: count() }).from(ovrReports);
+  // Total count excludes drafts
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(ovrReports)
+    .where(sql`${ovrReports.status} != 'draft'`);
   const byStatus = await getStatusCounts();
 
-  // Incidents by department (top 10)
+  // Incidents by department (top 10) - excludes drafts
   const departmentResults = await db
     .select({
       locationId: ovrReports.locationId,
       count: count(),
     })
     .from(ovrReports)
+    .where(sql`${ovrReports.status} != 'draft'`)
     .groupBy(ovrReports.locationId)
     .orderBy(desc(count()))
     .limit(10);
@@ -199,7 +212,11 @@ async function getAdminStats() {
 }
 
 async function getQualityManagerStats() {
-  const [totalResult] = await db.select({ count: count() }).from(ovrReports);
+  // Total count excludes drafts
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(ovrReports)
+    .where(sql`${ovrReports.status} != 'draft'`);
   const byStatus = await getStatusCounts();
 
   const [closedThisMonthResult] = await db

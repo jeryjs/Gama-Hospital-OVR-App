@@ -255,11 +255,24 @@ export const ACCESS_CONTROL = {
             showSystemSettings: (roles: AppRole[]) =>
                 hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN]),
 
-            showLocationManagement: (roles: AppRole[]) =>
+            /** Department management includes location management */
+            showDepartmentManagement: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.TECH_ADMIN,
                     APP_ROLES.FACILITY_MANAGER,
+                    APP_ROLES.DEVELOPER,
+                ]),
+
+            showAllIncidents: (roles: AppRole[]) =>
+                hasAnyRole(roles, [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.CEO,
+                    APP_ROLES.EXECUTIVE,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.SUPERVISOR,
+                    APP_ROLES.TEAM_LEAD,
                     APP_ROLES.DEVELOPER,
                 ]),
 

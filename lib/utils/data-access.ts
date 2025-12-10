@@ -38,13 +38,28 @@ export interface UserContext {
  * Build WHERE clause for incident visibility based on user roles
  * This is the SINGLE SOURCE OF TRUTH for who can see which incidents
  * 
+ * CRITICAL BUSINESS RULES:
+ * 1. Drafts are ALWAYS private - only the reporter can see their own drafts
+ * 2. This filter is for the main /incidents list (not /incidents/me or /api/incidents/drafts)
+ * 3. Elevated roles see submitted incidents but NEVER other users' drafts
+ * 
  * @param userContext - Current user information
+ * @param options - Additional options for filtering
  * @returns SQL condition for filtering incidents
  */
-export function buildIncidentVisibilityFilter(userContext: UserContext) {
+export function buildIncidentVisibilityFilter(
+    userContext: UserContext,
+    options: { includeDrafts?: boolean; myReportsOnly?: boolean } = {}
+) {
     const { userId, roles } = userContext;
+    const { includeDrafts = false, myReportsOnly = false } = options;
 
-    // Super admins, QI, and executives see everything
+    // If requesting only user's own reports (for /incidents/me)
+    if (myReportsOnly) {
+        return eq(ovrReports.reporterId, userId);
+    }
+
+    // Super admins, QI, and executives see everything EXCEPT others' drafts
     if (hasAnyRole(roles, [
         APP_ROLES.SUPER_ADMIN,
         APP_ROLES.DEVELOPER,
@@ -53,19 +68,50 @@ export function buildIncidentVisibilityFilter(userContext: UserContext) {
         APP_ROLES.QUALITY_MANAGER,
         APP_ROLES.QUALITY_ANALYST,
     ])) {
-        return undefined; // No filter = see all
+        // Show all non-draft incidents OR user's own drafts (if includeDrafts is true)
+        if (includeDrafts) {
+            return or(
+                sql`${ovrReports.status} != 'draft'`,
+                eq(ovrReports.reporterId, userId)
+            );
+        }
+        // Default: exclude all drafts from main incident list
+        return sql`${ovrReports.status} != 'draft'`;
     }
 
-    // Supervisors see their team's incidents
+    // Supervisors see their team's non-draft incidents + their own drafts (if includeDrafts)
     if (hasAnyRole(roles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD])) {
-        return or(
-            eq(ovrReports.reporterId, userId),
-            eq(ovrReports.supervisorId, userId)
+        if (includeDrafts) {
+            return and(
+                or(
+                    eq(ovrReports.reporterId, userId),
+                    eq(ovrReports.supervisorId, userId)
+                ),
+                or(
+                    sql`${ovrReports.status} != 'draft'`,
+                    eq(ovrReports.reporterId, userId)
+                )
+            );
+        }
+        // Default: team incidents excluding drafts (unless own)
+        return and(
+            or(
+                eq(ovrReports.reporterId, userId),
+                eq(ovrReports.supervisorId, userId)
+            ),
+            sql`${ovrReports.status} != 'draft'`
         );
     }
 
-    // Everyone else only sees their own reports
-    return eq(ovrReports.reporterId, userId);
+    // Employees only see their own non-draft reports (drafts via separate endpoint)
+    if (includeDrafts) {
+        return eq(ovrReports.reporterId, userId);
+    }
+    // Default: own reports excluding drafts
+    return and(
+        eq(ovrReports.reporterId, userId),
+        sql`${ovrReports.status} != 'draft'`
+    );
 }
 
 /**

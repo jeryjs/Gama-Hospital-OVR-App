@@ -2,6 +2,9 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
+import { PeoplePicker } from '@/components/shared';
+import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
+import { useDepartmentsWithLocations } from '@/lib/hooks';
 import {
   INJURY_OUTCOMES,
   PERSON_INVOLVED_OPTIONS,
@@ -18,7 +21,6 @@ import {
   SENTINEL_EVENTS,
 } from '@/lib/constants';
 import { CreateIncidentInput } from '@/lib/api/schemas';
-import { useUsers } from '@/lib/hooks';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import {
@@ -152,20 +154,6 @@ function preparePayload(formData: FormData, isDraft: boolean) {
 }
 
 /**
- * Fetches locations from API
- */
-async function fetchLocations(): Promise<Array<{ id: number; name: string }>> {
-  try {
-    const res = await fetch('/api/locations');
-    if (res.ok) return await res.json();
-    return [];
-  } catch (error) {
-    console.error('Error fetching locations:', error);
-    return [];
-  }
-}
-
-/**
  * Fetches draft from server
  */
 async function fetchDraftFromServer(id: string): Promise<FormData | undefined> {
@@ -214,17 +202,44 @@ async function submitForm(
 // ============================================
 
 /**
+ * Location option type for Autocomplete with department grouping
+ */
+interface LocationOption {
+  id: number;
+  name: string;
+  departmentId: number;
+  departmentName: string;
+}
+
+/**
+ * Converts departments with locations to flat location options
+ */
+function flattenLocations(departments: DepartmentWithLocations[]): LocationOption[] {
+  return departments.flatMap(dept =>
+    (dept.locations || []).map(loc => ({
+      id: loc.id,
+      name: loc.name,
+      departmentId: dept.id,
+      departmentName: dept.name,
+    }))
+  );
+}
+
+/**
  * Occurrence Details Section
  */
 function OccurrenceDetailsSection({
   formData,
-  locations,
+  departments,
   onChange,
 }: {
   formData: FormData;
-  locations: Array<{ id: number; name: string }>;
+  departments: DepartmentWithLocations[];
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
+  const locations = flattenLocations(departments);
+  const selectedLocation = locations.find(l => l.id === formData.locationId) || null;
+
   return (
     <Box sx={{ mb: 4 }}>
       {/* Header Section */}
@@ -256,10 +271,31 @@ function OccurrenceDetailsSection({
         <Grid size={{ xs: 12, md: 4 }}>
           <Autocomplete
             options={locations}
+            groupBy={(option) => option.departmentName}
             getOptionLabel={(option) => option.name}
-            value={locations.find(l => l.id === formData.locationId)}
+            value={selectedLocation}
             onChange={(_, value) => onChange('locationId', value?.id)}
+            isOptionEqualToValue={(option, value) => option.id === value?.id}
             renderInput={(params) => <TextField {...params} label="Location / Dept *" required />}
+            renderGroup={(params) => (
+              <li key={params.key}>
+                <Typography
+                  component="div"
+                  sx={{
+                    position: 'sticky',
+                    top: -8,
+                    px: 2,
+                    py: 1,
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {params.group}
+                </Typography>
+                <ul style={{ padding: 0 }}>{params.children}</ul>
+              </li>
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
@@ -869,7 +905,7 @@ function ImmediateActionsSection({
 
 /**
  * Supervisor Selector Component
- * Fetches and displays list of supervisors
+ * Uses PeoplePicker for enhanced user search
  */
 function SupervisorSelector({
   value,
@@ -878,34 +914,25 @@ function SupervisorSelector({
   value: string | number | undefined;
   onChange: (value: number) => void;
 }) {
-  const { users, error } = useUsers({ role: 'supervisor' });
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Failed to load supervisors. Please try again.
-      </Alert>
-    );
-  }
+  // Handle selection change
+  const handleChange = useCallback((newValue: UserSearchResult | UserSearchResult[] | null) => {
+    const user = Array.isArray(newValue) ? newValue[0] : newValue;
+    setSelectedUser(user);
+    if (user) {
+      onChange(user.id);
+    }
+  }, [onChange]);
 
   return (
-    <Autocomplete
-      options={users}
-      getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
-      value={users.find((u: any) => u.id === Number(value)) || null}
-      onChange={(_, newValue) => {
-        if (newValue) {
-          onChange(newValue.id);
-        }
-      }}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Select Supervisor *"
-          placeholder="Search by name or employee ID..."
-        />
-      )}
-      isOptionEqualToValue={(option, value) => option.id === value?.id}
+    <PeoplePicker
+      value={selectedUser}
+      onChange={handleChange}
+      filterByRoles={['supervisor', 'team_lead', 'quality_manager', 'quality_analyst', 'admin', 'super_admin']}
+      label="Select Supervisor *"
+      placeholder="Search by name or employee ID..."
+      required
     />
   );
 }
@@ -1325,9 +1352,9 @@ export default function NewIncidentPage() {
   const router = useRouter();
   const [draftId, setDraftId] = useState<string | null>(null);
   const { data: session } = useSession();
+  const { departments, isLoading: isLoadingDepartments } = useDepartmentsWithLocations();
 
   const [loading, setLoading] = useState(false);
-  const [locations, setLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
 
@@ -1356,11 +1383,6 @@ export default function NewIncidentPage() {
         }
       }
       setDraftLoaded(true);
-    })();
-
-    (async () => {
-      const locs = await fetchLocations();
-      setLocations(locs);
     })();
   }, [draftId]);
 
@@ -1423,7 +1445,7 @@ export default function NewIncidentPage() {
 
               <OccurrenceDetailsSection
                 formData={formData}
-                locations={locations}
+                departments={departments}
                 onChange={handleChange}
               />
 

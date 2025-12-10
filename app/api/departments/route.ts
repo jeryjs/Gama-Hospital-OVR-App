@@ -11,6 +11,7 @@ import {
     createPaginatedResponse,
 } from '@/lib/api/middleware';
 import { departmentCreateSchema, departmentUpdateSchema } from '@/lib/api/schemas';
+import { generateDepartmentCode } from '@/lib/utils/departments';
 import { eq, count, asc, desc, and, ilike, or, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -96,7 +97,13 @@ export async function GET(request: NextRequest) {
                             name: true,
                             building: true,
                             floor: true,
+                            displayOrder: true,
+                            isActive: true,
                         },
+                        orderBy: (locations, { asc, sql }) => [
+                            asc(sql`COALESCE(${locations.displayOrder}, 999999)`),
+                            asc(locations.name),
+                        ],
                     },
                     headOfDepartment: {
                         columns: {
@@ -108,8 +115,15 @@ export async function GET(request: NextRequest) {
                 },
             });
 
+            // Transform to match DepartmentWithLocations schema
+            const transformedData = data.map(dept => ({
+                ...dept,
+                head: dept.headOfDepartment,
+                locations: (dept as any).locations || [],
+            }));
+
             return NextResponse.json(
-                createPaginatedResponse(data, total, { page, limit: pageSize, sortOrder })
+                createPaginatedResponse(transformedData, total, { page, limit: pageSize, sortOrder })
             );
         }
 
@@ -140,9 +154,19 @@ export async function POST(request: NextRequest) {
 
         const body = await validateBody(request, departmentCreateSchema);
 
+        // Auto-generate code if not provided
+        let code = body.code;
+        if (!code || code.trim() === '') {
+            const existingDepts = await db
+                .select({ code: departments.code })
+                .from(departments);
+            const existingCodes = existingDepts.map(d => d.code);
+            code = generateDepartmentCode(body.name, existingCodes);
+        }
+
         const [newDepartment] = await db.insert(departments).values({
             name: body.name,
-            code: body.code,
+            code: code.toUpperCase(),
             headOfDepartment: body.headId,
             isActive: body.isActive ?? true,
         }).returning();

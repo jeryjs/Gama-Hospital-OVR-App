@@ -8,6 +8,7 @@ export type {
   User,
   UserPublic,
   UserMinimal,
+  UserSearchResult,
 
   // Location types
   Location,

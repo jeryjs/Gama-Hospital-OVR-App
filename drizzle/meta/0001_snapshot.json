@@ -1,0 +1,1566 @@
+{
+  "id": "19336eb7-850c-492a-b51d-a279afcbeb5d",
+  "prevId": "95af3bf2-26fc-4be5-b658-a96053806ea8",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.departments": {
+      "name": "departments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "head_of_department": {
+          "name": "head_of_department",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "departments_head_of_department_users_id_fk": {
+          "name": "departments_head_of_department_users_id_fk",
+          "tableFrom": "departments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "head_of_department"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "departments_code_unique": {
+          "name": "departments_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.locations": {
+      "name": "locations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "department_id": {
+          "name": "department_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "building": {
+          "name": "building",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "floor": {
+          "name": "floor",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "locations_department_id_departments_id_fk": {
+          "name": "locations_department_id_departments_id_fk",
+          "tableFrom": "locations",
+          "tableTo": "departments",
+          "columnsFrom": [
+            "department_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "locations_code_unique": {
+          "name": "locations_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_attachments": {
+      "name": "ovr_attachments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ovr_report_id": {
+          "name": "ovr_report_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_url": {
+          "name": "file_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_type": {
+          "name": "file_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_size": {
+          "name": "file_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ovr_attachments_ovr_report_id_ovr_reports_id_fk": {
+          "name": "ovr_attachments_ovr_report_id_ovr_reports_id_fk",
+          "tableFrom": "ovr_attachments",
+          "tableTo": "ovr_reports",
+          "columnsFrom": [
+            "ovr_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ovr_attachments_uploaded_by_users_id_fk": {
+          "name": "ovr_attachments_uploaded_by_users_id_fk",
+          "tableFrom": "ovr_attachments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_comments": {
+      "name": "ovr_comments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ovr_report_id": {
+          "name": "ovr_report_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "comment": {
+          "name": "comment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_system_comment": {
+          "name": "is_system_comment",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ovr_comments_ovr_report_id_ovr_reports_id_fk": {
+          "name": "ovr_comments_ovr_report_id_ovr_reports_id_fk",
+          "tableFrom": "ovr_comments",
+          "tableTo": "ovr_reports",
+          "columnsFrom": [
+            "ovr_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ovr_comments_user_id_users_id_fk": {
+          "name": "ovr_comments_user_id_users_id_fk",
+          "tableFrom": "ovr_comments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_corrective_actions": {
+      "name": "ovr_corrective_actions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ovr_report_id": {
+          "name": "ovr_report_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_to": {
+          "name": "assigned_to",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "checklist": {
+          "name": "checklist",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action_taken": {
+          "name": "action_taken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evidence_files": {
+          "name": "evidence_files",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_by": {
+          "name": "closed_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ovr_corrective_actions_ovr_report_id_ovr_reports_id_fk": {
+          "name": "ovr_corrective_actions_ovr_report_id_ovr_reports_id_fk",
+          "tableFrom": "ovr_corrective_actions",
+          "tableTo": "ovr_reports",
+          "columnsFrom": [
+            "ovr_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ovr_corrective_actions_created_by_users_id_fk": {
+          "name": "ovr_corrective_actions_created_by_users_id_fk",
+          "tableFrom": "ovr_corrective_actions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_corrective_actions_closed_by_users_id_fk": {
+          "name": "ovr_corrective_actions_closed_by_users_id_fk",
+          "tableFrom": "ovr_corrective_actions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "closed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_investigations": {
+      "name": "ovr_investigations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ovr_report_id": {
+          "name": "ovr_report_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "investigator_ids": {
+          "name": "investigator_ids",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "findings": {
+          "name": "findings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "problems_identified": {
+          "name": "problems_identified",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cause_classification": {
+          "name": "cause_classification",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cause_details": {
+          "name": "cause_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "corrective_action_plan": {
+          "name": "corrective_action_plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rca_analysis": {
+          "name": "rca_analysis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fishbone_analysis": {
+          "name": "fishbone_analysis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ovr_investigations_ovr_report_id_ovr_reports_id_fk": {
+          "name": "ovr_investigations_ovr_report_id_ovr_reports_id_fk",
+          "tableFrom": "ovr_investigations",
+          "tableTo": "ovr_reports",
+          "columnsFrom": [
+            "ovr_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ovr_investigations_created_by_users_id_fk": {
+          "name": "ovr_investigations_created_by_users_id_fk",
+          "tableFrom": "ovr_investigations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_reports": {
+      "name": "ovr_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(20)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "occurrence_date": {
+          "name": "occurrence_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurrence_time": {
+          "name": "occurrence_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location_id": {
+          "name": "location_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "specific_location": {
+          "name": "specific_location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "person_involved": {
+          "name": "person_involved",
+          "type": "person_involved",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "involved_person_name": {
+          "name": "involved_person_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_age": {
+          "name": "involved_person_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_sex": {
+          "name": "involved_person_sex",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_unit": {
+          "name": "involved_person_unit",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_mrn": {
+          "name": "involved_person_mrn",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_staff_id": {
+          "name": "involved_staff_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_employee_id": {
+          "name": "involved_person_employee_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_position": {
+          "name": "involved_person_position",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_relation": {
+          "name": "involved_person_relation",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "involved_person_contact": {
+          "name": "involved_person_contact",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_sentinel_event": {
+          "name": "is_sentinel_event",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "sentinel_event_details": {
+          "name": "sentinel_event_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurrence_category": {
+          "name": "occurrence_category",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurrence_subcategory": {
+          "name": "occurrence_subcategory",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurrence_detail": {
+          "name": "occurrence_detail",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level_of_harm": {
+          "name": "level_of_harm",
+          "type": "level_of_harm",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reporter_id": {
+          "name": "reporter_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reporter_department": {
+          "name": "reporter_department",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reporter_position": {
+          "name": "reporter_position",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "physician_notified": {
+          "name": "physician_notified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "physician_saw_patient": {
+          "name": "physician_saw_patient",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "assessment": {
+          "name": "assessment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diagnosis": {
+          "name": "diagnosis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "injury_outcome": {
+          "name": "injury_outcome",
+          "type": "injury_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "treatment_types": {
+          "name": "treatment_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hospitalized_details": {
+          "name": "hospitalized_details",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "treatment_provided": {
+          "name": "treatment_provided",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "physician_name": {
+          "name": "physician_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "physician_id": {
+          "name": "physician_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "physician_signature_date": {
+          "name": "physician_signature_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "risk_impact": {
+          "name": "risk_impact",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "risk_likelihood": {
+          "name": "risk_likelihood",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "risk_score": {
+          "name": "risk_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "supervisor_notified": {
+          "name": "supervisor_notified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "supervisor_id": {
+          "name": "supervisor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "supervisor_action": {
+          "name": "supervisor_action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_received_by": {
+          "name": "qi_received_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_received_date": {
+          "name": "qi_received_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_assigned_by": {
+          "name": "qi_assigned_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_assigned_date": {
+          "name": "qi_assigned_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_reviewed_by": {
+          "name": "qi_reviewed_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_reviewed_at": {
+          "name": "qi_reviewed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_rejection_reason": {
+          "name": "qi_rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_feedback": {
+          "name": "qi_feedback",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_form_complete": {
+          "name": "qi_form_complete",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_proper_cause_identified": {
+          "name": "qi_proper_cause_identified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_proper_timeframe": {
+          "name": "qi_proper_timeframe",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_action_complies_standards": {
+          "name": "qi_action_complies_standards",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qi_effective_corrective_action": {
+          "name": "qi_effective_corrective_action",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "severity_level": {
+          "name": "severity_level",
+          "type": "severity_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "case_review": {
+          "name": "case_review",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reporter_feedback": {
+          "name": "reporter_feedback",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_by": {
+          "name": "closed_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "ovr_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ovr_reports_location_id_locations_id_fk": {
+          "name": "ovr_reports_location_id_locations_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "locations",
+          "columnsFrom": [
+            "location_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_involved_staff_id_users_id_fk": {
+          "name": "ovr_reports_involved_staff_id_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "involved_staff_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_reporter_id_users_id_fk": {
+          "name": "ovr_reports_reporter_id_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "reporter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_supervisor_id_users_id_fk": {
+          "name": "ovr_reports_supervisor_id_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "supervisor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_qi_received_by_users_id_fk": {
+          "name": "ovr_reports_qi_received_by_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "qi_received_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_qi_assigned_by_users_id_fk": {
+          "name": "ovr_reports_qi_assigned_by_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "qi_assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_qi_reviewed_by_users_id_fk": {
+          "name": "ovr_reports_qi_reviewed_by_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "qi_reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_reports_closed_by_users_id_fk": {
+          "name": "ovr_reports_closed_by_users_id_fk",
+          "tableFrom": "ovr_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "closed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ovr_shared_access": {
+      "name": "ovr_shared_access",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ovr_report_id": {
+          "name": "ovr_report_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_expires_at": {
+          "name": "token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "last_accessed_at": {
+          "name": "last_accessed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invited_by": {
+          "name": "invited_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invited_at": {
+          "name": "invited_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_by": {
+          "name": "revoked_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "ovr_shared_access_resource_idx": {
+          "name": "ovr_shared_access_resource_idx",
+          "columns": [
+            {
+              "expression": "resource_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "resource_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ovr_shared_access_token_idx": {
+          "name": "ovr_shared_access_token_idx",
+          "columns": [
+            {
+              "expression": "access_token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ovr_shared_access_email_idx": {
+          "name": "ovr_shared_access_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ovr_shared_access_ovr_report_id_ovr_reports_id_fk": {
+          "name": "ovr_shared_access_ovr_report_id_ovr_reports_id_fk",
+          "tableFrom": "ovr_shared_access",
+          "tableTo": "ovr_reports",
+          "columnsFrom": [
+            "ovr_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ovr_shared_access_user_id_users_id_fk": {
+          "name": "ovr_shared_access_user_id_users_id_fk",
+          "tableFrom": "ovr_shared_access",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_shared_access_invited_by_users_id_fk": {
+          "name": "ovr_shared_access_invited_by_users_id_fk",
+          "tableFrom": "ovr_shared_access",
+          "tableTo": "users",
+          "columnsFrom": [
+            "invited_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ovr_shared_access_revoked_by_users_id_fk": {
+          "name": "ovr_shared_access_revoked_by_users_id_fk",
+          "tableFrom": "ovr_shared_access",
+          "tableTo": "users",
+          "columnsFrom": [
+            "revoked_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ovr_shared_access_access_token_unique": {
+          "name": "ovr_shared_access_access_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "access_token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "azure_id": {
+          "name": "azure_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roles": {
+          "name": "roles",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY['employee']::text[]"
+        },
+        "department": {
+          "name": "department",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "profile_picture": {
+          "name": "profile_picture",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_azure_id_unique": {
+          "name": "users_azure_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "azure_id"
+          ]
+        },
+        "users_employee_id_unique": {
+          "name": "users_employee_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "employee_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.injury_outcome": {
+      "name": "injury_outcome",
+      "schema": "public",
+      "values": [
+        "no_injury",
+        "minor",
+        "serious",
+        "death"
+      ]
+    },
+    "public.level_of_harm": {
+      "name": "level_of_harm",
+      "schema": "public",
+      "values": [
+        "med_a",
+        "med_b",
+        "med_c",
+        "med_d",
+        "med_e",
+        "med_f",
+        "med_g",
+        "med_h",
+        "med_i",
+        "near_miss",
+        "none",
+        "minor",
+        "moderate",
+        "major",
+        "catastrophic"
+      ]
+    },
+    "public.ovr_status": {
+      "name": "ovr_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "submitted",
+        "qi_review",
+        "investigating",
+        "qi_final_actions",
+        "closed"
+      ]
+    },
+    "public.person_involved": {
+      "name": "person_involved",
+      "schema": "public",
+      "values": [
+        "patient",
+        "staff",
+        "visitor_watcher",
+        "others"
+      ]
+    },
+    "public.severity_level": {
+      "name": "severity_level",
+      "schema": "public",
+      "values": [
+        "near_miss",
+        "no_apparent_injury",
+        "minor",
+        "major"
+      ]
+    },
+    "public.treatment_type": {
+      "name": "treatment_type",
+      "schema": "public",
+      "values": [
+        "first_aid",
+        "sutures",
+        "observation",
+        "bloodwork",
+        "radiology",
+        "hospitalized",
+        "transferred"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

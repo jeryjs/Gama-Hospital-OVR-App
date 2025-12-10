@@ -7,8 +7,7 @@ import {
     Checkbox, ListItemText, Divider, alpha, Skeleton
 } from '@mui/material';
 import { Close, FilterListOff } from '@mui/icons-material';
-import { useDepartments } from '@/lib/hooks/useDepartments';
-import { useLocations } from '@/lib/hooks/useLocations';
+import { useDepartments, useDepartmentsWithLocations } from '@/lib/hooks';
 
 // OVR Status options
 const STATUS_OPTIONS = [
@@ -102,7 +101,15 @@ interface FilterControlsProps {
 
 function FilterControls({ filters, onChange }: FilterControlsProps) {
     const { departments } = useDepartments();
-    const { locations } = useLocations();
+    const { departments: departmentsWithLocations } = useDepartmentsWithLocations();
+
+    // Flatten locations from all departments
+    const locations = departmentsWithLocations.flatMap(dept =>
+        (dept.locations || []).map(loc => ({
+            ...loc,
+            departmentName: dept.name
+        }))
+    );
 
     return (
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
@@ -205,7 +212,15 @@ interface ActiveFiltersChipsProps {
 
 function ActiveFiltersChips({ filters, onChange }: ActiveFiltersChipsProps) {
     const { departments } = useDepartments();
-    const { locations } = useLocations();
+    const { departments: departmentsWithLocations } = useDepartmentsWithLocations();
+
+    // Flatten locations from all departments
+    const locations = departmentsWithLocations.flatMap(dept =>
+        (dept.locations || []).map(loc => ({
+            ...loc,
+            departmentName: dept.name
+        }))
+    );
 
     const hasFilters =
         filters.statuses.length > 0 ||

@@ -5,57 +5,17 @@ import { and, asc, count, desc, eq, ilike, or, SQL, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 
+/**
+ * GET /api/users - Paginated user management endpoint (Admin only)
+ * 
+ * For user search/autocomplete, use GET /api/users/search instead
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
     const { searchParams } = new URL(request.url);
 
-    // Legacy support for simple user list (used by dropdowns)
-    const legacy = searchParams.get('legacy');
-    if (legacy === 'true') {
-      const rolesParam = searchParams.get('roles');
-      const department = searchParams.get('department');
-
-      const query = db
-        .select({
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
-          department: users.department,
-          roles: users.roles,
-        })
-        .from(users)
-        .where(eq(users.isActive, true));
-
-      let allUsers = await query;
-
-      // Filter by roles if specified (user must have ANY of the specified roles)
-      if (rolesParam) {
-        const targetRoles = rolesParam.split(',').map(r => r.trim());
-        allUsers = allUsers.filter(u =>
-          u.roles?.some(role => targetRoles.includes(role))
-        );
-      }
-
-      if (department) {
-        allUsers = allUsers.filter(u => u.department === department);
-      }
-
-      const formattedUsers = allUsers.map(u => ({
-        id: u.id,
-        name: `${u.firstName} ${u.lastName}`,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        email: u.email,
-        department: u.department,
-        roles: u.roles,
-      }));
-
-      return NextResponse.json(formattedUsers);
-    }
-
-    // New paginated user management endpoint (requires admin access)
+    // Admin-only paginated user management endpoint
     if (!ACCESS_CONTROL.api.users.canView(session.user.roles)) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin access required' },

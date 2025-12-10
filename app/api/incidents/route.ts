@@ -15,7 +15,8 @@ import {
 } from '@/lib/api/schemas';
 import { buildIncidentVisibilityFilter } from '@/lib/utils';
 import { generateOVRId } from '@/lib/generate-ovr-id';
-import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { ACCESS_CONTROL } from '@/lib/access-control';
+import { and, asc, desc, eq, like, or, sql, ne } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -46,20 +47,38 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = [];
 
+    // Determine if this is a "my reports" request (reporterId matches current user)
+    const isMyReportsRequest = query.reporterId === userId;
+
     // Role-based access control using security utility
-    const visibilityFilter = buildIncidentVisibilityFilter({
-      userId,
-      roles: session.user.roles,
-      email: session.user.email,
-    });
+    // For "my reports" requests, show all statuses including drafts
+    // For general list, exclude drafts (unless it's the user's own)
+    const visibilityFilter = buildIncidentVisibilityFilter(
+      {
+        userId,
+        roles: session.user.roles,
+        email: session.user.email,
+      },
+      {
+        includeDrafts: isMyReportsRequest, // Only include drafts when viewing own reports
+        myReportsOnly: isMyReportsRequest, // Restrict to own reports if specified
+      }
+    );
 
     if (visibilityFilter) {
       conditions.push(visibilityFilter);
     }
 
     // Apply filters
+    // IMPORTANT: If status filter is 'draft', ensure user can only see their own drafts
     if (query.status) {
-      conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+      if (query.status === 'draft') {
+        // Only allow viewing own drafts
+        conditions.push(eq(ovrReports.status, 'draft'));
+        conditions.push(eq(ovrReports.reporterId, userId));
+      } else {
+        conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+      }
     }
 
     if (query.category) {

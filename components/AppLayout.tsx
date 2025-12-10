@@ -78,6 +78,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = React.useMemo(() => {
     const userRoles = session?.user.roles || [];
     const qiReviewCount = stats?.byStatus?.qi_review || 0;
+    const myDraftsCount = stats?.myReports?.drafts || 0;
+
+    // Check if user has elevated access (can view all or team incidents)
+    const canViewAllIncidents = ACCESS_CONTROL.api.incidents.canViewAll(userRoles);
+    const canViewTeamIncidents = ACCESS_CONTROL.api.incidents.canViewTeam(userRoles);
+    const hasElevatedAccess = canViewAllIncidents || canViewTeamIncidents;
 
     const items: NavItem[] = [
       { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
@@ -88,17 +94,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         children: [
           {
             title: 'My Reports',
-            path: '/incidents',
-            badge: {
+            path: '/incidents/me',
+            badge: myDraftsCount > 0 ? {
+              content: myDraftsCount,
+              tooltip: `${myDraftsCount} draft${myDraftsCount !== 1 ? 's' : ''} in progress`
+            } : {
               content: <Add />,
               link: '/incidents/new',
               tooltip: 'Report New incident'
             }
           },
+          // Only show "All Incidents" for users with elevated access
+          ...(hasElevatedAccess ? [{
+            title: canViewAllIncidents ? 'All Incidents' : 'Team Incidents',
+            path: '/incidents',
+          }] : []),
           {
             title: 'QI Review',
             path: '/incidents/qi/review',
-            roles: ['quality_manager', 'quality_analyst', 'super_admin', 'developer'],
+            roles: ['quality_manager', 'quality_analyst', 'super_admin', 'developer'] as AppRole[],
             badge: qiReviewCount > 0 ? {
               content: qiReviewCount,
               tooltip: `${qiReviewCount} incident${qiReviewCount !== 1 ? 's' : ''} pending QI review`
@@ -127,12 +141,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             roles: ['super_admin', 'tech_admin', 'developer']
           },
           {
-            title: 'Locations',
-            path: '/administration/locations',
-            roles: ['super_admin', 'tech_admin', 'facility_manager', 'developer']
-          },
-          {
-            title: 'Departments',
+            title: 'Departments & Locations',
             path: '/administration/departments',
             roles: ['super_admin', 'tech_admin', 'facility_manager', 'developer']
           },

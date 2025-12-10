@@ -36,6 +36,17 @@ export const userMinimalSchema = userSelectSchema.pick({
   lastName: true,
 });
 
+// User search result schema (for People Picker component)
+export const userSearchResultSchema = userSelectSchema.pick({
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  department: true,
+  profilePicture: true,
+  roles: true,
+});
+
 // Location schemas (auto-generated from DB)
 export const locationSelectSchema = createSelectSchema(locations);
 export const locationInsertSchema = createInsertSchema(locations);
@@ -50,13 +61,16 @@ export const locationMinimalSchema = locationSelectSchema.pick({
 // Location CRUD schemas
 export const locationCreateSchema = z.object({
   name: z.string().min(1).max(100),
-  departmentId: z.number().int().positive(),
+  departmentId: z.number().int().positive(), // Required - locations must belong to a department
   building: z.string().max(100).optional(),
   floor: z.string().max(50).optional(),
+  displayOrder: z.number().int().optional(), // For drag-drop sorting
   isActive: z.boolean().default(true),
 });
 
-export const locationUpdateSchema = locationCreateSchema.partial();
+export const locationUpdateSchema = locationCreateSchema.partial().extend({
+  departmentId: z.number().int().positive().optional(), // Allow partial updates without changing department
+});
 
 // Department schemas (auto-generated from DB)
 export const departmentSelectSchema = createSelectSchema(departments);
@@ -65,15 +79,21 @@ export const departmentInsertSchema = createInsertSchema(departments);
 // Department CRUD schemas
 export const departmentCreateSchema = z.object({
   name: z.string().min(1).max(100),
-  code: z.string().min(1).max(20),
+  code: z.string().max(20).optional(), // Optional - auto-generated if not provided
   headId: z.number().int().positive().optional(),
   isActive: z.boolean().default(true),
 });
 
 export const departmentUpdateSchema = departmentCreateSchema.partial();
 
+// Extended location schema for department view (includes displayOrder)
+export const locationForDepartmentSchema = locationMinimalSchema.extend({
+  displayOrder: z.number().nullable().optional(),
+  isActive: z.boolean().optional(),
+});
+
 export const departmentWithLocationsSchema = departmentSelectSchema.extend({
-  locations: z.array(locationMinimalSchema).optional(),
+  locations: z.array(locationForDepartmentSchema).default([]),
   head: userMinimalSchema.optional(),
 });
 
@@ -225,12 +245,14 @@ export type User = z.infer<typeof userSelectSchema>;
 export type UserInsert = z.infer<typeof userInsertSchema>;
 export type UserPublic = z.infer<typeof userPublicSchema>;
 export type UserMinimal = z.infer<typeof userMinimalSchema>;
+export type UserSearchResult = z.infer<typeof userSearchResultSchema>;
 
 export type Location = z.infer<typeof locationSelectSchema>;
 export type LocationInsert = z.infer<typeof locationInsertSchema>;
 export type LocationMinimal = z.infer<typeof locationMinimalSchema>;
 export type LocationCreate = z.infer<typeof locationCreateSchema>;
 export type LocationUpdate = z.infer<typeof locationUpdateSchema>;
+export type LocationForDepartment = z.infer<typeof locationForDepartmentSchema>;
 
 export type Department = z.infer<typeof departmentSelectSchema>;
 export type DepartmentInsert = z.infer<typeof departmentInsertSchema>;

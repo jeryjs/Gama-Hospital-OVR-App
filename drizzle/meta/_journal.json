@@ -8,6 +8,13 @@
       "when": 1765284802070,
       "tag": "0000_sweet_golden_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765330145294,
+      "tag": "0001_redundant_shatterstar",
+      "breakpoints": true
     }
   ]
 }

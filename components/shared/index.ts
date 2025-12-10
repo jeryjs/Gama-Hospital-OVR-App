@@ -33,3 +33,6 @@ export type { RecentIncidentsListProps, RecentIncident } from './RecentIncidents
 
 export { QuickActionsPanel } from './QuickActionsPanel';
 export type { QuickActionsPanelProps, QuickAction } from './QuickActionsPanel';
+
+export { PeoplePicker } from './PeoplePicker';
+export type { PeoplePickerProps } from './PeoplePicker';

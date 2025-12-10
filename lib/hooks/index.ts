@@ -13,13 +13,13 @@ export { useCorrectiveActions } from './useCorrectiveActions';
 export { useSharedAccess } from './useSharedAccess';
 export { useComments } from './useComments';
 export { useUsers } from './useUsers';
-export { useLocations } from './useLocations';
-export { useLocationManagement } from './useLocationManagement';
 export { useDepartments, useDepartmentsWithLocations } from './useDepartments';
 export { useDepartmentManagement } from './useDepartmentManagement';
 export { useDashboardStats } from './useDashboardStats';
 export { useUserManagement } from './useUserManagement';
 export { useReportData, useIncidentTrends, useLocationComparison } from './useReportData';
+export { usePeopleSearch } from './usePeopleSearch';
+export { useDrafts } from './useDrafts';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
@@ -55,14 +55,15 @@ export type {
 } from './useSharedAccess';
 export type { UseCommentsReturn } from './useComments';
 export type { UseUsersOptions, UseUsersReturn } from './useUsers';
-export type { UseLocationsReturn } from './useLocations';
 export type { UseDashboardStatsReturn, DashboardStats } from './useDashboardStats';
+export type { UseDraftsOptions, UseDraftsReturn } from './useDrafts';
 
 // Location & Department management types (re-exported from schemas)
 export type {
     Location,
     LocationCreate,
     LocationUpdate,
+    LocationForDepartment,
     Department,
     DepartmentCreate,
     DepartmentUpdate,
@@ -70,7 +71,7 @@ export type {
 } from '@/lib/api/schemas';
 
 // User list management types
-export type { User, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
+export type { User, UserListQuery, UserListResponse, UserUpdate, UserSearchResult } from '@/lib/api/schemas';
 
 // Report data types
 export type {
@@ -82,3 +83,8 @@ export type {
     LocationStats,
     DepartmentStats,
 } from './useReportData';
+
+export type {
+    UsePeopleSearchOptions,
+    UsePeopleSearchReturn,
+} from './usePeopleSearch';

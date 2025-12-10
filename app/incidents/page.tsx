@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncidents } from '@/lib/hooks';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { fadeIn } from '@/lib/theme';
 import { getStatusColor, getStatusLabel, STATUS_CONFIG } from '@/lib/utils/status';
 import type { OVRStatus } from '@/lib/utils/status';
@@ -37,11 +38,13 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 export default function IncidentsPage() {
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,15 +53,26 @@ export default function IncidentsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
-  // Status labels mapping
+  // Status labels mapping - NO DRAFT (drafts never shown on this page)
   const statusLabels = {
-    draft: 'Draft',
     submitted: 'Submitted',
     qi_review: 'QI Review',
     investigating: 'Investigating',
     qi_final_actions: 'Final Actions',
     closed: 'Closed',
   };
+
+  const userRoles = session?.user?.roles || [];
+  const canViewAllIncidents = ACCESS_CONTROL.api.incidents.canViewAll(userRoles);
+  const canViewTeamIncidents = ACCESS_CONTROL.api.incidents.canViewTeam(userRoles);
+  const hasElevatedAccess = canViewAllIncidents || canViewTeamIncidents;
+
+  // Redirect employees (non-elevated roles) to /incidents/me
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && !hasElevatedAccess) {
+      router.replace('/incidents/me');
+    }
+  }, [sessionStatus, hasElevatedAccess, router]);
 
   const { incidents, pagination, isLoading, error } = useIncidents({
     page,
@@ -93,8 +107,16 @@ export default function IncidentsPage() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status') || '';
-    setStatusFilter(status);
+    // Don't allow 'draft' status filter on this page
+    if (status && status !== 'draft') {
+      setStatusFilter(status);
+    }
   }, []);
+
+  // Show loading while checking session or redirecting
+  if (sessionStatus === 'loading' || (!hasElevatedAccess && sessionStatus === 'authenticated')) {
+    return <LoadingFallback />;
+  }
 
   if (!!error) {
     return (
@@ -123,10 +145,13 @@ export default function IncidentsPage() {
             >
               <Box>
                 <Typography variant="h4" gutterBottom fontWeight={700}>
-                  My OVR Reports
+                  {canViewAllIncidents ? 'All Incidents' : 'Team Incidents'}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  View and manage incidents reported by you ({pagination?.total || 0})
+                  {canViewAllIncidents
+                    ? `View and manage all OVR reports (${pagination?.total || 0})`
+                    : `View incidents from your team (${pagination?.total || 0})`
+                  }
                 </Typography>
               </Box>
               <Button
@@ -171,7 +196,7 @@ export default function IncidentsPage() {
 
             {/* Filter Dialog */}
             <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
-              <DialogTitle>Filter Reports</DialogTitle>
+              <DialogTitle>Filter Incidents</DialogTitle>
               <DialogContent sx={{ minWidth: 300, pt: 2 }}>
                 <TextField
                   fullWidth
@@ -212,6 +237,9 @@ export default function IncidentsPage() {
                       <TableCell sx={{ fontWeight: 600 }}>
                         Category
                       </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        Reporter
+                      </TableCell>
                       <TableCell
                         onClick={() => handleSort('status')}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
@@ -230,13 +258,13 @@ export default function IncidentsPage() {
                   <TableBody>
                     {incidents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                        <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                           <Typography variant="body1" color="text.secondary">
                             {hasActiveFilters
                               ? 'No incidents match your filters.'
-                              : 'No incidents found. Create your first report!'}
+                              : 'No incidents found.'}
                           </Typography>
-                          {hasActiveFilters ? (
+                          {hasActiveFilters && (
                             <Button
                               variant="outlined"
                               startIcon={<Close />}
@@ -244,16 +272,6 @@ export default function IncidentsPage() {
                               sx={{ mt: 2 }}
                             >
                               Clear Filters
-                            </Button>
-                          ) : (
-                            <Button
-                              component={Link}
-                              href="/incidents/new"
-                              variant="outlined"
-                              startIcon={<Add />}
-                              sx={{ mt: 2 }}
-                            >
-                              New Report
                             </Button>
                           )}
                         </TableCell>
@@ -287,6 +305,14 @@ export default function IncidentsPage() {
                               sx={{ textTransform: 'capitalize' }}
                             >
                               {incident.occurrenceCategory.replace(/_/g, ' ')}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {incident.reporter
+                                ? `${incident.reporter.firstName} ${incident.reporter.lastName}`
+                                : 'Unknown'
+                              }
                             </Typography>
                           </TableCell>
                           <TableCell>

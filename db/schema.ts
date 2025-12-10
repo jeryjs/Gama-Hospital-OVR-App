@@ -90,6 +90,7 @@ export const locations = pgTable('locations', {
   departmentId: integer('department_id').references(() => departments.id),
   building: varchar('building', { length: 100 }),
   floor: varchar('floor', { length: 50 }),
+  displayOrder: integer('display_order'), // For drag-drop sorting within department
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
