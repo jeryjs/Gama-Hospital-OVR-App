@@ -9,7 +9,7 @@ interface LinkElementNode extends TElement {
     url?: string;
 }
 
-export function LinkElement({ children, attributes, element, ...props }: PlateElementProps) {
+export function LinkElement({ children, attributes, element }: PlateElementProps) {
     const linkElement = element as LinkElementNode;
     const url = linkElement.url || '#';
 
@@ -37,7 +37,6 @@ export function LinkElement({ children, attributes, element, ...props }: PlateEl
                     borderRadius: '2px',
                 },
             }}
-            {...props}
         >
             {children}
         </Link>

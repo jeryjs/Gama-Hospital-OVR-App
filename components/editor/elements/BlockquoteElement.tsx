@@ -3,7 +3,7 @@
 import { Box } from '@mui/material';
 import type { PlateElementProps } from 'platejs/react';
 
-export function BlockquoteElement({ children, attributes, ...props }: PlateElementProps) {
+export function BlockquoteElement({ children, attributes }: PlateElementProps) {
     return (
         <Box
             component="blockquote"
@@ -23,7 +23,6 @@ export function BlockquoteElement({ children, attributes, ...props }: PlateEleme
                     my: 0,
                 },
             }}
-            {...props}
         >
             {children}
         </Box>

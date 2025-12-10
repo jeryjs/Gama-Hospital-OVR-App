@@ -7,7 +7,7 @@ interface HeadingElementProps extends PlateElementProps {
     variant: 'h1' | 'h2' | 'h3';
 }
 
-export function HeadingElement({ children, attributes, variant, ...props }: HeadingElementProps) {
+export function HeadingElement({ children, attributes, variant }: HeadingElementProps) {
     const styles = {
         h1: {
             fontSize: '1.75rem',
@@ -44,7 +44,6 @@ export function HeadingElement({ children, attributes, variant, ...props }: Head
                     mt: 0,
                 },
             }}
-            {...props}
         >
             {children}
         </Typography>
