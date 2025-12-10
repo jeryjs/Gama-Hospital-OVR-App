@@ -23,6 +23,14 @@ export type {
   OVRReportWithRelations,
   OVRReportListItem,
 
+  // Investigation & Corrective Action types
+  Investigation,
+  InvestigationWithUsers,
+  Investigator,
+  CorrectiveAction,
+  CorrectiveActionWithUsers,
+  Assignee,
+
   // API types
   ApiError,
   PaginationParams,

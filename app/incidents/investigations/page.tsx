@@ -8,20 +8,16 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { IncidentCard, StatusDisplay } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useInvestigations } from '@/lib/hooks';
 import type { InvestigationListItem } from '@/lib/hooks';
-import { Add, FilterList, Search, Visibility } from '@mui/icons-material';
+import { Search, Visibility } from '@mui/icons-material';
 import {
     Alert,
     Box,
     Button,
-    Card,
-    CardContent,
     Chip,
-    Grid,
     LinearProgress,
     MenuItem,
     Paper,
@@ -42,6 +38,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { IncidentsHeader, MetricsCards } from '../_shared';
 
 /**
  * Investigations List Page
@@ -88,6 +85,13 @@ export default function InvestigationsPage() {
     const pendingCount = investigations?.filter((inv: InvestigationListItem) => !inv.submittedAt).length || 0;
     const completedCount = investigations?.filter((inv: InvestigationListItem) => inv.submittedAt).length || 0;
 
+    // Build metrics for MetricsCards
+    const metrics = [
+        { label: 'Total Investigations', value: totalCount, color: 'default' as const },
+        { label: 'Pending', value: pendingCount, color: 'warning' as const },
+        { label: 'Completed', value: completedCount, color: 'success' as const },
+    ];
+
     return (
         <AppLayout>
             <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
@@ -97,55 +101,12 @@ export default function InvestigationsPage() {
                     transition={{ duration: 0.3 }}
                 >
                     <Stack spacing={3}>
-                        {/* Header */}
-                        <Box>
-                            <Typography variant="h4" fontWeight={700} gutterBottom>
-                                Investigations
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Manage incident investigations and track progress
-                            </Typography>
-                        </Box>
+                        <IncidentsHeader
+                            title="Investigations"
+                            subtitle="Manage incident investigations and track progress"
+                        />
 
-                        {/* Metrics Cards */}
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                                            Total Investigations
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700}>
-                                            {totalCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card sx={{ bgcolor: 'warning.lighter' }}>
-                                    <CardContent>
-                                        <Typography variant="body2" color="warning.dark" gutterBottom>
-                                            Pending
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700} color="warning.dark">
-                                            {pendingCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card sx={{ bgcolor: 'success.lighter' }}>
-                                    <CardContent>
-                                        <Typography variant="body2" color="success.dark" gutterBottom>
-                                            Completed
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700} color="success.dark">
-                                            {completedCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        </Grid>
+                        <MetricsCards metrics={metrics} />
 
                         {/* Filters */}
                         <Paper sx={{ p: 2 }}>

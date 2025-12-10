@@ -51,8 +51,7 @@ export async function GET(request: NextRequest) {
     const isMyReportsRequest = query.reporterId === userId;
 
     // Role-based access control using security utility
-    // For "my reports" requests, show all statuses including drafts
-    // For general list, exclude drafts (unless it's the user's own)
+    // Drafts are now in localStorage only - never show drafts from DB
     const visibilityFilter = buildIncidentVisibilityFilter(
       {
         userId,
@@ -60,8 +59,8 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
       },
       {
-        includeDrafts: isMyReportsRequest, // Only include drafts when viewing own reports
-        myReportsOnly: isMyReportsRequest, // Restrict to own reports if specified
+        includeDrafts: false, // Drafts are localStorage only now
+        myReportsOnly: isMyReportsRequest,
       }
     );
 
@@ -69,14 +68,13 @@ export async function GET(request: NextRequest) {
       conditions.push(visibilityFilter);
     }
 
+    // Always exclude drafts from API results (legacy data protection)
+    conditions.push(ne(ovrReports.status, 'draft'));
+
     // Apply filters
-    // IMPORTANT: If status filter is 'draft', ensure user can only see their own drafts
     if (query.status) {
-      if (query.status === 'draft') {
-        // Only allow viewing own drafts
-        conditions.push(eq(ovrReports.status, 'draft'));
-        conditions.push(eq(ovrReports.reporterId, userId));
-      } else {
+      // Skip draft status filter - drafts are localStorage only
+      if (query.status !== 'draft') {
         conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
       }
     }
@@ -168,6 +166,7 @@ export async function POST(request: NextRequest) {
     const userId = parseInt(session.user.id);
 
     // Generate OVR ID using utility (DRY principle)
+    // All incidents from API are submitted (drafts are localStorage only)
     const ovrId = await generateOVRId();
 
     const newIncident = await db
@@ -218,9 +217,9 @@ export async function POST(request: NextRequest) {
         reporterDepartment: body.reporterDepartment || session.user.department,
         reporterPosition: body.reporterPosition || session.user.position,
 
-        // Status - New workflow: draft or submitted (goes to QI review)
-        status: body.status === 'draft' ? 'draft' : 'submitted',
-        submittedAt: body.status !== 'draft' ? new Date() : null,
+        // Status - Always submitted (drafts are localStorage only)
+        status: 'submitted',
+        submittedAt: new Date(),
       })
       .returning();
 

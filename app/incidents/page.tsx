@@ -2,65 +2,36 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
-import { formatErrorForAlert } from '@/lib/client/error-handler';
-import { useIncidents } from '@/lib/hooks';
+import { ErrorLayout } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { fadeIn } from '@/lib/theme';
-import { getStatusColor, getStatusLabel, STATUS_CONFIG } from '@/lib/utils/status';
-import type { OVRStatus } from '@/lib/utils/status';
-import {
-  Add,
-  Close,
-  FilterList,
-  Visibility
-} from '@mui/icons-material';
-import {
-  Alert,
-  alpha,
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Pagination,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography
-} from '@mui/material';
-import { format } from 'date-fns';
+import { useIncidents } from '@/lib/hooks';
+import { Add } from '@mui/icons-material';
+import { Box, Button, Stack } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import {
+  IncidentsHeader,
+  IncidentsFilters,
+  IncidentsList,
+  IncidentsPagination,
+  type IncidentFilters,
+} from './_shared';
+
+type SortColumn = 'createdAt' | 'occurrenceDate' | 'status';
 
 export default function IncidentsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'createdAt' | 'occurrenceDate' | 'status'>('createdAt');
+  const [filters, setFilters] = useState<IncidentFilters>({
+    search: '',
+    status: '',
+  });
+  const [sortBy, setSortBy] = useState<SortColumn>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-
-  // Status labels mapping - NO DRAFT (drafts never shown on this page)
-  const statusLabels = {
-    submitted: 'Submitted',
-    qi_review: 'QI Review',
-    investigating: 'Investigating',
-    qi_final_actions: 'Final Actions',
-    closed: 'Closed',
-  };
 
   const userRoles = session?.user?.roles || [];
   const canViewAllIncidents = ACCESS_CONTROL.api.incidents.canViewAll(userRoles);
@@ -74,56 +45,56 @@ export default function IncidentsPage() {
     }
   }, [sessionStatus, hasElevatedAccess, router]);
 
-  const { incidents, pagination, isLoading, error } = useIncidents({
-    page,
-    limit: 10,
-    sortBy,
-    sortOrder,
-    status: statusFilter || undefined,
-    search: searchTerm || undefined,
-  });
-
-  const handleSort = (key: typeof sortBy) => {
-    if (sortBy === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(key);
-      setSortOrder('desc');
-    }
-  };
-
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('');
-    setSortBy('createdAt');
-    setSortOrder('desc');
-    setPage(1);
-  };
-
-  const hasActiveFilters = searchTerm || statusFilter;
-
-  // Initialize filters from URL once on client (avoid useSearchParams)
+  // Initialize filters from URL once on client
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status') || '';
     // Don't allow 'draft' status filter on this page
     if (status && status !== 'draft') {
-      setStatusFilter(status);
+      setFilters((prev) => ({ ...prev, status }));
     }
   }, []);
 
+  const { incidents, pagination, isLoading, error } = useIncidents({
+    page,
+    limit: 10,
+    sortBy,
+    sortOrder,
+    status: filters.status || undefined,
+    search: filters.search || undefined,
+  });
+
+  const handleSort = (column: SortColumn) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ search: '', status: '' });
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+  };
+
+  const hasActiveFilters = Boolean(filters.search || filters.status);
+
   // Show loading while checking session or redirecting
-  if (sessionStatus === 'loading' || (!hasElevatedAccess && sessionStatus === 'authenticated')) {
+  if (
+    sessionStatus === 'loading' ||
+    (!hasElevatedAccess && sessionStatus === 'authenticated')
+  ) {
     return <LoadingFallback />;
   }
 
-  if (!!error) {
+  if (error) {
     return (
       <AppLayout>
-        <Alert severity="error" sx={{ mt: 4 }}>
-          Failed to load incidents. {formatErrorForAlert(error)}
-        </Alert>
+        <ErrorLayout error={error} onRetry={() => { }} />
       </AppLayout>
     );
   }
@@ -132,232 +103,66 @@ export default function IncidentsPage() {
     return <LoadingFallback />;
   }
 
+  const title = canViewAllIncidents ? 'All Incidents' : 'Team Incidents';
+  const subtitle = canViewAllIncidents
+    ? 'View and manage all OVR reports'
+    : 'View incidents from your team';
+
   return (
     <AppLayout>
       <Box>
-        <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+        >
           <Stack spacing={3}>
-            {/* Header */}
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Box>
-                <Typography variant="h4" gutterBottom fontWeight={700}>
-                  {canViewAllIncidents ? 'All Incidents' : 'Team Incidents'}
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  {canViewAllIncidents
-                    ? `View and manage all OVR reports (${pagination?.total || 0})`
-                    : `View incidents from your team (${pagination?.total || 0})`
-                  }
-                </Typography>
-              </Box>
-              <Button
-                component={Link}
-                href="/incidents/new"
-                variant="contained"
-                startIcon={<Add />}
-                sx={{ px: 3, py: 1.5 }}
-              >
-                New Report
-              </Button>
-            </Stack>
-
-            {/* Filters */}
-            <Stack direction="row" spacing={2} alignItems="center">
-              <TextField
-                placeholder="Search by reference or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                size="small"
-                sx={{ flex: 1 }}
-              />
-              <Button
-                startIcon={<FilterList />}
-                onClick={() => setFilterDialogOpen(true)}
-                variant={hasActiveFilters ? 'contained' : 'outlined'}
-                size="small"
-              >
-                Filter
-              </Button>
-              {hasActiveFilters && (
+            <IncidentsHeader
+              title={title}
+              subtitle={subtitle}
+              count={pagination?.total || 0}
+              actions={
                 <Button
-                  size="small"
-                  startIcon={<Close />}
-                  onClick={handleClearFilters}
-                  variant="outlined"
+                  component={Link}
+                  href="/incidents/new"
+                  variant="contained"
+                  startIcon={<Add />}
+                  sx={{ px: 3, py: 1.5 }}
                 >
-                  Clear
+                  New Report
                 </Button>
-              )}
-            </Stack>
+              }
+            />
 
-            {/* Filter Dialog */}
-            <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
-              <DialogTitle>Filter Incidents</DialogTitle>
-              <DialogContent sx={{ minWidth: 300, pt: 2 }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  SelectProps={{ native: true }}
-                >
-                  <option value="">All Statuses</option>
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </TextField>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setFilterDialogOpen(false)}>Close</Button>
-              </DialogActions>
-            </Dialog>
+            <IncidentsFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              excludeStatuses={['draft']}
+              useDialog={true}
+            />
 
-            {/* Table */}
-            <Paper>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05) }}>
-                      <TableCell sx={{ fontWeight: 600 }}>
-                        Reference #
-                      </TableCell>
-                      <TableCell
-                        onClick={() => handleSort('occurrenceDate')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Date {sortBy === 'occurrenceDate' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>
-                        Category
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>
-                        Reporter
-                      </TableCell>
-                      <TableCell
-                        onClick={() => handleSort('status')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell
-                        onClick={() => handleSort('createdAt')}
-                        sx={{ cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Created {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {incidents.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                          <Typography variant="body1" color="text.secondary">
-                            {hasActiveFilters
-                              ? 'No incidents match your filters.'
-                              : 'No incidents found.'}
-                          </Typography>
-                          {hasActiveFilters && (
-                            <Button
-                              variant="outlined"
-                              startIcon={<Close />}
-                              onClick={handleClearFilters}
-                              sx={{ mt: 2 }}
-                            >
-                              Clear Filters
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      incidents.map((incident) => (
-                        <TableRow
-                          key={incident.id}
-                          hover
-                          sx={{
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              backgroundColor: (theme) =>
-                                alpha(theme.palette.primary.main, 0.05),
-                            },
-                          }}
-                          onClick={() => router.push(`/incidents/view/${incident.id}`)}
-                        >
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={600}>
-                              {incident.id}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              variant="body2"
-                              sx={{ textTransform: 'capitalize' }}
-                            >
-                              {incident.occurrenceCategory.replace(/_/g, ' ')}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {incident.reporter
-                                ? `${incident.reporter.firstName} ${incident.reporter.lastName}`
-                                : 'Unknown'
-                              }
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={getStatusLabel(incident.status)}
-                              color={getStatusColor(incident.status) as any}
-                              size="small"
-                              sx={{
-                                fontWeight: 600,
-                                borderRadius: 1.5,
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(incident.createdAt), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              size="small"
-                              component={Link}
-                              href={`/incidents/view/${incident.id}`}
-                              startIcon={<Visibility fontSize="small" />}
-                            >
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
+            <IncidentsList
+              incidents={incidents}
+              isLoading={isLoading}
+              showReporter={true}
+              linkPrefix="/incidents/view"
+              linkQuery="source=all"
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={handleClearFilters}
+              sortable={true}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+            />
 
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <Box display="flex" justifyContent="center">
-                <Pagination
-                  count={pagination.totalPages}
-                  page={page}
-                  onChange={(_, value) => setPage(value)}
-                  color="primary"
-                  size="large"
-                />
-              </Box>
+            {pagination && (
+              <IncidentsPagination
+                page={page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.total}
+                itemsPerPage={10}
+                onPageChange={setPage}
+              />
             )}
           </Stack>
         </motion.div>

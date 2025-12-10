@@ -2,7 +2,9 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
+import { ReporterPreview } from '@/components/incident-form/ReporterPreview';
 import { PeoplePicker } from '@/components/shared';
+import { RichTextEditor, type EditorValue, getCharacterCount, serializeToPlainText } from '@/components/editor';
 import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
 import { useDepartmentsWithLocations } from '@/lib/hooks';
 import {
@@ -21,6 +23,14 @@ import {
   SENTINEL_EVENTS,
 } from '@/lib/constants';
 import { CreateIncidentInput } from '@/lib/api/schemas';
+import {
+  generateDraftId,
+  getDraftById,
+  saveDraft,
+  deleteDraft,
+  isDraftId,
+  type LocalDraft,
+} from '@/lib/utils/draft-storage';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import {
@@ -57,16 +67,11 @@ import { useCallback, useEffect, useState } from 'react';
 // Alias to CreateIncidentInput for form handling with Dayjs conversions
 // ============================================
 
-type FormData = CreateIncidentInput & {
+type FormData = Omit<CreateIncidentInput, 'description'> & {
   occurrenceDate: Dayjs | undefined;
   occurrenceTime: Dayjs | undefined;
+  description: EditorValue | undefined;
 };
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DRAFT_KEY = 'gh:draft:new';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -85,6 +90,7 @@ function getEmptyFormData(): FormData {
     if (/locationId$/i.test(k)) return undefined;
     if (/Id$/i.test(k)) return ''; // many "Id" fields are strings in the schema
     if (k === 'personInvolved') return 'patient';
+    if (k === 'description') return undefined; // EditorValue - starts as undefined
     return '';
   };
 
@@ -119,78 +125,85 @@ function getEmptyFormData(): FormData {
 }
 
 /**
- * Parses JSON draft from localStorage with Dayjs conversion
+ * Parses localStorage draft with Dayjs conversion
  */
-function parseDraftFromLocalStorage(draft: string): FormData {
-  const parsed = JSON.parse(draft);
-  return {
-    ...parsed,
-    occurrenceDate: parsed.occurrenceDate ? dayjs(parsed.occurrenceDate) : undefined,
-    occurrenceTime: parsed.occurrenceTime ? dayjs(parsed.occurrenceTime) : undefined,
-  };
-}
+function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
+  // Parse description from JSON string if stored
+  let description: EditorValue | undefined = undefined;
+  if (draft.description) {
+    if (typeof draft.description === 'string') {
+      try {
+        description = JSON.parse(draft.description);
+      } catch {
+        // If it's not valid JSON, ignore it (old format)
+        description = undefined;
+      }
+    } else {
+      description = draft.description as EditorValue;
+    }
+  }
 
-/**
- * Parses JSON draft from server API with Dayjs conversion
- */
-function parseDraftFromServer(data: Record<string, unknown>): FormData {
   return {
-    ...data,
-    occurrenceDate: data.occurrenceDate ? dayjs(data.occurrenceDate as string) : undefined,
-    occurrenceTime: data.occurrenceTime ? dayjs(data.occurrenceTime as string, 'HH:mm:ss') : undefined,
-  } as FormData;
+    ...draft,
+    occurrenceDate: draft.occurrenceDate ? dayjs(draft.occurrenceDate) : undefined,
+    occurrenceTime: draft.occurrenceTime ? dayjs(draft.occurrenceTime) : undefined,
+    description,
+  } as unknown as FormData;
 }
 
 /**
  * Converts FormData to API payload (Dayjs to string dates)
  */
-function preparePayload(formData: FormData, isDraft: boolean) {
+function preparePayload(formData: FormData) {
   return {
     ...formData,
     occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
-    status: isDraft ? 'draft' : 'submitted',
+    // Serialize rich text description to JSON string
+    description: formData.description ? JSON.stringify(formData.description) : '',
+    // Status is always submitted when sent to API (drafts are localStorage only)
+    status: 'submitted',
   };
 }
 
 /**
- * Fetches draft from server
+ * Converts FormData to LocalDraft for localStorage
  */
-async function fetchDraftFromServer(id: string): Promise<FormData | undefined> {
-  try {
-    const res = await fetch(`/api/incidents/${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      return parseDraftFromServer(data);
-    }
-    return undefined;
-  } catch (error) {
-    console.error('Failed to load draft from server:', error);
-    return undefined;
-  }
+function prepareLocalDraft(
+  formData: FormData,
+  draftId: string,
+  userId: number,
+  email: string,
+  existingCreatedAt?: string
+): LocalDraft {
+  return {
+    ...formData,
+    id: draftId,
+    reporterId: userId,
+    reporterEmail: email,
+    occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
+    occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
+    // Serialize rich text description to JSON string for localStorage
+    description: formData.description ? JSON.stringify(formData.description) : '',
+    createdAt: existingCreatedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as LocalDraft;
 }
 
 /**
- * Submits form data to API
+ * Submits form data to API (always creates as submitted)
  */
-async function submitForm(
-  formData: FormData,
-  isDraft: boolean,
-  draftId: string | null
-): Promise<{ success: boolean; id?: string }> { // ID is now string
+async function submitToApi(formData: FormData): Promise<{ success: boolean; id?: string }> {
   try {
-    const payload = preparePayload(formData, isDraft);
-    const url = draftId ? `/api/incidents/${draftId}` : '/api/incidents';
-    const method = draftId ? 'PATCH' : 'POST';
-
-    const res = await fetch(url, {
-      method,
+    const payload = preparePayload(formData);
+    const res = await fetch('/api/incidents', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json();
-    return res.ok ? { success: true, id: draftId || data.id } : { success: false };
+    return res.ok ? { success: true, id: data.id } : { success: false };
   } catch (error) {
     console.error('Error submitting:', error);
     return { success: false };
@@ -564,7 +577,7 @@ function ClassificationSection({
   formData: FormData;
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
-  const MAX_CHARS = 999;
+  const descriptionLength = formData.description ? getCharacterCount(formData.description) : 0;
   return (
     <Box sx={{ mb: 4 }}>
       <Typography
@@ -590,24 +603,24 @@ function ClassificationSection({
       </Box>
       <Grid container spacing={2} sx={{ mt: 2 }}>
         <Grid size={{ xs: 12 }}>
-          <Box sx={{ position: 'relative' }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Description of Occurrence / Variance *"
-              value={formData.description.slice(0, MAX_CHARS) || ''}
-              onChange={(e) => onChange('description', e.target.value)}
-              required
-              placeholder="Please provide a detailed description of what occurred..."
-              helperText="Please ensure the appropriate classification of Occurrence is selected above."
-            />
-            <Typography
-              variant="caption"
-              sx={{ position: 'absolute', bottom: 8, right: 8, color: 'text.secondary', fontSize: '0.75rem' }}
-            >
-              {MAX_CHARS - (formData.description?.length || 0)}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+              Description of Occurrence / Variance *
             </Typography>
+            <RichTextEditor
+              value={formData.description}
+              onChange={(value) => onChange('description', value)}
+              placeholder="Please provide a detailed description of what occurred..."
+              minHeight={150}
+            />
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Please ensure the appropriate classification of Occurrence is selected above.
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {descriptionLength} characters
+              </Typography>
+            </Stack>
           </Box>
         </Grid>
 
@@ -650,9 +663,17 @@ function ClassificationSection({
 function ImmediateActionsSection({
   formData,
   onChange,
+  selectedPhysician,
+  setSelectedPhysician,
+  isPhysicianManualMode,
+  setIsPhysicianManualMode,
 }: {
   formData: FormData;
   onChange: (key: keyof FormData, value: unknown) => void;
+  selectedPhysician: UserSearchResult | null;
+  setSelectedPhysician: (val: UserSearchResult | null) => void;
+  isPhysicianManualMode: boolean;
+  setIsPhysicianManualMode: (val: boolean) => void;
 }) {
   // Wrap onChange to handle confirm logic for clearing fields
   const handleChange = (key: keyof FormData, value: unknown) => {
@@ -753,26 +774,44 @@ function ImmediateActionsSection({
 
         {/* Physician Details - Name, ID, Signature & Date */}
         {formData.physicianNotified && (
-          <>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="Physician's Name"
-                required={!!formData.physicianSawPatient}
-                value={formData.physicianName || ''}
-                onChange={(e) => handleChange('physicianName', e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="Physician ID #"
-                required={!!formData.physicianSawPatient}
-                value={formData.physicianId || ''}
-                onChange={(e) => handleChange('physicianId', e.target.value)}
-              />
-            </Grid>
-          </>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <PeoplePicker
+              value={selectedPhysician}
+              onChange={(val) => {
+                setSelectedPhysician(val as UserSearchResult | null);
+                if (val && !Array.isArray(val)) {
+                  handleChange('physicianName', `${val.firstName} ${val.lastName}`.trim());
+                  handleChange('physicianId', val.id.toString());
+                }
+              }}
+              label={formData.physicianSawPatient ? "Physician's Name *" : "Physician's Name"}
+              placeholder="Search for physician..."
+              variant="ms-modern"
+              showManualToggle
+              onManualModeChange={(isManual) => setIsPhysicianManualMode(isManual)}
+              initialManualMode={isPhysicianManualMode}
+            >
+              {/* Manual entry fields */}
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Physician's Name"
+                  required={!!formData.physicianSawPatient}
+                  value={formData.physicianName || ''}
+                  onChange={(e) => handleChange('physicianName', e.target.value)}
+                  placeholder="Enter physician name manually"
+                />
+                <TextField
+                  fullWidth
+                  label="Physician ID #"
+                  required={!!formData.physicianSawPatient}
+                  value={formData.physicianId || ''}
+                  onChange={(e) => handleChange('physicianId', e.target.value)}
+                  placeholder="Enter physician ID manually"
+                />
+              </Stack>
+            </PeoplePicker>
+          </Grid>
         )}
 
         {formData.physicianSawPatient && (
@@ -1350,7 +1389,6 @@ function FormActions({
 
 export default function NewIncidentPage() {
   const router = useRouter();
-  const [draftId, setDraftId] = useState<string | null>(null);
   const { data: session } = useSession();
   const { departments, isLoading: isLoadingDepartments } = useDepartmentsWithLocations();
 
@@ -1358,44 +1396,65 @@ export default function NewIncidentPage() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
 
-  // Read draft id from URL once on client (avoid useSearchParams)
+  // Physician selection state
+  const [selectedPhysician, setSelectedPhysician] = useState<UserSearchResult | null>(null);
+  const [isPhysicianManualMode, setIsPhysicianManualMode] = useState(false);
+
+  // Draft management - using localStorage
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [existingDraftCreatedAt, setExistingDraftCreatedAt] = useState<string | undefined>();
+
+  // Read draft id from URL once on client
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const draft = params.get('draft');
-    if (draft) setDraftId(draft);
+    const draftParam = params.get('draft');
+    if (draftParam && isDraftId(draftParam)) {
+      setDraftId(draftParam);
+    }
   }, []);
 
-  // Initialize draft on mount
+  // Initialize draft on mount - load from localStorage
   useEffect(() => {
-    (async () => {
-      if (draftId) {
-        const draft = await fetchDraftFromServer(draftId);
-        if (draft) setFormData(draft);
+    if (draftId) {
+      // Load existing draft from localStorage
+      const existingDraft = getDraftById(draftId);
+      if (existingDraft) {
+        setFormData(parseDraftFromLocalStorage(existingDraft));
+        setExistingDraftCreatedAt(existingDraft.createdAt);
+        setDraftLoaded(true);
       } else {
-        const draft = localStorage.getItem(DRAFT_KEY);
-        if (draft) {
-          try {
-            setFormData(parseDraftFromLocalStorage(draft));
-          } catch (e) {
-            console.error('Failed to load draft:', e);
-          }
-        }
+        // Draft not found, generate new ID
+        const newDraftId = generateDraftId();
+        setDraftId(newDraftId);
+        setDraftLoaded(true);
       }
+    } else {
+      // New draft - generate ID
+      const newDraftId = generateDraftId();
+      setDraftId(newDraftId);
       setDraftLoaded(true);
-    })();
+    }
   }, [draftId]);
 
   // Auto-save to localStorage with debounce
   useEffect(() => {
-    if (!draftLoaded) return;
+    if (!draftLoaded || !session?.user || !draftId) return;
 
     const timer = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      const userId = parseInt(session.user.id);
+      const draft = prepareLocalDraft(
+        formData,
+        draftId,
+        userId,
+        session.user.email || '',
+        existingDraftCreatedAt
+      );
+      saveDraft(draft);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [formData, draftLoaded]);
+  }, [formData, draftLoaded, draftId, session?.user, existingDraftCreatedAt]);
 
   // Handle field changes
   const handleChange = useCallback((key: keyof FormData, value: unknown) => {
@@ -1404,18 +1463,41 @@ export default function NewIncidentPage() {
 
   // Clear draft
   const handleClearDraft = useCallback(() => {
-    localStorage.removeItem(DRAFT_KEY);
+    if (draftId) {
+      deleteDraft(draftId);
+    }
+    const newDraftId = generateDraftId();
+    setDraftId(newDraftId);
+    setExistingDraftCreatedAt(undefined);
     setFormData(getEmptyFormData());
-    setDraftLoaded(false);
-  }, []);
+  }, [draftId]);
 
-  // Submit handler
-  const handleSubmit = async (isDraft: boolean) => {
+  // Save draft handler (explicit save)
+  const handleSaveDraft = useCallback(() => {
+    if (!session?.user || !draftId) return;
+
+    const userId = parseInt(session.user.id);
+    const draft = prepareLocalDraft(
+      formData,
+      draftId,
+      userId,
+      session.user.email || '',
+      existingDraftCreatedAt
+    );
+    saveDraft(draft);
+    alert('Draft saved successfully!');
+  }, [formData, draftId, session?.user, existingDraftCreatedAt]);
+
+  // Submit handler - sends to API and deletes draft on success
+  const handleSubmit = async () => {
     setLoading(true);
-    const result = await submitForm(formData, isDraft, draftId);
+    const result = await submitToApi(formData);
 
     if (result.success) {
-      localStorage.removeItem(DRAFT_KEY);
+      // Delete draft from localStorage on successful submission
+      if (draftId) {
+        deleteDraft(draftId);
+      }
       router.replace(`/incidents/view/${result.id}`);
     } else {
       alert('Failed to submit report');
@@ -1443,6 +1525,8 @@ export default function NewIncidentPage() {
             >
               <OVRHeaderSection />
 
+              <ReporterPreview />
+
               <OccurrenceDetailsSection
                 formData={formData}
                 departments={departments}
@@ -1455,7 +1539,14 @@ export default function NewIncidentPage() {
 
               <ClassificationSection formData={formData} onChange={handleChange} />
 
-              <ImmediateActionsSection formData={formData} onChange={handleChange} />
+              <ImmediateActionsSection
+                formData={formData}
+                onChange={handleChange}
+                selectedPhysician={selectedPhysician}
+                setSelectedPhysician={setSelectedPhysician}
+                isPhysicianManualMode={isPhysicianManualMode}
+                setIsPhysicianManualMode={setIsPhysicianManualMode}
+              />
 
               <RiskIdentificationSection formData={formData} onChange={handleChange} />
 
@@ -1485,8 +1576,8 @@ export default function NewIncidentPage() {
 
                     <FormActions
                       loading={loading}
-                      onSaveDraft={() => handleSubmit(true)}
-                      onSubmit={() => handleSubmit(false)}
+                      onSaveDraft={handleSaveDraft}
+                      onSubmit={handleSubmit}
                     />
                   </Stack>
                 </Paper>

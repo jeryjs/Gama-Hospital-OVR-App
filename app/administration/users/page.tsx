@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { ErrorLayout } from '@/components/shared';
 import type { User, UserUpdate } from '@/lib/api/schemas';
 import { useUserManagement, useDepartments } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
@@ -916,9 +917,7 @@ export default function UsersManagementPage() {
 
             {/* Table */}
             {error && (
-              <Paper sx={{ p: 2, bgcolor: alpha('#EF4444', 0.1) }}>
-                <Typography color="error">Error loading users: {error.message}</Typography>
-              </Paper>
+              <ErrorLayout error={error} variant="inline" onRetry={() => refresh()} showBack={false} showHome={false} />
             )}
 
             <Paper>

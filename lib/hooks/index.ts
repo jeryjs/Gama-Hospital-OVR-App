@@ -19,7 +19,6 @@ export { useDashboardStats } from './useDashboardStats';
 export { useUserManagement } from './useUserManagement';
 export { useReportData, useIncidentTrends, useLocationComparison } from './useReportData';
 export { usePeopleSearch } from './usePeopleSearch';
-export { useDrafts } from './useDrafts';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
@@ -56,7 +55,6 @@ export type {
 export type { UseCommentsReturn } from './useComments';
 export type { UseUsersOptions, UseUsersReturn } from './useUsers';
 export type { UseDashboardStatsReturn, DashboardStats } from './useDashboardStats';
-export type { UseDraftsOptions, UseDraftsReturn } from './useDrafts';
 
 // Location & Department management types (re-exported from schemas)
 export type {

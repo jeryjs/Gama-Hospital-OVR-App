@@ -365,3 +365,26 @@ export function getRiskLevel(score: number): typeof RISK_LEVELS[number] {
 export function calculateRiskScore(impact: number, likelihood: number): number {
     return impact * likelihood;
 }
+
+// ============================================
+// BUILDING & FLOOR OPTIONS
+// ============================================
+
+/**
+ * Building and Floor options - Single source of truth
+ */
+export const LOCATION_OPTIONS = {
+    buildings: ['Main Building', 'East Wing', 'West Wing', 'North Tower', 'South Tower', 'Annex'] as const,
+    floors: ['B2', 'B1', 'G', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] as const,
+} as const;
+
+export type Building = typeof LOCATION_OPTIONS.buildings[number];
+export type Floor = typeof LOCATION_OPTIONS.floors[number];
+
+// ============================================
+// DRAFT STORAGE
+// ============================================
+
+export const DRAFT_STORAGE_KEY = 'ovr-app-drafts';
+export const DRAFT_STATUS = 'draft' as const;
+export const DRAFT_ID_PREFIX = 'DRAFT-';

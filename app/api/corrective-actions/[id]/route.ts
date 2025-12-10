@@ -5,7 +5,7 @@
  */
 
 import { db } from '@/db';
-import { ovrCorrectiveActions } from '@/db/schema';
+import { ovrCorrectiveActions, ovrSharedAccess } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
     AuthorizationError,
@@ -16,7 +16,7 @@ import {
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
 import { canAccessCorrectiveAction } from '@/lib/utils';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -56,7 +56,24 @@ export async function GET(
             throw new NotFoundError('Corrective Action');
         }
 
-        return NextResponse.json(action);
+        // Fetch shared access list if user has permission
+        let sharedAccess: any[] = [];
+        if (ACCESS_CONTROL.api.correctiveActions.canCreate(session.user.roles)) {
+            sharedAccess = await db
+                .select()
+                .from(ovrSharedAccess)
+                .where(
+                    and(
+                        eq(ovrSharedAccess.resourceType, 'corrective_action'),
+                        eq(ovrSharedAccess.resourceId, actionId)
+                    )
+                );
+        }
+
+        return NextResponse.json({
+            action,
+            sharedAccess,
+        });
     } catch (error) {
         return handleApiError(error);
     }

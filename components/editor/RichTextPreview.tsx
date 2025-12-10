@@ -5,7 +5,7 @@ import type { EditorValue, TElement, TText } from './plate-types';
 import { isEmptyValue } from './plate-types';
 
 interface RichTextPreviewProps {
-    value?: EditorValue;
+    value?: EditorValue | string | TElement | null;
     emptyText?: string;
 }
 
@@ -175,7 +175,7 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                 </Box>
             );
 
-        case 'a':
+        case 'a': {
             const linkNode = node as TElement & { url?: string };
             return (
                 <Link
@@ -195,6 +195,7 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     {children}
                 </Link>
             );
+        }
 
         case 'p':
         default:
@@ -221,11 +222,76 @@ function renderNode(node: unknown, index: number): React.ReactNode {
     }
 }
 
+/**
+ * Helper to normalize input to an array of nodes.
+ * Accepts:
+ * - EditorValue (array)
+ * - JSON string (which parses to array or single node)
+ * - single element node object
+ * - fallback: wrap plain string into a paragraph text node
+ */
+function normalizeValueToNodes(value: EditorValue | string | TElement | null | undefined): unknown[] {
+    if (!value) return [];
+
+    // If it's already an array of nodes (EditorValue)
+    if (Array.isArray(value)) return value;
+
+    // If it's a string, attempt JSON parse for serialized node(s)
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed;
+            if (isElementNode(parsed)) return [parsed];
+            // Not an element; render text inside a paragraph node
+            return [
+                {
+                    type: 'p',
+                    children: [{ text: String(parsed) }],
+                },
+            ];
+        } catch {
+            // Not JSON — treat as plain text
+            return [
+                {
+                    type: 'p',
+                    children: [{ text: value }],
+                },
+            ];
+        }
+    }
+
+    // If it's a single element node, wrap it into an array
+    if (isElementNode(value)) {
+        return [value];
+    }
+
+    // Unknown shape: return empty
+    return [];
+}
+
 export function RichTextPreview({
     value,
     emptyText = 'No content',
 }: RichTextPreviewProps) {
-    if (isEmptyValue(value)) {
+    // If it's a Plate Editor value (array) and empty, show emptyText.
+    // If a string or other formats are passed, we still handle them below.
+    if (isEmptyValue(Array.isArray(value) ? (value as EditorValue) : undefined)) {
+        return (
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'text.disabled',
+                    fontStyle: 'italic',
+                }}
+            >
+                {emptyText}
+            </Typography>
+        );
+    }
+
+    const nodes = normalizeValueToNodes(value);
+
+    if (!nodes || nodes.length === 0) {
         return (
             <Typography
                 variant="body2"
@@ -250,7 +316,7 @@ export function RichTextPreview({
                 },
             }}
         >
-            {value?.map((node, index) => renderNode(node, index))}
+            {nodes.map((node, index) => renderNode(node, index))}
         </Box>
     );
 }

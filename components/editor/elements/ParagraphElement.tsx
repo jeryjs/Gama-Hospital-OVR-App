@@ -3,7 +3,7 @@
 import { Typography } from '@mui/material';
 import type { PlateElementProps } from 'platejs/react';
 
-export function ParagraphElement({ children, attributes, ...props }: PlateElementProps) {
+export function ParagraphElement({ children, attributes }: PlateElementProps) {
     return (
         <Typography
             component="p"
@@ -20,7 +20,6 @@ export function ParagraphElement({ children, attributes, ...props }: PlateElemen
                     mb: 0,
                 },
             }}
-            {...props}
         >
             {children}
         </Typography>

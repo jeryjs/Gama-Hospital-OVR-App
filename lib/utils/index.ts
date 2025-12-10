@@ -64,5 +64,21 @@ export {
     getInvestigationsForIncident,
     getCorrectiveActionsForIncident,
     canEditIncident,
+    getUsersByIds,
+    populateInvestigationUsers,
+    populateActionUsers,
 } from './data-access';
 export type { UserContext } from './data-access';
+
+// Draft storage utilities (localStorage-based)
+export {
+    generateDraftId,
+    isDraftId,
+    getDraftsFromStorage,
+    getUserDrafts,
+    getDraftById,
+    saveDraft,
+    deleteDraft,
+    clearUserDrafts,
+} from './draft-storage';
+export type { LocalDraft } from './draft-storage';

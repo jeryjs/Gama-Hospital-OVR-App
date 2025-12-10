@@ -32,6 +32,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import { RichTextEditor, type EditorValue, getCharacterCount } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -62,20 +63,21 @@ export default function InvestigationDetailPage() {
         accessToken
     );
 
-    // Form state
-    const [findings, setFindings] = useState('');
-    const [problemsIdentified, setProblemsIdentified] = useState('');
+    // Form state - using EditorValue for rich text fields
+    const [findings, setFindings] = useState<EditorValue | undefined>();
+    const [problemsIdentified, setProblemsIdentified] = useState<EditorValue | undefined>();
     const [causeClassification, setCauseClassification] = useState('');
-    const [causeDetails, setCauseDetails] = useState('');
+    const [causeDetails, setCauseDetails] = useState<EditorValue | undefined>();
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
     useState(() => {
         if (investigation) {
-            setFindings(investigation.findings || '');
-            setProblemsIdentified(investigation.problemsIdentified || '');
+            // Rich text fields store JSON, parse if string
+            setFindings(investigation.findings ? (typeof investigation.findings === 'string' ? JSON.parse(investigation.findings) : investigation.findings) : undefined);
+            setProblemsIdentified(investigation.problemsIdentified ? (typeof investigation.problemsIdentified === 'string' ? JSON.parse(investigation.problemsIdentified) : investigation.problemsIdentified) : undefined);
             setCauseClassification(investigation.causeClassification || '');
-            setCauseDetails(investigation.causeDetails || '');
+            setCauseDetails(investigation.causeDetails ? (typeof investigation.causeDetails === 'string' ? JSON.parse(investigation.causeDetails) : investigation.causeDetails) : undefined);
         }
     });
 
@@ -88,10 +90,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await update({
-                findings: findings.trim() || undefined,
-                problemsIdentified: problemsIdentified.trim() || undefined,
+                findings: findings ? JSON.stringify(findings) : undefined,
+                problemsIdentified: problemsIdentified ? JSON.stringify(problemsIdentified) : undefined,
                 causeClassification: causeClassification.trim() || undefined,
-                causeDetails: causeDetails.trim() || undefined,
+                causeDetails: causeDetails ? JSON.stringify(causeDetails) : undefined,
             });
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
@@ -101,7 +103,10 @@ export default function InvestigationDetailPage() {
     const handleSubmit = async () => {
         if (!canEdit) return;
 
-        if (!findings.trim() || !problemsIdentified.trim()) {
+        const findingsCount = findings ? getCharacterCount(findings) : 0;
+        const problemsCount = problemsIdentified ? getCharacterCount(problemsIdentified) : 0;
+
+        if (findingsCount < 10 || problemsCount < 10) {
             alert('Findings and Problems Identified are required');
             return;
         }
@@ -112,10 +117,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await submit({
-                findings: findings.trim(),
-                problemsIdentified: problemsIdentified.trim(),
+                findings: findings ? JSON.stringify(findings) : '',
+                problemsIdentified: problemsIdentified ? JSON.stringify(problemsIdentified) : '',
                 causeClassification: causeClassification.trim(),
-                causeDetails: causeDetails.trim(),
+                causeDetails: causeDetails ? JSON.stringify(causeDetails) : '',
             });
 
             alert('Investigation submitted successfully!');
@@ -163,11 +168,13 @@ export default function InvestigationDetailPage() {
                 {/* Header */}
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                        {isQIUser && (
-                            <IconButton component={Link} href="/incidents/investigations" size="small">
-                                <ArrowBack />
-                            </IconButton>
-                        )}
+                        <IconButton
+                            component={Link}
+                            href={investigation ? `/incidents/view/${investigation.ovrReportId}` : '/incidents'}
+                            size="small"
+                        >
+                            <ArrowBack />
+                        </IconButton>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h5" fontWeight={700}>
                                 Investigation INV-{investigation.id}
@@ -222,31 +229,37 @@ export default function InvestigationDetailPage() {
                                 />
                                 <CardContent>
                                     <Stack spacing={3}>
-                                        <TextField
-                                            label="Findings"
-                                            multiline
-                                            rows={4}
-                                            fullWidth
-                                            required
-                                            value={findings}
-                                            onChange={(e) => setFindings(e.target.value)}
-                                            placeholder="Describe what was discovered during the investigation..."
-                                            disabled={!canEdit}
-                                            helperText={`${findings.length} characters`}
-                                        />
+                                        <Box>
+                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                                Findings *
+                                            </Typography>
+                                            <RichTextEditor
+                                                value={findings}
+                                                onChange={setFindings}
+                                                placeholder="Describe what was discovered during the investigation..."
+                                                minHeight={150}
+                                                disabled={!canEdit}
+                                            />
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                {findings ? getCharacterCount(findings) : 0} characters
+                                            </Typography>
+                                        </Box>
 
-                                        <TextField
-                                            label="Problems Identified"
-                                            multiline
-                                            rows={4}
-                                            fullWidth
-                                            required
-                                            value={problemsIdentified}
-                                            onChange={(e) => setProblemsIdentified(e.target.value)}
-                                            placeholder="List the problems that contributed to the incident..."
-                                            disabled={!canEdit}
-                                            helperText={`${problemsIdentified.length} characters`}
-                                        />
+                                        <Box>
+                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                                Problems Identified *
+                                            </Typography>
+                                            <RichTextEditor
+                                                value={problemsIdentified}
+                                                onChange={setProblemsIdentified}
+                                                placeholder="List the problems that contributed to the incident..."
+                                                minHeight={150}
+                                                disabled={!canEdit}
+                                            />
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                {problemsIdentified ? getCharacterCount(problemsIdentified) : 0} characters
+                                            </Typography>
+                                        </Box>
 
                                         <TextField
                                             label="Cause Classification"
@@ -257,17 +270,21 @@ export default function InvestigationDetailPage() {
                                             disabled={!canEdit}
                                         />
 
-                                        <TextField
-                                            label="Cause Details"
-                                            multiline
-                                            rows={3}
-                                            fullWidth
-                                            value={causeDetails}
-                                            onChange={(e) => setCauseDetails(e.target.value)}
-                                            placeholder="Provide detailed explanation of the root cause..."
-                                            disabled={!canEdit}
-                                            helperText={`${causeDetails.length} characters`}
-                                        />
+                                        <Box>
+                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                                Cause Details
+                                            </Typography>
+                                            <RichTextEditor
+                                                value={causeDetails}
+                                                onChange={setCauseDetails}
+                                                placeholder="Provide detailed explanation of the root cause..."
+                                                minHeight={120}
+                                                disabled={!canEdit}
+                                            />
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                {causeDetails ? getCharacterCount(causeDetails) : 0} characters
+                                            </Typography>
+                                        </Box>
 
                                         {canEdit && (
                                             <Stack direction="row" spacing={2} justifyContent="flex-end">
@@ -281,7 +298,7 @@ export default function InvestigationDetailPage() {
                                                 <Button
                                                     variant="contained"
                                                     onClick={handleSubmit}
-                                                    disabled={!findings.trim() || !problemsIdentified.trim() || submitting}
+                                                    disabled={!(findings && getCharacterCount(findings) >= 10) || !(problemsIdentified && getCharacterCount(problemsIdentified) >= 10) || submitting}
                                                 >
                                                     {submitting ? 'Submitting...' : 'Submit Investigation'}
                                                 </Button>

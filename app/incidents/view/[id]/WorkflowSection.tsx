@@ -8,12 +8,15 @@
 'use client';
 
 import { Box, Divider } from '@mui/material';
+import { RichTextPreview, type EditorValue } from '@/components/editor';
 import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
 import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
+import { CorrectiveActionsSummary } from '@/components/incident-form/CorrectiveActionsSummary';
 import { InvestigationManagement } from '@/components/incident-form/InvestigationManagement';
+import { InvestigationSummary } from '@/components/incident-form/InvestigationSummary';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
 import { QIReviewSection } from '@/components/incident-form/QIReviewSection';
-import type { OVRReportWithRelations } from '@/lib/types';
+import type { OVRReportWithRelations } from '@/lib/api/schemas';
 import { useState } from 'react';
 
 interface WorkflowSectionProps {
@@ -98,9 +101,10 @@ export function WorkflowSection({
 
                 {/* Investigation Summary (read-only) */}
                 {incident.investigation && (
-                    <Box sx={{ mb: 3 }}>
-                        <InvestigationSummary investigation={incident.investigation} />
-                    </Box>
+                    <InvestigationSummary
+                        investigation={incident.investigation}
+                        incidentId={incident.id}
+                    />
                 )}
 
                 {/* Corrective Actions Management */}
@@ -136,9 +140,15 @@ export function WorkflowSection({
 
                 {/* Investigation Summary */}
                 {incident.investigation && (
-                    <Box sx={{ mb: 3 }}>
-                        <InvestigationSummary investigation={incident.investigation} />
-                    </Box>
+                    <InvestigationSummary
+                        investigation={incident.investigation}
+                        incidentId={incident.id}
+                    />
+                )}
+
+                {/* Corrective Actions Summary */}
+                {incident.correctiveActions && incident.correctiveActions.length > 0 && (
+                    <CorrectiveActionsSummary actions={incident.correctiveActions} />
                 )}
 
                 {/* QI Feedback (legacy section) */}
@@ -168,71 +178,28 @@ export function WorkflowSection({
 }
 
 /**
- * Investigation Summary Component (Read-Only)
- * Displays completed investigation details
+ * Helper to parse rich text value from string or EditorValue
  */
-function InvestigationSummary({ investigation }: { investigation: any }) {
-    return (
-        <Box
-            sx={{
-                bgcolor: 'background.paper',
-                p: 3,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-            }}
-        >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Box
-                    sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        bgcolor: 'success.main',
-                    }}
-                />
-                <Box sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                    Investigation Summary
-                </Box>
-            </Box>
-
-            {investigation.findings && (
-                <Box sx={{ mb: 2 }}>
-                    <Box sx={{ fontWeight: 500, mb: 0.5, color: 'text.secondary' }}>
-                        Findings:
-                    </Box>
-                    <Box sx={{ pl: 2 }}>{investigation.findings}</Box>
-                </Box>
-            )}
-
-            {investigation.problemsIdentified && (
-                <Box sx={{ mb: 2 }}>
-                    <Box sx={{ fontWeight: 500, mb: 0.5, color: 'text.secondary' }}>
-                        Problems Identified:
-                    </Box>
-                    <Box sx={{ pl: 2 }}>{investigation.problemsIdentified}</Box>
-                </Box>
-            )}
-
-            {investigation.causeClassification && (
-                <Box sx={{ mb: 2 }}>
-                    <Box sx={{ fontWeight: 500, mb: 0.5, color: 'text.secondary' }}>
-                        Cause Classification:
-                    </Box>
-                    <Box sx={{ pl: 2 }}>{investigation.causeClassification}</Box>
-                </Box>
-            )}
-
-            {investigation.causeDetails && (
-                <Box>
-                    <Box sx={{ fontWeight: 500, mb: 0.5, color: 'text.secondary' }}>
-                        Cause Details:
-                    </Box>
-                    <Box sx={{ pl: 2 }}>{investigation.causeDetails}</Box>
-                </Box>
-            )}
-        </Box>
-    );
+function parseRichTextValue(value: unknown): EditorValue | undefined {
+    if (!value) return undefined;
+    if (typeof value === 'string') {
+        // Try to parse as JSON (rich text)
+        try {
+            const parsed = JSON.parse(value);
+            // If parsed is an array, assume it's EditorValue
+            if (Array.isArray(parsed)) return parsed as EditorValue;
+        } catch {
+            // Not JSON, treat as markdown (legacy)
+            // Convert markdown string to EditorValue format
+            return [
+                {
+                    type: 'paragraph',
+                    children: [{ text: value }],
+                },
+            ] as EditorValue;
+        }
+    }
+    return value as EditorValue;
 }
 
 /**
@@ -250,6 +217,9 @@ function CaseReviewSummary({
     closedBy: number | null;
     closedAt: Date | null;
 }) {
+    const parsedCaseReview = parseRichTextValue(caseReview);
+    const parsedReporterFeedback = parseRichTextValue(reporterFeedback);
+
     return (
         <Box
             sx={{
@@ -279,7 +249,12 @@ function CaseReviewSummary({
                     <Box sx={{ fontWeight: 500, mb: 0.5, color: 'success.dark' }}>
                         Case Review:
                     </Box>
-                    <Box sx={{ pl: 2, color: 'text.primary' }}>{caseReview}</Box>
+                    <Box sx={{ pl: 2, color: 'text.primary' }}>
+                        <RichTextPreview
+                            value={parsedCaseReview}
+                            emptyText="No case review provided"
+                        />
+                    </Box>
                 </Box>
             )}
 
@@ -288,7 +263,12 @@ function CaseReviewSummary({
                     <Box sx={{ fontWeight: 500, mb: 0.5, color: 'success.dark' }}>
                         Feedback to Reporter:
                     </Box>
-                    <Box sx={{ pl: 2, color: 'text.primary' }}>{reporterFeedback}</Box>
+                    <Box sx={{ pl: 2, color: 'text.primary' }}>
+                        <RichTextPreview
+                            value={parsedReporterFeedback}
+                            emptyText="No feedback provided"
+                        />
+                    </Box>
                 </Box>
             )}
 

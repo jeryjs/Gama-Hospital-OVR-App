@@ -1,7 +1,7 @@
 'use client';
 
-import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
+import { ErrorLayout } from '@/components/shared';
 import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
 import { CompletionAnimation } from '@/components/incident-form/CompletionAnimation';
 import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
@@ -14,7 +14,7 @@ import { QIReviewSection } from '@/components/incident-form/QIReviewSection';
 import { RiskClassificationSection } from '@/components/incident-form/RiskClassificationSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
 import { useIncident } from '@/lib/hooks';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
@@ -22,7 +22,6 @@ import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
 import { WorkflowSection } from './WorkflowSection';
-import { formatErrorForAlert } from '@/lib/client/error-handler';
 
 // Inner component that fetches data
 function IncidentDetails() {
@@ -35,15 +34,7 @@ function IncidentDetails() {
   if (isLoading) return <LoadingFallback />;
 
   if (error || !incident) {
-    return (
-      <AppLayout>
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" color="error">
-            Error loading incident: {formatErrorForAlert(error)}
-          </Typography>
-        </Box>
-      </AppLayout>
-    );
+    return <ErrorLayout error={error} onRetry={() => mutate()} />;
   }
 
   // Handle successful closure
@@ -53,8 +44,8 @@ function IncidentDetails() {
   };
 
   return (
-    <AppLayout>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
+    <>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 4 }}>
         <IncidentHeader incident={incident} />
 
         {/* Show timeline only after submission */}
@@ -100,7 +91,7 @@ function IncidentDetails() {
         incidentId={incident.id}
         onClose={() => setShowCompletion(false)}
       />
-    </AppLayout>
+    </>
   );
 }
 

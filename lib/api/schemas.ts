@@ -154,6 +154,8 @@ export function getDetailColumns() {
 
 /**
  * Relation configurations - reusable for both list and detail
+ * Note: investigations.investigators and correctiveActions.assignedTo are integer arrays
+ * User details must be fetched separately and populated by the API
  */
 export const incidentRelations = {
   reporter: {
@@ -200,23 +202,48 @@ export const incidentRelations = {
   },
 } as const;
 
+// ============================================
+// EXTENDED SCHEMAS WITH USER DETAILS
+// For API responses that include populated user data
+// ============================================
+
+// Investigator user info (populated from investigators integer array)
+export const investigatorSchema = userSelectSchema.pick({
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  department: true,
+  profilePicture: true,
+});
+
+// Assignee user info (populated from assignedTo integer array)
+export const assigneeSchema = userSelectSchema.pick({
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  profilePicture: true,
+});
+
+// Investigation with populated investigators
+export const investigationWithUsersSchema = investigationSelectSchema.extend({
+  investigatorUsers: z.array(investigatorSchema).optional(),
+});
+
+// Corrective Action with populated assignees
+export const correctiveActionWithUsersSchema = correctiveActionSelectSchema.extend({
+  assigneeUsers: z.array(assigneeSchema).optional(),
+});
+
 // OVR Report with relations (used by detail view)
 export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   reporter: userPublicSchema.optional(),
   location: locationMinimalSchema.optional(),
   supervisor: userMinimalSchema.optional(),
   involvedPerson: userPublicSchema.optional(),
-  investigation: z.object({
-    id: z.number(),
-    findings: z.string().nullable(),
-    submittedAt: z.string().nullable(),
-  }).optional(),
-  correctiveActions: z.array(z.object({
-    id: z.number(),
-    title: z.string(),
-    status: z.string(),
-    dueDate: z.string(),
-  })).optional(),
+  investigation: investigationWithUsersSchema.nullable().optional(),
+  correctiveActions: z.array(correctiveActionWithUsersSchema).optional(),
   sharedAccess: z.array(z.object({
     id: z.number(),
     email: z.string(),
@@ -262,9 +289,13 @@ export type DepartmentWithLocations = z.infer<typeof departmentWithLocationsSche
 
 export type Investigation = z.infer<typeof investigationSelectSchema>;
 export type InvestigationInsert = z.infer<typeof investigationInsertSchema>;
+export type InvestigationWithUsers = z.infer<typeof investigationWithUsersSchema>;
+export type Investigator = z.infer<typeof investigatorSchema>;
 
 export type CorrectiveAction = z.infer<typeof correctiveActionSelectSchema>;
 export type CorrectiveActionInsert = z.infer<typeof correctiveActionInsertSchema>;
+export type CorrectiveActionWithUsers = z.infer<typeof correctiveActionWithUsersSchema>;
+export type Assignee = z.infer<typeof assigneeSchema>;
 
 export type SharedAccess = z.infer<typeof sharedAccessSelectSchema>;
 export type SharedAccessInsert = z.infer<typeof sharedAccessInsertSchema>;

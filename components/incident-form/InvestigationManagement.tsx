@@ -9,6 +9,7 @@
 
 import {
     Alert,
+    Avatar,
     Box,
     Button,
     Card,
@@ -35,10 +36,12 @@ import {
     Email as EmailIcon,
     Link as LinkIcon,
     PersonAdd as PersonAddIcon,
+    OpenInNew as OpenIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useInvestigation, useSharedAccess } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import Link from 'next/link';
 
 interface InvestigationManagementProps {
     incidentId: string;
@@ -209,6 +212,23 @@ export function InvestigationManagement({
             />
 
             <CardContent>
+                {/* Investigation Info & Link */}
+                <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" color="text.secondary">
+                            Investigation ID: <strong>INV-{investigationId}</strong>
+                        </Typography>
+                        <Button
+                            component={Link}
+                            href={`/incidents/investigations/${investigationId}`}
+                            size="small"
+                            endIcon={<OpenIcon />}
+                        >
+                            Open Investigation
+                        </Button>
+                    </Stack>
+                </Box>
+
                 {/* Investigators List */}
                 {sharedAccess.length === 0 ? (
                     <Alert severity="info">
@@ -252,7 +272,9 @@ export function InvestigationManagement({
                                 <ListItemText
                                     primary={
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <EmailIcon fontSize="small" color="action" />
+                                            <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
+                                                {access.email[0].toUpperCase()}
+                                            </Avatar>
                                             <Typography variant="body1">{access.email}</Typography>
                                             <Chip
                                                 label={access.status}

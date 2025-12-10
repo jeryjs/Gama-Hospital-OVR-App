@@ -8,7 +8,6 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { StatusDisplay } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveActions } from '@/lib/hooks';
@@ -18,10 +17,7 @@ import {
     Alert,
     Box,
     Button,
-    Card,
-    CardContent,
     Chip,
-    Grid,
     LinearProgress,
     MenuItem,
     Paper,
@@ -36,12 +32,13 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { format, isAfter, isPast } from 'date-fns';
+import { format, isPast } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { IncidentsHeader, MetricsCards } from '../_shared';
 
 /**
  * Corrective Actions List Page
@@ -91,6 +88,14 @@ export default function CorrectiveActionsPage() {
         (action: CorrectiveActionListItem) => action.status === 'open' && isPast(new Date(action.dueDate))
     ).length || 0;
 
+    // Build metrics for MetricsCards
+    const metrics = [
+        { label: 'Total Actions', value: totalCount, color: 'default' as const },
+        { label: 'Open', value: openCount, color: 'warning' as const },
+        { label: 'Closed', value: closedCount, color: 'success' as const },
+        { label: 'Overdue', value: overdueCount, color: 'error' as const },
+    ];
+
     return (
         <AppLayout>
             <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
@@ -100,67 +105,12 @@ export default function CorrectiveActionsPage() {
                     transition={{ duration: 0.3 }}
                 >
                     <Stack spacing={3}>
-                        {/* Header */}
-                        <Box>
-                            <Typography variant="h4" fontWeight={700} gutterBottom>
-                                Corrective Actions
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Track and manage corrective action items
-                            </Typography>
-                        </Box>
+                        <IncidentsHeader
+                            title="Corrective Actions"
+                            subtitle="Track and manage corrective action items"
+                        />
 
-                        {/* Metrics Cards */}
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                                            Total Actions
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700}>
-                                            {totalCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card sx={{ bgcolor: 'warning.lighter' }}>
-                                    <CardContent>
-                                        <Typography variant="body2" color="warning.dark" gutterBottom>
-                                            Open
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700} color="warning.dark">
-                                            {openCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card sx={{ bgcolor: 'success.lighter' }}>
-                                    <CardContent>
-                                        <Typography variant="body2" color="success.dark" gutterBottom>
-                                            Closed
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700} color="success.dark">
-                                            {closedCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                                <Card sx={{ bgcolor: overdueCount > 0 ? 'error.lighter' : 'background.paper' }}>
-                                    <CardContent>
-                                        <Typography variant="body2" color={overdueCount > 0 ? 'error.dark' : 'text.secondary'} gutterBottom>
-                                            Overdue
-                                        </Typography>
-                                        <Typography variant="h3" fontWeight={700} color={overdueCount > 0 ? 'error.dark' : 'text.primary'}>
-                                            {overdueCount}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        </Grid>
+                        <MetricsCards metrics={metrics} />
 
                         {/* Filters */}
                         <Paper sx={{ p: 2 }}>

@@ -9,3 +9,6 @@ export type {
   Comment,
   CommentWithUser,
 } from '@/lib/types';
+
+// Filter types for shared components
+export type { IncidentFilters } from './IncidentsFilters';

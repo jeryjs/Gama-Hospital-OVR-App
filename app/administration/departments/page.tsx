@@ -4,15 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AppLayout } from '@/components/AppLayout';
-import { useDepartmentManagement, useDepartmentsWithLocations, useUsers } from '@/lib/hooks';
-import type { DepartmentWithLocations, DepartmentCreate, DepartmentUpdate, LocationForDepartment, LocationCreate } from '@/lib/api/schemas';
+import { useDepartmentManagement, useDepartmentsWithLocations } from '@/lib/hooks';
+import type { DepartmentWithLocations, DepartmentCreate, DepartmentUpdate, LocationForDepartment, LocationCreate, UserSearchResult } from '@/lib/api/schemas';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { generateDepartmentCode } from '@/lib/utils/departments';
+import { LOCATION_OPTIONS } from '@/lib/constants';
+import { PeoplePicker } from '@/components/shared/PeoplePicker';
 import {
     Add,
     Business,
-    CheckCircle,
-    Close,
     Delete,
     DragIndicator,
     Edit,
@@ -22,6 +21,7 @@ import {
     Warning,
     Apartment,
     KeyboardArrowRight,
+    FolderOff,
 } from '@mui/icons-material';
 import {
     alpha,
@@ -55,35 +55,8 @@ import {
     Grid,
     Card,
     CardContent,
-    InputAdornment,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// ============================================
-// CODE PREVIEW HELPER
-// ============================================
-function CodePreview({ name, existingCodes }: { name: string; existingCodes: string[] }) {
-    const suggestedCode = useMemo(() => {
-        if (!name.trim()) return '';
-        return generateDepartmentCode(name, existingCodes);
-    }, [name, existingCodes]);
-
-    if (!suggestedCode) return null;
-
-    return (
-        <Chip
-            label={suggestedCode}
-            size="small"
-            sx={{
-                bgcolor: alpha('#6366F1', 0.15),
-                color: '#6366F1',
-                fontWeight: 600,
-                fontFamily: 'monospace',
-                ml: 1,
-            }}
-        />
-    );
-}
 
 // ============================================
 // CREATE DEPARTMENT DIALOG
@@ -92,17 +65,16 @@ interface CreateDepartmentDialogProps {
     open: boolean;
     onClose: () => void;
     onSave: (data: DepartmentCreate) => Promise<void>;
-    users: { id: number; firstName: string; lastName: string }[];
-    existingCodes: string[];
 }
 
-function CreateDepartmentDialog({ open, onClose, onSave, users, existingCodes }: CreateDepartmentDialogProps) {
+function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialogProps) {
     const [formData, setFormData] = useState<DepartmentCreate>({
         name: '',
         code: undefined,
         headId: undefined,
         isActive: true,
     });
+    const [selectedHead, setSelectedHead] = useState<UserSearchResult | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -115,8 +87,12 @@ function CreateDepartmentDialog({ open, onClose, onSave, users, existingCodes }:
         setSaving(true);
         setError('');
         try {
-            await onSave(formData);
+            await onSave({
+                ...formData,
+                headId: selectedHead?.id,
+            });
             setFormData({ name: '', code: undefined, headId: undefined, isActive: true });
+            setSelectedHead(null);
             onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create department');
@@ -127,6 +103,7 @@ function CreateDepartmentDialog({ open, onClose, onSave, users, existingCodes }:
 
     const handleClose = () => {
         setFormData({ name: '', code: undefined, headId: undefined, isActive: true });
+        setSelectedHead(null);
         setError('');
         onClose();
     };
@@ -141,46 +118,22 @@ function CreateDepartmentDialog({ open, onClose, onSave, users, existingCodes }:
                     </Alert>
                 )}
                 <Stack spacing={2} sx={{ mt: 1 }}>
-                    <Box>
-                        <TextField
-                            label="Department Name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            fullWidth
-                            required
-                            placeholder="e.g., Emergency Medicine"
-                            InputProps={{
-                                endAdornment: formData.name && (
-                                    <InputAdornment position="end">
-                                        <CodePreview name={formData.name} existingCodes={existingCodes} />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            helperText="Code will be auto-generated from name"
-                        />
-                    </Box>
-                    <FormControl fullWidth>
-                        <InputLabel>Department Head (Optional)</InputLabel>
-                        <Select
-                            value={formData.headId || ''}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    headId: e.target.value ? Number(e.target.value) : undefined,
-                                })
-                            }
-                            label="Department Head (Optional)"
-                        >
-                            <MenuItem value="">
-                                <em>None</em>
-                            </MenuItem>
-                            {users.map((user) => (
-                                <MenuItem key={user.id} value={user.id}>
-                                    {user.firstName} {user.lastName}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <TextField
+                        label="Department Name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        fullWidth
+                        required
+                        placeholder="e.g., Emergency Medicine"
+                    />
+                    <PeoplePicker
+                        value={selectedHead}
+                        onChange={(val) => setSelectedHead(val as UserSearchResult | null)}
+                        label="Department Head (Optional)"
+                        placeholder="Search for department head..."
+                        filterByRoles={['supervisor', 'quality_manager', 'executive', 'facility_manager']}
+                        variant="ms-modern"
+                    />
                     <FormControlLabel
                         control={
                             <Switch
@@ -275,22 +228,38 @@ function AddLocationDialog({ open, department, onClose, onSave }: AddLocationDia
                     />
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Building"
-                                value={formData.building}
-                                onChange={(e) => setFormData({ ...formData, building: e.target.value })}
-                                fullWidth
-                                placeholder="e.g., Main Building"
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Building</InputLabel>
+                                <Select
+                                    value={formData.building}
+                                    onChange={(e) => setFormData({ ...formData, building: e.target.value })}
+                                    label="Building"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {LOCATION_OPTIONS.buildings.map((building) => (
+                                        <MenuItem key={building} value={building}>{building}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Floor"
-                                value={formData.floor}
-                                onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                                fullWidth
-                                placeholder="e.g., 3rd Floor"
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Floor</InputLabel>
+                                <Select
+                                    value={formData.floor}
+                                    onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                                    label="Floor"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {LOCATION_OPTIONS.floors.map((floor) => (
+                                        <MenuItem key={floor} value={floor}>Floor {floor}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                     </Grid>
                     <FormControlLabel
@@ -599,20 +568,38 @@ function EditLocationDialog({ open, location, departmentId, onClose, onSave }: E
                     />
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Building"
-                                value={formData.building}
-                                onChange={(e) => setFormData({ ...formData, building: e.target.value })}
-                                fullWidth
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Building</InputLabel>
+                                <Select
+                                    value={formData.building}
+                                    onChange={(e) => setFormData({ ...formData, building: e.target.value })}
+                                    label="Building"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {LOCATION_OPTIONS.buildings.map((building) => (
+                                        <MenuItem key={building} value={building}>{building}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Floor"
-                                value={formData.floor}
-                                onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                                fullWidth
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Floor</InputLabel>
+                                <Select
+                                    value={formData.floor}
+                                    onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                                    label="Floor"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {LOCATION_OPTIONS.floors.map((floor) => (
+                                        <MenuItem key={floor} value={floor}>Floor {floor}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                     </Grid>
                     <FormControlLabel
@@ -646,11 +633,11 @@ interface EditDepartmentDialogProps {
     department: DepartmentWithLocations | null;
     onClose: () => void;
     onSave: (id: number, data: DepartmentUpdate) => Promise<void>;
-    users: { id: number; firstName: string; lastName: string }[];
 }
 
-function EditDepartmentDialog({ open, department, onClose, onSave, users }: EditDepartmentDialogProps) {
+function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartmentDialogProps) {
     const [formData, setFormData] = useState<DepartmentUpdate>({});
+    const [selectedHead, setSelectedHead] = useState<UserSearchResult | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -658,10 +645,23 @@ function EditDepartmentDialog({ open, department, onClose, onSave, users }: Edit
         if (department) {
             setFormData({
                 name: department.name,
-                code: department.code,
                 headId: department.headOfDepartment ?? undefined,
                 isActive: department.isActive,
             });
+            // Set selected head from department data
+            if (department.head) {
+                setSelectedHead({
+                    id: department.head.id,
+                    firstName: department.head.firstName,
+                    lastName: department.head.lastName,
+                    email: '', // Not available in minimal schema
+                    department: null,
+                    profilePicture: null,
+                    roles: [],
+                });
+            } else {
+                setSelectedHead(null);
+            }
         }
     }, [department]);
 
@@ -675,7 +675,10 @@ function EditDepartmentDialog({ open, department, onClose, onSave, users }: Edit
         setSaving(true);
         setError('');
         try {
-            await onSave(department.id, formData);
+            await onSave(department.id, {
+                ...formData,
+                headId: selectedHead?.id,
+            });
             onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update department');
@@ -703,35 +706,14 @@ function EditDepartmentDialog({ open, department, onClose, onSave, users }: Edit
                         fullWidth
                         required
                     />
-                    <TextField
-                        label="Code"
-                        value={formData.code || ''}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                        fullWidth
-                        inputProps={{ maxLength: 20 }}
+                    <PeoplePicker
+                        value={selectedHead}
+                        onChange={(val) => setSelectedHead(val as UserSearchResult | null)}
+                        label="Department Head"
+                        placeholder="Search for department head..."
+                        filterByRoles={['supervisor', 'quality_manager', 'executive', 'facility_manager']}
+                        variant="ms-modern"
                     />
-                    <FormControl fullWidth>
-                        <InputLabel>Department Head</InputLabel>
-                        <Select
-                            value={formData.headId || ''}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    headId: e.target.value ? Number(e.target.value) : undefined,
-                                })
-                            }
-                            label="Department Head"
-                        >
-                            <MenuItem value="">
-                                <em>None</em>
-                            </MenuItem>
-                            {users.map((user) => (
-                                <MenuItem key={user.id} value={user.id}>
-                                    {user.firstName} {user.lastName}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
                     <FormControlLabel
                         control={
                             <Switch
@@ -791,8 +773,6 @@ export default function DepartmentsManagementPage() {
         deleteDepartment: removeDepartment,
     } = useDepartmentManagement({ includeLocations: true });
 
-    const { users } = useUsers({ fetchAll: true });
-
     // Permission checks
     const userRoles = session?.user?.roles || [];
     const canCreate = ACCESS_CONTROL.api.locations.canCreate(userRoles);
@@ -824,19 +804,14 @@ export default function DepartmentsManagementPage() {
         }
     }, [departments, selectedDepartment]);
 
-    // Filter departments by search
+    // Filter departments by search (name only, code is internal)
     const filteredDepartments = useMemo(() => {
         if (!search.trim()) return departments;
         const searchLower = search.toLowerCase();
         return departments.filter(
-            (dept) =>
-                dept.name.toLowerCase().includes(searchLower) ||
-                dept.code.toLowerCase().includes(searchLower)
+            (dept) => dept.name.toLowerCase().includes(searchLower)
         );
     }, [departments, search]);
-
-    // Get existing codes for code generation
-    const existingCodes = useMemo(() => departments.map(d => d.code), [departments]);
 
     // Handlers
     const handleCreateDepartment = async (data: DepartmentCreate) => {
@@ -994,27 +969,14 @@ export default function DepartmentsManagementPage() {
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={
-                                                        <Stack direction="row" alignItems="center" spacing={1}>
-                                                            <Typography variant="body2" fontWeight={600} noWrap>
-                                                                {dept.name}
-                                                            </Typography>
-                                                            <Chip
-                                                                label={dept.code}
-                                                                size="small"
-                                                                sx={{
-                                                                    height: 18,
-                                                                    fontSize: '0.65rem',
-                                                                    fontWeight: 600,
-                                                                    fontFamily: 'monospace',
-                                                                    bgcolor: alpha('#6366F1', 0.1),
-                                                                    color: '#6366F1',
-                                                                }}
-                                                            />
-                                                        </Stack>
+                                                        <Typography variant="body2" fontWeight={600} noWrap>
+                                                            {dept.name}
+                                                        </Typography>
                                                     }
                                                     secondary={
                                                         <Typography variant="caption" color="text.secondary">
                                                             {dept.locations?.length || 0} location{(dept.locations?.length || 0) !== 1 ? 's' : ''}
+                                                            {dept.head && <> • {dept.head.firstName} {dept.head.lastName}</>}
                                                         </Typography>
                                                     }
                                                 />
@@ -1058,16 +1020,6 @@ export default function DepartmentsManagementPage() {
                                                         <Typography variant="h6" fontWeight={700}>
                                                             {selectedDepartment.name}
                                                         </Typography>
-                                                        <Chip
-                                                            label={selectedDepartment.code}
-                                                            size="small"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                fontFamily: 'monospace',
-                                                                bgcolor: alpha('#6366F1', 0.15),
-                                                                color: '#6366F1',
-                                                            }}
-                                                        />
                                                         {!selectedDepartment.isActive && (
                                                             <Chip
                                                                 label="Inactive"
@@ -1209,8 +1161,6 @@ export default function DepartmentsManagementPage() {
                 open={createDeptDialogOpen}
                 onClose={() => setCreateDeptDialogOpen(false)}
                 onSave={handleCreateDepartment}
-                users={users}
-                existingCodes={existingCodes}
             />
 
             <EditDepartmentDialog
@@ -1218,7 +1168,6 @@ export default function DepartmentsManagementPage() {
                 department={editDepartment}
                 onClose={() => setEditDepartment(null)}
                 onSave={handleUpdateDepartment}
-                users={users}
             />
 
             <DeleteDepartmentDialog

@@ -35,6 +35,92 @@ export interface UserContext {
 }
 
 /**
+ * Fetch users by IDs for populating investigators/assignees
+ * Returns a map for efficient lookup
+ * 
+ * @param userIds - Array of user IDs to fetch
+ * @returns Map of userId -> user object
+ */
+export async function getUsersByIds(userIds: number[]): Promise<Map<number, {
+    id: number;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    department: string | null;
+    profilePicture: string | null;
+}>> {
+    if (!userIds.length) return new Map();
+
+    const fetchedUsers = await db
+        .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email,
+            department: users.department,
+            profilePicture: users.profilePicture,
+        })
+        .from(users)
+        .where(inArray(users.id, userIds));
+
+    return new Map(fetchedUsers.map(u => [u.id, u]));
+}
+
+/**
+ * Populate investigation with user details
+ * Converts investigator IDs array to full user objects
+ */
+export async function populateInvestigationUsers<T extends { investigators: number[] | null }>(
+    investigation: T
+): Promise<T & {
+    investigatorUsers: Array<{
+        id: number;
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
+        department: string | null;
+        profilePicture: string | null;
+    }>
+}> {
+    const userIds = investigation.investigators || [];
+    const usersMap = await getUsersByIds(userIds);
+
+    return {
+        ...investigation,
+        investigatorUsers: userIds
+            .map(id => usersMap.get(id))
+            .filter((u): u is NonNullable<typeof u> => u !== undefined),
+    };
+}
+
+/**
+ * Populate corrective action with user details
+ * Converts assignedTo IDs array to full user objects
+ */
+export async function populateActionUsers<T extends { assignedTo: number[] | null }>(
+    action: T
+): Promise<T & {
+    assigneeUsers: Array<{
+        id: number;
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
+        profilePicture: string | null;
+    }>
+}> {
+    const userIds = action.assignedTo || [];
+    const usersMap = await getUsersByIds(userIds);
+
+    return {
+        ...action,
+        assigneeUsers: userIds
+            .map(id => usersMap.get(id))
+            .filter((u): u is NonNullable<typeof u> => u !== undefined)
+            .map(({ department, ...rest }) => rest), // Exclude department for assignees
+    };
+}
+
+/**
  * Build WHERE clause for incident visibility based on user roles
  * This is the SINGLE SOURCE OF TRUTH for who can see which incidents
  * 
@@ -116,33 +202,50 @@ export function buildIncidentVisibilityFilter(
 
 /**
  * Securely fetch a single incident with access control
- * Returns 404 if not found OR if user doesn't have access (no information leak)
+ * 
+ * IMPORTANT: This function separates "not found" from "no permission":
+ * - If incident doesn't exist → throws NotFoundError (404)
+ * - If incident exists but user has no permission → throws AuthorizationError (403)
  * 
  * @param incidentId - Incident ID
  * @param userContext - Current user
- * @returns Incident or throws NotFoundError
+ * @returns Incident or throws NotFoundError/AuthorizationError
  */
 export async function getIncidentSecure(
     incidentId: string,
     userContext: UserContext
 ) {
+    // Step 1: Check if incident EXISTS (without permission check)
+    const [existingIncident] = await db
+        .select()
+        .from(ovrReports)
+        .where(eq(ovrReports.id, incidentId))
+        .limit(1);
+
+    // If incident doesn't exist at all, return 404
+    if (!existingIncident) {
+        throw new NotFoundError('Incident');
+    }
+
+    // Step 2: Check if user has permission to view this incident
     const visibilityFilter = buildIncidentVisibilityFilter(userContext);
 
     const whereConditions = visibilityFilter
         ? and(eq(ovrReports.id, incidentId), visibilityFilter)
         : eq(ovrReports.id, incidentId);
 
-    const [incident] = await db
+    const [accessibleIncident] = await db
         .select()
         .from(ovrReports)
         .where(whereConditions)
         .limit(1);
 
-    if (!incident) {
-        throw new NotFoundError('Incident');
+    // Incident exists but user doesn't have permission → 403
+    if (!accessibleIncident) {
+        throw new AuthorizationError('You do not have permission to view this incident');
     }
 
-    return incident;
+    return accessibleIncident;
 }
 
 /**

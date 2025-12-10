@@ -14,9 +14,9 @@ import {
     Card,
     CardContent,
     CardHeader,
-    TextField,
     Typography,
 } from '@mui/material';
+import { RichTextEditor, type EditorValue, getCharacterCount } from '@/components/editor';
 import {
     CheckCircle as CompleteIcon,
     Warning as WarningIcon,
@@ -41,16 +41,16 @@ export function CaseReviewSection({
     allActionsClosed,
     onSuccess,
 }: CaseReviewSectionProps) {
-    const [caseReview, setCaseReview] = useState('');
-    const [reporterFeedback, setReporterFeedback] = useState('');
+    const [caseReview, setCaseReview] = useState<EditorValue | undefined>();
+    const [reporterFeedback, setReporterFeedback] = useState<EditorValue | undefined>();
 
     const { performAction, submitting } = useIncidentActions(incidentId, onSuccess);
     const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const handleSubmit = async () => {
         const payload: CloseIncidentInput = {
-            caseReview: caseReview.trim(),
-            reporterFeedback: reporterFeedback.trim(),
+            caseReview: caseReview ? JSON.stringify(caseReview) : '',
+            reporterFeedback: reporterFeedback ? JSON.stringify(reporterFeedback) : '',
         };
 
         try {
@@ -64,9 +64,11 @@ export function CaseReviewSection({
         }
     };
 
-    // Smart validation
-    const isCaseReviewValid = caseReview.trim().length >= 100;
-    const isFeedbackValid = reporterFeedback.trim().length >= 50;
+    // Smart validation using getCharacterCount for rich text
+    const caseReviewLength = caseReview ? getCharacterCount(caseReview) : 0;
+    const feedbackLength = reporterFeedback ? getCharacterCount(reporterFeedback) : 0;
+    const isCaseReviewValid = caseReviewLength >= 100;
+    const isFeedbackValid = feedbackLength >= 50;
     const canSubmit = allActionsClosed && isCaseReviewValid && isFeedbackValid && !submitting;
 
     return (
@@ -110,36 +112,46 @@ export function CaseReviewSection({
                 )}
 
                 {/* Case Review */}
-                <TextField
-                    label="Case Review"
-                    multiline
-                    rows={6}
-                    fullWidth
-                    required
-                    value={caseReview}
-                    onChange={(e) => setCaseReview(e.target.value)}
-                    placeholder="Provide a comprehensive review of the case, including summary of findings, actions taken, and lessons learned (min 100 characters)..."
-                    helperText={`${caseReview.length}/100 minimum characters`}
-                    error={caseReview.length > 0 && caseReview.length < 100}
-                    disabled={!allActionsClosed}
-                    sx={{ mb: 3 }}
-                />
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                        Case Review *
+                    </Typography>
+                    <RichTextEditor
+                        value={caseReview}
+                        onChange={setCaseReview}
+                        placeholder="Provide a comprehensive review of the case, including summary of findings, actions taken, and lessons learned (min 100 characters)..."
+                        minHeight={200}
+                        disabled={!allActionsClosed}
+                    />
+                    <Typography
+                        variant="caption"
+                        color={caseReviewLength > 0 && caseReviewLength < 100 ? 'error.main' : 'text.secondary'}
+                        sx={{ mt: 0.5, display: 'block' }}
+                    >
+                        {caseReviewLength}/100 minimum characters
+                    </Typography>
+                </Box>
 
                 {/* Reporter Feedback */}
-                <TextField
-                    label="Feedback to Reporter"
-                    multiline
-                    rows={4}
-                    fullWidth
-                    required
-                    value={reporterFeedback}
-                    onChange={(e) => setReporterFeedback(e.target.value)}
-                    placeholder="Provide feedback to the reporter about the incident resolution and any follow-up actions (min 50 characters)..."
-                    helperText={`${reporterFeedback.length}/50 minimum characters`}
-                    error={reporterFeedback.length > 0 && reporterFeedback.length < 50}
-                    disabled={!allActionsClosed}
-                    sx={{ mb: 3 }}
-                />
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                        Feedback to Reporter *
+                    </Typography>
+                    <RichTextEditor
+                        value={reporterFeedback}
+                        onChange={setReporterFeedback}
+                        placeholder="Provide feedback to the reporter about the incident resolution and any follow-up actions (min 50 characters)..."
+                        minHeight={150}
+                        disabled={!allActionsClosed}
+                    />
+                    <Typography
+                        variant="caption"
+                        color={feedbackLength > 0 && feedbackLength < 50 ? 'error.main' : 'text.secondary'}
+                        sx={{ mt: 0.5, display: 'block' }}
+                    >
+                        {feedbackLength}/50 minimum characters
+                    </Typography>
+                </Box>
 
                 {/* Close Button */}
                 <Button

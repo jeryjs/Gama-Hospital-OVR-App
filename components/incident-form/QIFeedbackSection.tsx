@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { RichTextEditor, RichTextPreview, type EditorValue, getCharacterCount } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
@@ -29,7 +30,14 @@ interface Props {
 
 export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
-  const [feedback, setFeedback] = useState(incident.qiFeedback || '');
+  // Initialize feedback from existing value (parse JSON if string)
+  const [feedback, setFeedback] = useState<EditorValue | undefined>(() => {
+    if (!incident.qiFeedback) return undefined;
+    if (typeof incident.qiFeedback === 'string') {
+      try { return JSON.parse(incident.qiFeedback); } catch { return undefined; }
+    }
+    return incident.qiFeedback as EditorValue;
+  });
   const [formComplete, setFormComplete] = useState(incident.qiFormComplete || false);
   const [causeIdentified, setCauseIdentified] = useState(incident.qiProperCauseIdentified || false);
   const [timeframe, setTimeframe] = useState(incident.qiProperTimeframe || false);
@@ -43,13 +51,14 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const isClosed = incident.status === 'closed';
 
   const handleSubmit = async () => {
-    if (!feedback.trim() || !severityLevel) {
+    const feedbackLength = feedback ? getCharacterCount(feedback) : 0;
+    if (feedbackLength < 10 || !severityLevel) {
       alert('Please provide feedback and select severity level');
       return;
     }
 
     const result = await performAction('close-incident', {
-      feedback,
+      feedback: feedback ? JSON.stringify(feedback) : '',
       formComplete,
       causeIdentified,
       timeframe,
@@ -89,16 +98,17 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
       <Box sx={{ mt: 3 }}>
         {canSubmit ? (
           <Stack spacing={3}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="QI Feedback *"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Provide quality improvement feedback..."
-              required
-            />
+            <Box>
+              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                QI Feedback *
+              </Typography>
+              <RichTextEditor
+                value={feedback}
+                onChange={setFeedback}
+                placeholder="Provide quality improvement feedback..."
+                minHeight={150}
+              />
+            </Box>
 
             <Box>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -175,9 +185,10 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
                   border: (theme) => `1px solid ${theme.palette.divider}`,
                 }}
               >
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {incident.qiFeedback}
-                </Typography>
+                <RichTextPreview
+                  value={typeof incident.qiFeedback === 'string' ? (() => { try { return JSON.parse(incident.qiFeedback); } catch { return undefined; } })() : incident.qiFeedback}
+                  emptyText="No feedback provided"
+                />
               </Box>
             )}
 

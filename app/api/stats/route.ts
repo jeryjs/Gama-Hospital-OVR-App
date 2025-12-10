@@ -55,7 +55,7 @@ async function getAvgResolutionTime() {
 
 /**
  * Get status counts grouped by status
- * EXCLUDES drafts from all counts (drafts are private)
+ * Excludes drafts (drafts are localStorage only now)
  */
 async function getStatusCounts() {
   const statusResults = await db
@@ -64,11 +64,10 @@ async function getStatusCounts() {
       count: sql<number>`COUNT(*)::int`,
     })
     .from(ovrReports)
-    .where(sql`${ovrReports.status} != 'draft'`) // Exclude drafts from stats
+    .where(ne(ovrReports.status, 'draft')) // Exclude legacy drafts
     .groupBy(ovrReports.status);
 
   const byStatus = {
-    draft: 0, // Always 0 in public stats
     submitted: 0,
     qi_review: 0,
     investigating: 0,
@@ -77,7 +76,7 @@ async function getStatusCounts() {
   };
 
   statusResults.forEach((result) => {
-    if (result.status in byStatus && result.status !== 'draft') {
+    if (result.status in byStatus) {
       byStatus[result.status as keyof typeof byStatus] = result.count;
     }
   });
@@ -87,11 +86,11 @@ async function getStatusCounts() {
 
 /**
  * Get recent incidents with reporter information
- * EXCLUDES drafts (drafts are private to their reporters)
+ * Excludes drafts (drafts are localStorage only now)
  */
 async function getRecentIncidents(limit = 10, whereClause?: any) {
   // Build where clause that always excludes drafts
-  const draftExclusionClause = sql`${ovrReports.status} != 'draft'`;
+  const draftExclusionClause = ne(ovrReports.status, 'draft');
   const finalWhereClause = whereClause
     ? and(whereClause, draftExclusionClause)
     : draftExclusionClause;
@@ -137,12 +136,12 @@ function getFirstDayOfMonth() {
 
 /**
  * Get user's report counts by status
+ * Excludes drafts (drafts are localStorage only now)
  */
 async function getUserReportCounts(userId: number) {
   const result = await db
     .select({
-      total: sql<number>`COUNT(*)::int`,
-      drafts: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} = 'draft')::int`,
+      total: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} != 'draft')::int`,
       inProgress: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} IN ('submitted', 'qi_review', 'investigating', 'qi_final_actions'))::int`,
       resolved: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} = 'closed')::int`,
     })
@@ -151,7 +150,6 @@ async function getUserReportCounts(userId: number) {
 
   return {
     total: result[0]?.total || 0,
-    drafts: result[0]?.drafts || 0,
     inProgress: result[0]?.inProgress || 0,
     resolved: result[0]?.resolved || 0,
   };
@@ -166,7 +164,7 @@ async function getAdminStats() {
   const [totalResult] = await db
     .select({ count: count() })
     .from(ovrReports)
-    .where(sql`${ovrReports.status} != 'draft'`);
+    .where(ne(ovrReports.status, 'draft'));
   const byStatus = await getStatusCounts();
 
   // Incidents by department (top 10) - excludes drafts
@@ -176,7 +174,7 @@ async function getAdminStats() {
       count: count(),
     })
     .from(ovrReports)
-    .where(sql`${ovrReports.status} != 'draft'`)
+    .where(ne(ovrReports.status, 'draft'))
     .groupBy(ovrReports.locationId)
     .orderBy(desc(count()))
     .limit(10);
@@ -200,8 +198,6 @@ async function getAdminStats() {
 
   return {
     total: totalResult?.count || 0,
-    drafts: byStatus.draft,
-    // submitted: byStatus.submitted,
     resolved: byStatus.closed,
     byStatus,
     byDepartment,
@@ -216,7 +212,7 @@ async function getQualityManagerStats() {
   const [totalResult] = await db
     .select({ count: count() })
     .from(ovrReports)
-    .where(sql`${ovrReports.status} != 'draft'`);
+    .where(ne(ovrReports.status, 'draft'));
   const byStatus = await getStatusCounts();
 
   const [closedThisMonthResult] = await db
@@ -229,8 +225,6 @@ async function getQualityManagerStats() {
 
   return {
     total: totalResult?.count || 0,
-    drafts: byStatus.draft,
-    // submitted: byStatus.submitted,
     resolved: byStatus.closed,
     byStatus,
     byDepartment: [],
@@ -241,11 +235,8 @@ async function getQualityManagerStats() {
   };
 }
 
-// getDepartmentHeadStats removed - HOD role eliminated
-
 async function getSupervisorStats(userId: number) {
   // OPTIMIZED: Parallel queries where possible
-  // REMOVED: Pending approval queries - incidents go directly to QI now
   const [myReports, myRecentReports, [teamReportsResult]] = await Promise.all([
     getUserReportCounts(userId),
 
@@ -257,19 +248,21 @@ async function getSupervisorStats(userId: number) {
         createdAt: ovrReports.createdAt,
       })
       .from(ovrReports)
-      .where(eq(ovrReports.reporterId, userId))
+      .where(and(
+        eq(ovrReports.reporterId, userId),
+        ne(ovrReports.status, 'draft') // Exclude drafts
+      ))
       .orderBy(desc(ovrReports.createdAt))
       .limit(5),
 
-    db.select({ count: sql<number>`COUNT(*)::int` }).from(ovrReports),
+    db.select({ count: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} != 'draft')::int` }).from(ovrReports),
   ]);
 
   return {
     total: 0,
-    drafts: 0,
     submitted: 0,
     resolved: 0,
-    byStatus: { draft: 0, submitted: 0, qi_review: 0, investigating: 0, qi_final_actions: 0, closed: 0 },
+    byStatus: { submitted: 0, qi_review: 0, investigating: 0, qi_final_actions: 0, closed: 0 },
     byDepartment: [],
     recentIncidents: [],
     activeUsers: 0,
@@ -291,17 +284,18 @@ async function getEmployeeStats(userId: number) {
       createdAt: ovrReports.createdAt,
     })
     .from(ovrReports)
-    .where(eq(ovrReports.reporterId, userId))
+    .where(and(
+      eq(ovrReports.reporterId, userId),
+      ne(ovrReports.status, 'draft') // Exclude drafts
+    ))
     .orderBy(desc(ovrReports.createdAt))
     .limit(5);
 
   return {
     total: myReports.total,
-    drafts: myReports.drafts,
     submitted: 0,
     resolved: myReports.resolved,
     byStatus: {
-      draft: 0,
       submitted: 0,
       qi_review: 0,
       investigating: 0,

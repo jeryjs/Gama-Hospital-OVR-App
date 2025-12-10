@@ -12,7 +12,7 @@ import {
   getDetailColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
-import { getIncidentSecure, canEditIncident } from '@/lib/utils';
+import { getIncidentSecure, canEditIncident, populateInvestigationUsers, populateActionUsers } from '@/lib/utils';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -38,7 +38,26 @@ export async function GET(
       with: incidentRelations,
     });
 
-    return NextResponse.json(fullIncident);
+    if (!fullIncident) {
+      return NextResponse.json(fullIncident);
+    }
+
+    // Populate user details for investigation and corrective actions
+    const enrichedIncident = { ...fullIncident } as any;
+
+    // Populate investigators in investigation
+    if (fullIncident.investigation) {
+      enrichedIncident.investigation = await populateInvestigationUsers(fullIncident.investigation);
+    }
+
+    // Populate assignees in corrective actions
+    if (fullIncident.correctiveActions?.length) {
+      enrichedIncident.correctiveActions = await Promise.all(
+        fullIncident.correctiveActions.map(action => populateActionUsers(action))
+      );
+    }
+
+    return NextResponse.json(enrichedIncident);
   } catch (error) {
     return handleApiError(error);
   }

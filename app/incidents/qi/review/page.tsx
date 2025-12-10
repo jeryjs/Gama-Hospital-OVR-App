@@ -10,18 +10,13 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   LinearProgress,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Table,
   TableBody,
@@ -38,24 +33,36 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import {
+  IncidentsHeader,
+  IncidentsFilters,
+  MetricsCards,
+  type IncidentFilters,
+} from '../../_shared';
+
+// Category options for filtering
+const CATEGORY_OPTIONS = [
+  { value: 'fall', label: 'Fall' },
+  { value: 'medication', label: 'Medication' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'procedure', label: 'Procedure' },
+  { value: 'other', label: 'Other' },
+];
 
 /**
  * QI Review Queue Page
  * 
  * Purpose: Manage submitted incidents awaiting QI review
  * Distinct from QI Dashboard - this is the action queue
- * 
- * Features:
- * - Shows ONLY 'submitted' status incidents
- * - Quick approve/reject actions
- * - Filtering and search
- * - Metrics cards
  */
 export default function QIReviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [filters, setFilters] = useState<IncidentFilters>({
+    search: '',
+    status: '', // Always 'submitted' for this page
+    category: '',
+  });
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject' | null>(null);
@@ -69,11 +76,11 @@ export default function QIReviewPage() {
     }
   }, [session, router]);
 
-  // Fetch submitted incidents
+  // Fetch submitted incidents only
   const { incidents, pagination, isLoading, error, mutate } = useIncidents({
     status: 'submitted',
-    search: searchTerm || undefined,
-    category: categoryFilter || undefined,
+    search: filters.search || undefined,
+    category: filters.category || undefined,
     page: 1,
     limit: 20,
     sortBy: 'createdAt',
@@ -144,6 +151,12 @@ export default function QIReviewPage() {
 
   const pendingCount = incidents?.length || 0;
 
+  // Build metrics for cards
+  const metrics = [
+    { label: 'Pending Review', value: pendingCount, color: 'warning' as const },
+    { label: 'Total Records', value: pagination?.total || 0, color: 'default' as const },
+  ];
+
   return (
     <AppLayout>
       <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
@@ -153,72 +166,23 @@ export default function QIReviewPage() {
           transition={{ duration: 0.3 }}
         >
           <Stack spacing={3}>
-            {/* Header */}
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                QI Review Queue
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Review and approve/reject submitted incidents before investigation
-              </Typography>
-            </Box>
+            <IncidentsHeader
+              title="QI Review Queue"
+              subtitle="Review and approve/reject submitted incidents before investigation"
+            />
 
-            {/* Metrics Cards */}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Pending Review
-                    </Typography>
-                    <Typography variant="h3" fontWeight={700}>
-                      {pendingCount}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Total Records
-                    </Typography>
-                    <Typography variant="h3" fontWeight={700}>
-                      {pagination?.total || 0}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+            <MetricsCards metrics={metrics} />
 
-            {/* Filters */}
-            <Paper sx={{ p: 2 }}>
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  placeholder="Search by reference or description..."
-                  size="small"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  sx={{ flex: 1 }}
-                />
-                <Select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  size="small"
-                  displayEmpty
-                  sx={{ minWidth: 200 }}
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  <MenuItem value="fall">Fall</MenuItem>
-                  <MenuItem value="medication">Medication</MenuItem>
-                  <MenuItem value="equipment">Equipment</MenuItem>
-                  <MenuItem value="procedure">Procedure</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
-                </Select>
-              </Stack>
-            </Paper>
+            <IncidentsFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              showCategoryFilter={true}
+              categories={CATEGORY_OPTIONS}
+              useDialog={false}
+              searchPlaceholder="Search by reference or description..."
+            />
 
-            {/* Incidents Table */}
+            {/* Incidents Table - Custom for QI Review with Review action */}
             <Paper>
               <TableContainer>
                 <Table>

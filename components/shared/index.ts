@@ -36,3 +36,8 @@ export type { QuickActionsPanelProps, QuickAction } from './QuickActionsPanel';
 
 export { PeoplePicker } from './PeoplePicker';
 export type { PeoplePickerProps } from './PeoplePicker';
+
+export { ErrorLayout } from './ErrorLayout';
+export type { ErrorLayoutProps, ErrorVariant } from './ErrorLayout';
+
+export { ReporterCard } from './ReporterCard';

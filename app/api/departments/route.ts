@@ -154,19 +154,12 @@ export async function POST(request: NextRequest) {
 
         const body = await validateBody(request, departmentCreateSchema);
 
-        // Auto-generate code if not provided
-        let code = body.code;
-        if (!code || code.trim() === '') {
-            const existingDepts = await db
-                .select({ code: departments.code })
-                .from(departments);
-            const existingCodes = existingDepts.map(d => d.code);
-            code = generateDepartmentCode(body.name, existingCodes);
-        }
+        // Always auto-generate internal code (never user-provided)
+        const code = generateDepartmentCode(body.name);
 
         const [newDepartment] = await db.insert(departments).values({
             name: body.name,
-            code: code.toUpperCase(),
+            code,
             headOfDepartment: body.headId,
             isActive: body.isActive ?? true,
         }).returning();

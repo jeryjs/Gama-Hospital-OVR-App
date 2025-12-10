@@ -3,6 +3,7 @@
 import { AppLayout } from '@/components/AppLayout';
 import { EmptyState, QuickActionsPanel, RecentIncidentsList, StatCard } from '@/components/shared';
 import type { DashboardStats } from '@/lib/hooks';
+import { getUserDrafts } from '@/lib/utils/draft-storage';
 import { fadeIn } from '@/lib/theme';
 import {
   Add,
@@ -15,21 +16,33 @@ import {
 import { alpha, Box, Button, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function EmployeeDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
   const router = useRouter();
 
+  // Get draft count from localStorage
+  const [localDraftCount, setLocalDraftCount] = useState(0);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      const userId = parseInt(session.user.id);
+      const drafts = getUserDrafts(userId);
+      setLocalDraftCount(drafts.length);
+    }
+  }, [session?.user?.id]);
+
   const statCards = [
     { title: 'Total Reports', value: stats.myReports?.total || 0, icon: <Description fontSize="large" />, color: 'primary' as const, subtitle: 'All time' },
-    { title: 'Drafts', value: stats.myReports?.drafts || 0, icon: <Edit fontSize="large" />, color: 'warning' as const, subtitle: 'Not submitted', onClick: () => router.push('/incidents?status=draft&mine=true') },
+    { title: 'Drafts', value: localDraftCount, icon: <Edit fontSize="large" />, color: 'warning' as const, subtitle: 'Saved locally', onClick: () => router.push('/incidents/me') },
     { title: 'In Progress', value: stats.myReports?.inProgress || 0, icon: <PendingActions fontSize="large" />, color: 'info' as const, subtitle: 'Being reviewed' },
     { title: 'Resolved', value: stats.myReports?.resolved || 0, icon: <CheckCircle fontSize="large" />, color: 'success' as const, subtitle: 'Completed' },
   ];
 
   const quickActions = [
     { label: 'Report New Incident', icon: <Add />, href: '/incidents/new' },
-    { label: `Continue Draft (${stats.myReports?.drafts || 0})`, icon: <Edit />, href: '/incidents?status=draft&mine=true', count: stats.myReports?.drafts },
-    { label: 'View All My Reports', icon: <Visibility />, href: '/incidents?mine=true' },
+    { label: `Continue Draft (${localDraftCount})`, icon: <Edit />, href: '/incidents/me', count: localDraftCount },
+    { label: 'View All My Reports', icon: <Visibility />, href: '/incidents/me' },
   ];
 
   const myRecentReports = (stats.myRecentReports || []).slice(0, 5).map((report) => ({
@@ -85,7 +98,7 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                       💡 Quick Tip
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Reports are automatically saved as drafts. You can come back anytime to complete them.
+                      Reports are automatically saved as drafts in your browser. You can come back anytime to complete them.
                     </Typography>
                   </Box>
                 </Paper>
@@ -98,7 +111,7 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                     incidents={myRecentReports}
                     title="My Recent Reports"
                     showViewAll
-                    onViewAll={() => router.push('/incidents?mine=true')}
+                    onViewAll={() => router.push('/incidents/me')}
                   />
                 ) : (
                   <Paper sx={{ p: 3 }}>
