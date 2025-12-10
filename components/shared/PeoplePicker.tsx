@@ -106,10 +106,13 @@ function UserOption({
     props,
 }: {
     user: UserSearchResult;
-    props: React.HTMLAttributes<HTMLLIElement>;
+    props: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key };
 }) {
     const fullName = getFullName(user);
     const initials = getInitials(user.firstName, user.lastName);
+
+    // Extract key from props so we don't spread it into the DOM element
+    const { key, ...liProps } = props;
 
     return (
         <Tooltip
@@ -130,8 +133,9 @@ function UserOption({
             enterDelay={500}
         >
             <Box
+                key={key}
                 component="li"
-                {...props}
+                {...liProps}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',

@@ -11,8 +11,8 @@ export interface UseIncidentOptions {
 }
 
 export interface UseIncidentReturn {
-  incident: OVRReportWithRelations | null;
-  isError: boolean;
+  incident: OVRReportWithRelations | undefined;
+  isLoading: boolean;
   error: any;
   mutate: () => void;
 }
@@ -45,17 +45,17 @@ export function useIncident(
     return data!;
   };
 
-  const { data, error, mutate } = useSWR(url, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus,
     revalidateOnReconnect,
     refreshInterval,
     dedupingInterval: 2000,
-    suspense: true,
+    suspense: false,
   });
 
   return {
-    incident: data || null,
-    isError: !!error,
+    incident: data,
+    isLoading,
     error,
     mutate,
   };

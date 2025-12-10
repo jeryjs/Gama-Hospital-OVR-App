@@ -354,7 +354,7 @@ function PersonInvolvedSection({
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.isSentinelEvent || undefined}
+                  checked={!!formData.isSentinelEvent}
                   onChange={(e) => onChange('isSentinelEvent', e.target.checked)}
                 />
               }

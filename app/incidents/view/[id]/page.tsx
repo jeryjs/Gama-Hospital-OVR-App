@@ -22,6 +22,7 @@ import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
 import { WorkflowSection } from './WorkflowSection';
+import { formatErrorForAlert } from '@/lib/client/error-handler';
 
 // Inner component that fetches data
 function IncidentDetails() {
@@ -29,14 +30,16 @@ function IncidentDetails() {
   const [showCompletion, setShowCompletion] = useState(false);
 
   // This will suspend while loading
-  const { incident, mutate } = useIncident(params.id as string);
+  const { incident, error, isLoading, mutate } = useIncident(params.id as string);
 
-  if (!incident) {
+  if (isLoading) return <LoadingFallback />;
+
+  if (error || !incident) {
     return (
       <AppLayout>
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="error">
-            Incident not found
+            Error loading incident: {formatErrorForAlert(error)}
           </Typography>
         </Box>
       </AppLayout>
