@@ -10,107 +10,106 @@ import { injuryOutcomeEnum, personInvolvedEnum, severityLevelEnum } from '@/db/s
 // ============================================
 
 /**
- * Application roles - used for authorization throughout the app
+ * Application role definitions - single source of truth
  */
-export const APP_ROLES = {
+export const APP_ROLE_DEFS = {
     // System Administration
-    SUPER_ADMIN: 'super_admin',
-    TECH_ADMIN: 'tech_admin',
-    DEVELOPER: 'developer',
+    SUPER_ADMIN: {
+        key: 'super_admin', label: 'Super Admin', color: '#DC2626',
+        description: 'Full system access', priority: 1, azureId: '73a2c9f3-9282-4b99-be01-2813c93a5458',
+    },
+    TECH_ADMIN: {
+        key: 'tech_admin', label: 'Tech Admin', color: '#7C3AED',
+        description: 'System management access', priority: 5, azureId: '3909b6bd-c691-4d60-888c-a6a9c7dc4cef',
+    },
+    DEVELOPER: {
+        key: 'developer', label: 'Developer', color: '#059669',
+        description: 'Development and testing access', priority: 2, azureId: '0407bc66-a177-4a36-981a-c8109da6d7a7',
+    },
 
     // Executive Leadership
-    CEO: 'ceo',
-    EXECUTIVE: 'executive',
+    CEO: {
+        key: 'ceo', label: 'CEO', color: '#1E40AF',
+        description: 'Executive oversight', priority: 3, azureId: 'CEO_GROUP_ID_PLACEHOLDER',
+    },
+    EXECUTIVE: {
+        key: 'executive', label: 'Executive', color: '#4F46E5',
+        description: 'Executive level access', priority: 4, azureId: 'cbbffd0f-7b17-4e8b-93d4-9f9f4e5f0b1f',
+    },
 
     // Quality & Safety
-    QUALITY_MANAGER: 'quality_manager',
-    QUALITY_ANALYST: 'quality_analyst',
+    QUALITY_MANAGER: {
+        key: 'quality_manager', label: 'Quality Manager', color: '#8B5CF6',
+        description: 'QI workflow management', priority: 6, azureId: '42e686a5-1f6a-46bd-98e3-cdb19020a999',
+    },
+    QUALITY_ANALYST: {
+        key: 'quality_analyst', label: 'Quality Analyst', color: '#A78BFA',
+        description: 'Quality assurance support', priority: 7, azureId: 'QUALITY_ANALYST_GROUP_ID_PLACEHOLDER',
+    },
 
     // Team Management
-    SUPERVISOR: 'supervisor',
-    TEAM_LEAD: 'team_lead',
+    SUPERVISOR: {
+        key: 'supervisor', label: 'Supervisor', color: '#3B82F6',
+        description: 'Team supervision', priority: 8, azureId: '6ed1d31f-e276-46ae-8bb3-da64c9efb8fe',
+    },
+    TEAM_LEAD: {
+        key: 'team_lead', label: 'Team Lead', color: '#60A5FA',
+        description: 'Team coordination', priority: 9, azureId: 'TEAM_LEAD_GROUP_ID_PLACEHOLDER',
+    },
 
     // Specialized Roles
-    FACILITY_MANAGER: 'facility_manager',
+    FACILITY_MANAGER: {
+        key: 'facility_manager', label: 'Facility Manager', color: '#F59E0B',
+        description: 'Facility management', priority: 10, azureId: '437034f5-9a13-4d2d-b09a-30b454376f87',
+    },
 
     // Standard Access
-    EMPLOYEE: 'employee',
+    EMPLOYEE: {
+        key: 'employee', label: 'Employee', color: '#6B7280',
+        description: 'Standard user access', priority: 11, azureId: '677b3153-3137-47a0-8823-68b5eb3c1fa4',
+    },
 } as const;
 
-export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
+
+export type AppRole = typeof APP_ROLE_DEFS[keyof typeof APP_ROLE_DEFS]['key'];
 
 /**
- * Role priority order (highest to lowest)
- * Used for determining primary role when user has multiple roles
+ * Application role keys for easy reference
  */
-export const ROLE_PRIORITY: AppRole[] = [
-    APP_ROLES.SUPER_ADMIN,
-    APP_ROLES.DEVELOPER,
-    APP_ROLES.CEO,
-    APP_ROLES.EXECUTIVE,
-    APP_ROLES.TECH_ADMIN,
-    APP_ROLES.QUALITY_MANAGER,
-    APP_ROLES.QUALITY_ANALYST,
-    APP_ROLES.SUPERVISOR,
-    APP_ROLES.TEAM_LEAD,
-    APP_ROLES.FACILITY_MANAGER,
-    APP_ROLES.EMPLOYEE,
-];
+export const APP_ROLES = Object.fromEntries(
+    Object.entries(APP_ROLE_DEFS).map(([key, value]) => [key, value.key])
+) as { [K in keyof typeof APP_ROLE_DEFS]: typeof APP_ROLE_DEFS[K]['key'] };
 
 /**
- * Role metadata for UI display
+ * Role priority order (highest to lowest) - inferred from APP_ROLE_DEFS
  */
-export const ROLE_METADATA: Record<AppRole, { label: string; color: string; description: string }> = {
-    [APP_ROLES.SUPER_ADMIN]: { label: 'Super Admin', color: '#DC2626', description: 'Full system access' },
-    [APP_ROLES.TECH_ADMIN]: { label: 'Tech Admin', color: '#7C3AED', description: 'System management access' },
-    [APP_ROLES.DEVELOPER]: { label: 'Developer', color: '#059669', description: 'Development and testing access' },
-    [APP_ROLES.CEO]: { label: 'CEO', color: '#1E40AF', description: 'Executive oversight' },
-    [APP_ROLES.EXECUTIVE]: { label: 'Executive', color: '#4F46E5', description: 'Executive level access' },
-    [APP_ROLES.QUALITY_MANAGER]: { label: 'Quality Manager', color: '#8B5CF6', description: 'QI workflow management' },
-    [APP_ROLES.QUALITY_ANALYST]: { label: 'Quality Analyst', color: '#A78BFA', description: 'Quality assurance support' },
-    [APP_ROLES.SUPERVISOR]: { label: 'Supervisor', color: '#3B82F6', description: 'Team supervision' },
-    [APP_ROLES.TEAM_LEAD]: { label: 'Team Lead', color: '#60A5FA', description: 'Team coordination' },
-    [APP_ROLES.FACILITY_MANAGER]: { label: 'Facility Manager', color: '#F59E0B', description: 'Facility management' },
-    [APP_ROLES.EMPLOYEE]: { label: 'Employee', color: '#6B7280', description: 'Standard user access' },
-};
+export const ROLE_PRIORITY: AppRole[] = Object.values(APP_ROLE_DEFS)
+    .sort((a, b) => a.priority - b.priority)
+    .map(r => r.key);
+
+/**
+ * Role metadata for UI display - inferred from APP_ROLE_DEFS
+ */
+export const ROLE_METADATA = Object.fromEntries(
+    Object.values(APP_ROLE_DEFS).map(r => [
+        r.key,
+        { label: r.label, color: r.color, description: r.description }
+    ])
+) as Record<AppRole, { label: string; color: string; description: string }>;
 
 /**
  * Role labels for quick access (derived from ROLE_METADATA)
- * Use ROLE_METADATA for full metadata including colors and descriptions
  */
-export const ROLE_LABELS: Record<string, string> = Object.fromEntries(
-    Object.entries(ROLE_METADATA).map(([key, value]) => [key, value.label])
-);
+export const ROLE_LABELS: Record<AppRole, string> =
+    Object.fromEntries(Object.entries(ROLE_METADATA).map(([key, value]) => [key, value.label])) as Record<AppRole, string>;
 
 /**
- * Azure AD Security Group to App Role mapping
- * Uses Group Object IDs (not display names) for reliable mapping
- * Update these IDs to match your Azure AD security groups
+ * Azure AD Security Group to App Role mapping - inferred from APP_ROLE_DEFS
  */
-export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> = {
-    // System Administration
-    '73a2c9f3-9282-4b99-be01-2813c93a5458': [APP_ROLES.SUPER_ADMIN], // SG-OVR-SuperAdmins
-    '3909b6bd-c691-4d60-888c-a6a9c7dc4cef': [APP_ROLES.TECH_ADMIN],   // SG-OVR-TechAdmins
-    '0407bc66-a177-4a36-981a-c8109da6d7a7': [APP_ROLES.DEVELOPER],    // SG-OVR-Developers
-
-    // Executive Leadership
-    'CEO_GROUP_ID_PLACEHOLDER': [APP_ROLES.CEO],
-    'cbbffd0f-7b17-4e8b-93d4-9f9f4e5f0b1f': [APP_ROLES.EXECUTIVE],    // SG-OVR-Executives
-
-    // Quality & Safety
-    '42e686a5-1f6a-46bd-98e3-cdb19020a999': [APP_ROLES.QUALITY_MANAGER], // SG-OVR-QualityManagers
-    'QUALITY_ANALYST_GROUP_ID_PLACEHOLDER': [APP_ROLES.QUALITY_ANALYST],
-
-    // Team Management
-    '6ed1d31f-e276-46ae-8bb3-da64c9efb8fe': [APP_ROLES.SUPERVISOR], // SG-OVR-Supervisors
-    'TEAM_LEAD_GROUP_ID_PLACEHOLDER': [APP_ROLES.TEAM_LEAD],
-
-    // Specialized Roles
-    '437034f5-9a13-4d2d-b09a-30b454376f87': [APP_ROLES.FACILITY_MANAGER], // SG-OVR-FacilityManagers
-
-    // Standard Access
-    '677b3153-3137-47a0-8823-68b5eb3c1fa4': [APP_ROLES.EMPLOYEE], // SG-OVR-Employees
-};
+export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> =
+    Object.fromEntries(
+        Object.values(APP_ROLE_DEFS).map(r => [r.azureId, [r.key]])
+    );
 
 // ============================================
 // OVR FORM CONSTANTS (WITH UI METADATA)
@@ -345,34 +344,10 @@ export const RISK_MATRIX = Array.from({ length: 5 }, (_, impactIdx) =>
  * DRY: Single source of truth for risk level logic
  */
 export const RISK_LEVELS = [
-    {
-        level: 'green',
-        label: 'Low Risk',
-        range: [1, 3] as const,
-        color: '#4CAF50',
-        bgColor: '#E8F5E9'
-    },
-    {
-        level: 'yellow',
-        label: 'Moderate Risk',
-        range: [4, 6] as const,
-        color: '#FFC107',
-        bgColor: '#FFF9C4'
-    },
-    {
-        level: 'amber',
-        label: 'High Risk',
-        range: [8, 12] as const,
-        color: '#FF9800',
-        bgColor: '#FFE0B2'
-    },
-    {
-        level: 'red',
-        label: 'Extreme Risk',
-        range: [15, 25] as const,
-        color: '#F44336',
-        bgColor: '#FFCDD2'
-    },
+    { level: 'green', label: 'Low Risk', range: [1, 3] as const, color: '#4CAF50', bgColor: '#E8F5E9' },
+    { level: 'yellow', label: 'Moderate Risk', range: [4, 6] as const, color: '#FFC107', bgColor: '#FFF9C4' },
+    { level: 'amber', label: 'High Risk', range: [8, 12] as const, color: '#FF9800', bgColor: '#FFE0B2' },
+    { level: 'red', label: 'Extreme Risk', range: [15, 25] as const, color: '#F44336', bgColor: '#FFCDD2' },
 ] as const;
 
 /**

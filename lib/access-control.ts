@@ -247,7 +247,9 @@ export const ACCESS_CONTROL = {
          */
         navigation: {
             showAdministration: (roles: AppRole[]) =>
-                hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER]),
+                ACCESS_CONTROL.ui.navigation.showUserManagement(roles) ||
+                ACCESS_CONTROL.ui.navigation.showSystemSettings(roles) ||
+                ACCESS_CONTROL.ui.navigation.showDepartmentManagement(roles),
 
             showUserManagement: (roles: AppRole[]) =>
                 hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER]),
@@ -265,16 +267,8 @@ export const ACCESS_CONTROL = {
                 ]),
 
             showAllIncidents: (roles: AppRole[]) =>
-                hasAnyRole(roles, [
-                    APP_ROLES.SUPER_ADMIN,
-                    APP_ROLES.CEO,
-                    APP_ROLES.EXECUTIVE,
-                    APP_ROLES.QUALITY_MANAGER,
-                    APP_ROLES.QUALITY_ANALYST,
-                    APP_ROLES.SUPERVISOR,
-                    APP_ROLES.TEAM_LEAD,
-                    APP_ROLES.DEVELOPER,
-                ]),
+                ACCESS_CONTROL.api.incidents.canViewAll(roles) ||
+                ACCESS_CONTROL.api.incidents.canViewTeam(roles),
 
             showQIReview: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
