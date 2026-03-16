@@ -297,7 +297,10 @@ export async function validateBody<T>(
     if (error instanceof z.ZodError) {
       throw new ValidationError('Invalid request body', error.issues);
     }
-    throw new ValidationError('Failed to parse request body');
+    throw new ValidationError(
+      'Failed to parse request body',
+      error instanceof Error ? error.message || error.cause : undefined
+    );
   }
 }
 

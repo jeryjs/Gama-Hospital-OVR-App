@@ -543,20 +543,22 @@ export type UpdateIncidentInput = z.infer<typeof updateIncidentSchema>;
  * QI Review - Approve or reject submitted incident
  */
 export const qiReviewSchema = z.object({
-  decision: z.enum(['approve', 'reject']),
-  rejectionReason: z.string().optional().refine((val) => {
-    // If provided, must be at least 20 characters
-    if (val !== undefined && val !== null && val.trim().length > 0) {
-      return val.trim().length >= 20;
-    }
-    return true;
-  }, {
-    message: 'Rejection reason must be at least 20 characters',
-  }),
+  decision: z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    const normalized = val.trim().toLowerCase();
+    if (normalized === 'approved') return 'approve';
+    if (normalized === 'rejected') return 'reject';
+    return normalized;
+  }, z.enum(['approve', 'reject'])),
+  rejectionReason: z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    const trimmed = val.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, z.string().min(20, 'Rejection reason must be at least 20 characters').optional()),
 }).refine((data) => {
   // If rejected, rejection reason is required
   if (data.decision === 'reject') {
-    return data.rejectionReason && data.rejectionReason.trim().length >= 20;
+    return !!data.rejectionReason;
   }
   return true;
 }, {

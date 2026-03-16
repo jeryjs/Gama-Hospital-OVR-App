@@ -260,12 +260,27 @@ export async function apiCall<T>(
   options?: RequestInit
 ): Promise<{ data?: T; error?: ParsedError }> {
   try {
+    const hasBody = options?.body !== undefined && options?.body !== null;
+    const shouldStringifyBody =
+      hasBody &&
+      typeof options.body === 'object' &&
+      !(options.body instanceof FormData) &&
+      !(options.body instanceof Blob) &&
+      !(options.body instanceof URLSearchParams);
+
+    const normalizedBody = shouldStringifyBody
+      ? JSON.stringify(options.body)
+      : options?.body;
+
+    const headers = new Headers(options?.headers);
+    if (!(normalizedBody instanceof FormData) && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      body: normalizedBody,
+      headers,
     });
 
     if (!response.ok) {
