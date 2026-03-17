@@ -121,12 +121,6 @@ export function MedicalAssessmentSection({ incident }: Props) {
           </Grid>
         )}
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <InfoRow label="Physician Name" value={incident.physicianName} />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <InfoRow label="Physician ID #" value={incident.physicianId} />
-        </Grid>
       </Grid>
 
       {incident.treatmentProvided && (

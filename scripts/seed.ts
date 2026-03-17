@@ -222,7 +222,6 @@ Room signage: Fall precautions posted`,
                 levelOfHarm: 'major',
                 physicianNotified: true,
                 physicianSawPatient: true,
-                physicianName: 'Dr. Emily Wong',
                 assessment: 'Left hip pain, limited range of motion. X-ray ordered. Suspected hip fracture.',
                 treatmentProvided: JSON.stringify(['observation', 'radiology', 'hospitalized']),
 
@@ -296,7 +295,6 @@ Patient sustained left hip fracture requiring surgical intervention. Full recove
                 levelOfHarm: 'med_f',
                 physicianNotified: true,
                 physicianSawPatient: true,
-                physicianName: 'Dr. Emily Wong',
                 assessment: 'Patient developed mild hypoglycemia (BG: 65 mg/dL). Responded well to D50 bolus and continuous glucose monitoring. No long-term complications expected.',
                 treatmentProvided: JSON.stringify(['bloodwork', 'observation']),
 
@@ -405,7 +403,6 @@ Patient's father presented with minor laceration requiring assessment. Departmen
                 levelOfHarm: 'near_miss',
                 physicianNotified: true,
                 physicianSawPatient: false,
-                physicianName: 'Dr. Radiologist on duty',
 
                 reporterId: users[0].id,
                 reporterDepartment: 'Radiology',

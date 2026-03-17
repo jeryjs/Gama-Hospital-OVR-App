@@ -459,10 +459,10 @@ function UserCard({
  *   value={selectedUser}
  *   onChange={setSelectedUser}
  *   showManualToggle
- *   label="Physician"
+ *   label="Assignee"
  * >
- *   <TextField label="Physician Name" ... />
- *   <TextField label="Physician ID" ... />
+ *   <TextField label="Assignee Name" ... />
+ *   <TextField label="Assignee Reference" ... />
  * </PeoplePicker>
  */
 export function PeoplePicker({

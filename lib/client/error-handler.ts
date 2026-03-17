@@ -40,8 +40,6 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   diagnosis: 'Diagnosis',
   injuryOutcome: 'Injury Outcome',
   treatmentProvided: 'Treatment Provided',
-  physicianName: 'Physician Name',
-  physicianId: 'Physician ID',
 
   // Workflow - New QI-led investigation
   investigatorId: 'Investigator',
@@ -57,6 +55,9 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   caseReview: 'Case Review',
   reporterFeedback: 'Reporter Feedback',
   severityLevel: 'Severity Level',
+  riskImpact: 'Impact Score',
+  riskLikelihood: 'Likelihood Score',
+  riskScore: 'Risk Score',
   comment: 'Comment',
 
   // Corrective Actions

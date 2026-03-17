@@ -210,8 +210,6 @@ export async function POST(request: NextRequest) {
         diagnosis: body.diagnosis,
         injuryOutcome: body.injuryOutcome,
         treatmentProvided: body.treatmentProvided,
-        physicianName: body.physicianName,
-        physicianId: body.physicianId,
 
         // Reporter Info
         reporterDepartment: body.reporterDepartment || session.user.department,

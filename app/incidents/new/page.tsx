@@ -649,30 +649,12 @@ function ClassificationSection({
 function ImmediateActionsSection({
   formData,
   onChange,
-  selectedPhysician,
-  setSelectedPhysician,
-  isPhysicianManualMode,
-  setIsPhysicianManualMode,
 }: {
   formData: FormData;
   onChange: (key: keyof FormData, value: unknown) => void;
-  selectedPhysician: UserSearchResult | null;
-  setSelectedPhysician: (val: UserSearchResult | null) => void;
-  isPhysicianManualMode: boolean;
-  setIsPhysicianManualMode: (val: boolean) => void;
 }) {
   // Wrap onChange to handle confirm logic for clearing fields
   const handleChange = (key: keyof FormData, value: unknown) => {
-    // Confirm before clearing physician details
-    if (
-      key === 'physicianNotified' &&
-      value === false &&
-      (formData.physicianName || formData.physicianId)
-    ) {
-      if (!window.confirm('Changing this will clear entered physician details. Continue?')) return;
-      onChange('physicianName', '');
-      onChange('physicianId', '');
-    }
     // Confirm before clearing assessment/treatment details
     if (
       key === 'physicianSawPatient' &&
@@ -757,49 +739,6 @@ function ImmediateActionsSection({
             </RadioGroup>
           </FormControl>
         </Grid>
-
-        {/* Physician Details - Name, ID, Signature & Date */}
-        {formData.physicianNotified && (
-          <Grid size={{ xs: 12, md: 8 }}>
-            <PeoplePicker
-              value={selectedPhysician}
-              onChange={(val) => {
-                setSelectedPhysician(val as UserSearchResult | null);
-                if (val && !Array.isArray(val)) {
-                  handleChange('physicianName', `${val.firstName} ${val.lastName}`.trim());
-                  handleChange('physicianId', val.id.toString());
-                }
-              }}
-              label="Physician's Name"
-              required={!!formData.physicianSawPatient}
-              placeholder="Search for physician..."
-              variant="ms-modern"
-              showManualToggle
-              onManualModeChange={(isManual) => setIsPhysicianManualMode(isManual)}
-              initialManualMode={isPhysicianManualMode}
-            >
-              {/* Manual entry fields */}
-              <Stack spacing={2}>
-                <TextField
-                  fullWidth
-                  label="Physician's Name"
-                  required={!!formData.physicianSawPatient}
-                  value={formData.physicianName || ''}
-                  onChange={(e) => handleChange('physicianName', e.target.value)}
-                  placeholder="Enter physician name manually"
-                />
-                <TextField
-                  fullWidth
-                  label="Physician ID #"
-                  required={!!formData.physicianSawPatient}
-                  value={formData.physicianId || ''}
-                  onChange={(e) => handleChange('physicianId', e.target.value)}
-                  placeholder="Enter physician ID manually"
-                />
-              </Stack>
-            </PeoplePicker>
-          </Grid>
-        )}
 
         {formData.physicianSawPatient && (
           <>
@@ -1380,10 +1319,6 @@ export default function NewIncidentPage() {
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
 
-  // Physician selection state
-  const [selectedPhysician, setSelectedPhysician] = useState<UserSearchResult | null>(null);
-  const [isPhysicianManualMode, setIsPhysicianManualMode] = useState(false);
-
   // Draft management - using localStorage
   const [draftId, setDraftId] = useState<string | null>(null);
   const [existingDraftCreatedAt, setExistingDraftCreatedAt] = useState<string | undefined>();
@@ -1593,10 +1528,6 @@ export default function NewIncidentPage() {
               <ImmediateActionsSection
                 formData={formData}
                 onChange={handleChange}
-                selectedPhysician={selectedPhysician}
-                setSelectedPhysician={setSelectedPhysician}
-                isPhysicianManualMode={isPhysicianManualMode}
-                setIsPhysicianManualMode={setIsPhysicianManualMode}
               />
 
               <RiskIdentificationSection formData={formData} onChange={handleChange} />

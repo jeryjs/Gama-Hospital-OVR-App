@@ -378,14 +378,6 @@ export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 // ============================================
 
 /**
- * Helper function to check if physician saw patient
- * Used for conditional validation of physician-related fields
- */
-const requiresPhysicianDetails = (data: any): boolean => {
-  return Boolean(data.physicianSawPatient);
-};
-
-/**
  * Helper function to check if hospitalized or transferred
  * Used for conditional validation of hospitalization details
  */
@@ -482,30 +474,16 @@ export const createIncidentSchema = ovrReportInsertSchema
     message: 'Level of harm is required',
     path: ['levelOfHarm'],
   })
+  .refine((data) => data.riskScore, {
+    message: 'Risk score is required',
+    path: ['riskScore', 'riskImpact', 'riskLikelihood'],
+  })
   // ============================================
   // PHYSICIAN FOLLOW-UP VALIDATION
-  // Conditional: If physician saw patient, certain fields are required
+  // Conditional: If physician saw patient, treatment notes are required
   // ============================================
   .refine((data) => {
-    if (requiresPhysicianDetails(data)) {
-      return data.physicianName && data.physicianName.trim().length > 0;
-    }
-    return true;
-  }, {
-    message: 'Physician name is required when patient was seen by physician',
-    path: ['physicianName'],
-  })
-  .refine((data) => {
-    if (requiresPhysicianDetails(data)) {
-      return data.physicianId && data.physicianId.trim().length > 0;
-    }
-    return true;
-  }, {
-    message: 'Physician ID is required when patient was seen by physician',
-    path: ['physicianId'],
-  })
-  .refine((data) => {
-    if (requiresPhysicianDetails(data)) {
+    if (data.physicianSawPatient) {
       return data.treatmentProvided && data.treatmentProvided.trim().length >= 10;
     }
     return true;

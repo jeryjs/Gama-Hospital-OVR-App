@@ -12,24 +12,24 @@ import { format } from 'date-fns';
  * Excludes navigation, sidebar, headers
  */
 export function generatePrintableHTML(incident: OVRReportWithRelations): string {
-    const reporterName = incident.reporter
-        ? `${incident.reporter.firstName} ${incident.reporter.lastName}`
-        : 'Unknown';
+  const reporterName = incident.reporter
+    ? `${incident.reporter.firstName} ${incident.reporter.lastName}`
+    : 'Unknown';
 
-    const locationName = incident.location?.name || 'Unknown';
-    const locationDetails = [incident.location?.building, incident.location?.floor]
-        .filter(Boolean)
-        .join(' • ');
+  const locationName = incident.location?.name || 'Unknown';
+  const locationDetails = [incident.location?.building, incident.location?.floor]
+    .filter(Boolean)
+    .join(' • ');
 
-    const supervisorName = incident.supervisor
-        ? `${incident.supervisor.firstName} ${incident.supervisor.lastName}`
-        : 'Not assigned';
+  const supervisorName = incident.supervisor
+    ? `${incident.supervisor.firstName} ${incident.supervisor.lastName}`
+    : 'Not assigned';
 
-    const involvedPersonDetails = incident.involvedPersonName
-        ? `${incident.involvedPersonName}${incident.involvedPersonMRN ? ` (MRN: ${incident.involvedPersonMRN})` : ''}`
-        : 'Not specified';
+  const involvedPersonDetails = incident.involvedPersonName
+    ? `${incident.involvedPersonName}${incident.involvedPersonMRN ? ` (MRN: ${incident.involvedPersonMRN})` : ''}`
+    : 'Not specified';
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -245,10 +245,6 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
   ${incident.physicianSawPatient ? `
   <h2>Medical Assessment</h2>
   <div class="section">
-    <div class="field">
-      <div class="label">Physician</div>
-      <div class="value">${incident.physicianName || 'Unknown'} ${incident.physicianId ? `(ID: ${incident.physicianId})` : ''}</div>
-    </div>
     ${incident.treatmentTypes && incident.treatmentTypes.length > 0 ? `
     <div class="field">
       <div class="label">Treatment Types</div>
@@ -374,30 +370,30 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
  * Trigger browser print dialog
  */
 export function printIncident(incident: OVRReportWithRelations): void {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(generatePrintableHTML(incident));
-        printWindow.document.close();
-        // Small delay to ensure content is loaded before print
-        setTimeout(() => {
-            printWindow.print();
-        }, 250);
-    }
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(generatePrintableHTML(incident));
+    printWindow.document.close();
+    // Small delay to ensure content is loaded before print
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  }
 }
 
 /**
  * Download incident as HTML file
  */
 export function downloadIncident(incident: OVRReportWithRelations): void {
-    const html = generatePrintableHTML(incident);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
+  const html = generatePrintableHTML(incident);
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `incident-report-${incident.id}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `incident-report-${incident.id}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
