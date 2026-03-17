@@ -125,6 +125,13 @@ export function isActiveStatus(status: OVRStatus | string): boolean {
 }
 
 /**
+ * Check if status is rejected (draft with rejection reason)
+ */
+export function isRejectedStatus(incident: { status: string; qiRejectionReason?: string | null }): boolean {
+    return incident.status === 'draft' && !!incident.qiRejectionReason;
+}
+
+/**
  * Check if status is terminal
  */
 export function isClosedStatus(status: OVRStatus | string): boolean {

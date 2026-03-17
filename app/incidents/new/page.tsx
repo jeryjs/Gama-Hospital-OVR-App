@@ -1391,6 +1391,9 @@ export default function NewIncidentPage() {
         try {
           const res = await fetch(`/api/incidents/${draftParam}`);
           if (!res.ok) {
+            if (!cancelled) {
+              await showError(res);
+            }
             setDraftLoaded(true);
             return;
           }
@@ -1403,8 +1406,11 @@ export default function NewIncidentPage() {
           setHasDraftSnapshot(true);
           setDraftUpdatedAt(incidentDraft.updatedAt || new Date().toISOString());
           setDraftLoaded(true);
-        } catch {
-          if (!cancelled) setDraftLoaded(true);
+        } catch (error) {
+          if (!cancelled) {
+            await showError(error);
+            setDraftLoaded(true);
+          }
         }
       })();
 
@@ -1436,7 +1442,7 @@ export default function NewIncidentPage() {
     setHasDraftSnapshot(false);
     setDraftUpdatedAt(undefined);
     setDraftLoaded(true);
-  }, [draftLoaded, session?.user?.id, sessionStatus]);
+  }, [draftLoaded, session?.user?.id, sessionStatus, showError]);
 
   // Auto-save to localStorage with debounce
   useEffect(() => {

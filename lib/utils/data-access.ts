@@ -24,6 +24,7 @@ import type { AppRole } from '@/lib/constants';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
 import { NotFoundError, AuthorizationError } from '@/lib/api/middleware';
+import { isRejectedStatus } from './status';
 
 /**
  * User context for access control
@@ -246,6 +247,19 @@ export async function getIncidentSecure(
     // If incident doesn't exist at all, return 404
     if (!existingIncident) {
         throw new NotFoundError('Incident');
+    }
+
+    // Explicit fast-path for rejected drafts:
+    // - reporter can access own rejected draft
+    // - reviewer can access drafts they rejected
+    if (
+        isRejectedStatus(existingIncident) &&
+        (
+            existingIncident.reporterId === userContext.userId ||
+            existingIncident.qiReviewedBy === userContext.userId
+        )
+    ) {
+        return existingIncident;
     }
 
     // Step 2: Check if user has permission to view this incident
