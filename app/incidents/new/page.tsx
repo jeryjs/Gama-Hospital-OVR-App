@@ -975,14 +975,6 @@ function RiskIdentificationSection({
   const score = impact && likelihood ? calculateRiskScore(impact, likelihood) : 0;
   const riskLevel = score ? getRiskLevel(score) : null;
 
-  useEffect(() => {
-    if (impact && likelihood) {
-      const newScore = calculateRiskScore(impact, likelihood);
-      onChange('riskScore', newScore);
-      // onChange('riskLevel', newLevel.level);
-    }
-  }, [impact, likelihood, onChange]);
-
   return (
     <Box sx={{ mb: 4 }}>
       <Typography
@@ -1458,7 +1450,22 @@ export default function NewIncidentPage() {
 
   // Handle field changes
   const handleChange = useCallback((key: keyof FormData, value: unknown) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    setFormData((prev) => {
+      const next: FormData = { ...prev, [key]: value };
+
+      // Keep riskScore in sync without causing a render loop (fix performance issue)
+      if (key === 'riskImpact' || key === 'riskLikelihood') {
+        const impact = Number(key === 'riskImpact' ? value : prev.riskImpact || 0);
+        const likelihood = Number(key === 'riskLikelihood' ? value : prev.riskLikelihood || 0);
+        const newScore = impact && likelihood ? calculateRiskScore(impact, likelihood) : 0;
+
+        if (next.riskScore !== newScore) {
+          next.riskScore = newScore;
+        }
+      }
+
+      return next;
+    });
   }, []);
 
   // Clear draft

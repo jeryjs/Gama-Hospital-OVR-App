@@ -202,8 +202,8 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                                         <ErrorIcon color="error" fontSize="small" />
                                     </ListItemIcon>
                                     <ListItemText
-                                        primary={detail.message}
-                                        secondary={formatDetailPath(detail.path)}
+                                        primary={formatDetailPath(detail.path)}
+                                        secondary={detail.message}
                                         primaryTypographyProps={{ variant: 'body2' }}
                                         secondaryTypographyProps={{ variant: 'caption' }}
                                     />
@@ -219,7 +219,7 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                         sx={{
                             mt: 2,
                             p: 1.5,
-                            bgcolor: (theme) => theme.palette.grey[100],
+                            bgcolor: (theme) => theme.palette.background.paper,
                             borderRadius: 1,
                             display: 'flex',
                             alignItems: 'center',
