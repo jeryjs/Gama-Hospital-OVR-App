@@ -62,7 +62,7 @@ function IncidentDetails() {
         {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
 
         {/* Supervisor Section - Read-only display */}
-        {(incident.supervisorId || incident.supervisorAction) && (
+        {(incident.supervisorNotified || incident.supervisorId || incident.supervisorAction) && (
           <SupervisorSection incident={incident} onUpdate={mutate} />
         )}
 
