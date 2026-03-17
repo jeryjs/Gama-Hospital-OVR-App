@@ -1,4 +1,6 @@
 import type { EditorValue, TElement, TText } from '../plate-types';
+import { unified } from 'unified';
+import remarkStringify from 'remark-stringify';
 
 /**
  * Serialize Plate editor value to plain text
@@ -120,73 +122,105 @@ export function truncateToPlainText(
     return truncated + suffix;
 }
 
-function serializeTextNodeToMarkdown(node: TText): string {
-    const text = node.text || '';
-    if (!text) return '';
+function wrapMarks(node: TText, leaf: any): any {
+    let output = leaf;
 
-    let output = text;
+    if (node.bold) {
+        output = { type: 'strong', children: [output] };
+    }
 
-    if (node.bold) output = `**${output}**`;
-    if (node.italic) output = `*${output}*`;
-    if (node.underline) output = `<u>${output}</u>`;
+    if (node.italic) {
+        output = { type: 'emphasis', children: [output] };
+    }
+
+    if (node.underline) {
+        const raw = typeof node.text === 'string' ? node.text : '';
+        output = { type: 'html', value: `<u>${raw}</u>` };
+    }
 
     return output;
 }
 
-function serializeNodeToMarkdown(node: unknown): string {
+function toMdInline(node: unknown): any[] {
     if (isTextNode(node)) {
-        return serializeTextNodeToMarkdown(node);
+        const textLeaf = { type: 'text', value: node.text || '' };
+        return [wrapMarks(node, textLeaf)];
     }
 
     if (!isElementNode(node)) {
-        return '';
+        return [];
     }
 
-    const childText = node.children
-        ?.map((child) => serializeNodeToMarkdown(child))
-        .join('') || '';
+    if (node.type === 'a') {
+        const url = typeof (node as { url?: unknown }).url === 'string'
+            ? (node as unknown as { url: string }).url
+            : '';
 
-    const normalizeListItemText = (text: string) =>
-        text
-            .replace(/^[-*]\s+/, '')
-            .replace(/^\d+\.\s+/, '')
-            .trim();
+        return [{
+            type: 'link',
+            url,
+            children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: url }],
+        }];
+    }
+
+    return node.children?.flatMap((child) => toMdInline(child)) || [];
+}
+
+function toMdBlock(node: unknown): any[] {
+    if (!isElementNode(node)) {
+        return [];
+    }
 
     switch (node.type) {
         case 'h1':
-            return `# ${childText}`;
         case 'h2':
-            return `## ${childText}`;
         case 'h3':
-            return `### ${childText}`;
+            return [{
+                type: 'heading',
+                depth: node.type === 'h1' ? 1 : node.type === 'h2' ? 2 : 3,
+                children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }],
+            }];
+
         case 'blockquote':
-            return childText
-                .split('\n')
-                .map((line) => `> ${line}`)
-                .join('\n');
+            return [{
+                type: 'blockquote',
+                children: [{
+                    type: 'paragraph',
+                    children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }],
+                }],
+            }];
+
         case 'ul':
-            return node.children
-                ?.map((child) => `- ${normalizeListItemText(serializeNodeToMarkdown(child))}`)
-                .join('\n') || '';
         case 'ol':
-            return node.children
-                ?.map((child, index) => {
-                    const line = normalizeListItemText(serializeNodeToMarkdown(child));
-                    return `${index + 1}. ${line}`;
-                })
-                .join('\n') || '';
+            return [{
+                type: 'list',
+                ordered: node.type === 'ol',
+                spread: false,
+                children: (node.children || []).map((item) => ({
+                    type: 'listItem',
+                    spread: false,
+                    children: [{
+                        type: 'paragraph',
+                        children: isElementNode(item)
+                            ? item.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }]
+                            : [{ type: 'text', value: '' }],
+                    }],
+                })),
+            }];
+
         case 'li':
         case 'lic':
-            return childText;
-        case 'a': {
-            const url = typeof (node as { url?: unknown }).url === 'string'
-                ? (node as { url: string }).url
-                : '';
-            return url ? `[${childText || url}](${url})` : childText;
-        }
+            return [{
+                type: 'paragraph',
+                children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }],
+            }];
+
         case 'p':
         default:
-            return childText;
+            return [{
+                type: 'paragraph',
+                children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }],
+            }];
     }
 }
 
@@ -195,9 +229,16 @@ export function serializeToMarkdown(value: EditorValue | undefined | null): stri
         return '';
     }
 
-    return value
-        .map((node) => serializeNodeToMarkdown(node))
-        .filter(Boolean)
-        .join('\n\n')
+    const root = {
+        type: 'root',
+        children: value.flatMap((node) => toMdBlock(node)),
+    } as any;
+
+    return unified()
+        .use(remarkStringify, {
+            bullet: '-',
+            listItemIndent: 'one',
+        })
+        .stringify(root)
         .trim();
 }

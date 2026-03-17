@@ -95,6 +95,9 @@ importers:
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0
+      remark-stringify:
+        specifier: ^11.0.0
+        version: 11.0.0
       swr:
         specifier: ^2.3.7
         version: 2.3.7(react@19.2.0)
