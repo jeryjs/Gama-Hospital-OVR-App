@@ -139,6 +139,17 @@ export function buildIncidentVisibilityFilter(
 ) {
     const { userId, roles } = userContext;
     const { includeDrafts = false, myReportsOnly = false } = options;
+    const rejectedDraftForReporter = and(
+        eq(ovrReports.reporterId, userId),
+        eq(ovrReports.status, 'draft'),
+        sql`${ovrReports.qiRejectionReason} IS NOT NULL`
+    );
+
+    const rejectedDraftForReviewer = and(
+        eq(ovrReports.status, 'draft'),
+        eq(ovrReports.qiReviewedBy, userId),
+        sql`${ovrReports.qiRejectionReason} IS NOT NULL`
+    );
 
     // If requesting only user's own reports (for /incidents/me)
     if (myReportsOnly) {
@@ -154,15 +165,19 @@ export function buildIncidentVisibilityFilter(
         APP_ROLES.QUALITY_MANAGER,
         APP_ROLES.QUALITY_ANALYST,
     ])) {
-        // Show all non-draft incidents OR user's own drafts (if includeDrafts is true)
+        // Show all non-draft incidents + reviewer-owned rejected drafts.
+        // includeDrafts=true adds reporter's own regular drafts for specific endpoints.
         if (includeDrafts) {
             return or(
                 sql`${ovrReports.status} != 'draft'`,
-                eq(ovrReports.reporterId, userId)
+                eq(ovrReports.reporterId, userId),
+                rejectedDraftForReviewer
             );
         }
-        // Default: exclude all drafts from main incident list
-        return sql`${ovrReports.status} != 'draft'`;
+        return or(
+            sql`${ovrReports.status} != 'draft'`,
+            rejectedDraftForReviewer
+        );
     }
 
     // Supervisors see their team's non-draft incidents + their own drafts (if includeDrafts)
@@ -185,7 +200,10 @@ export function buildIncidentVisibilityFilter(
                 eq(ovrReports.reporterId, userId),
                 eq(ovrReports.supervisorId, userId)
             ),
-            sql`${ovrReports.status} != 'draft'`
+            or(
+                sql`${ovrReports.status} != 'draft'`,
+                rejectedDraftForReporter
+            )
         );
     }
 
@@ -193,10 +211,13 @@ export function buildIncidentVisibilityFilter(
     if (includeDrafts) {
         return eq(ovrReports.reporterId, userId);
     }
-    // Default: own reports excluding drafts
+    // Default employee visibility: own non-draft + own rejected drafts
     return and(
         eq(ovrReports.reporterId, userId),
-        sql`${ovrReports.status} != 'draft'`
+        or(
+            sql`${ovrReports.status} != 'draft'`,
+            rejectedDraftForReporter
+        )
     );
 }
 

@@ -4,8 +4,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { LoadingFallback } from '@/components/LoadingFallback';
 import { ErrorLayout } from '@/components/shared';
 import { useIncidents } from '@/lib/hooks';
-import { Add } from '@mui/icons-material';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Add, Edit } from '@mui/icons-material';
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -42,7 +42,11 @@ export default function MyReportsPage() {
         status: filters.status || undefined,
         search: filters.search || undefined,
         reporterId: userId,
+        fields: 'id,status,occurrenceDate,occurrenceCategory,createdAt,qiRejectionReason',
     });
+
+    const rejectedDrafts = (incidents as Array<any>).filter((incident) => incident.status === 'draft');
+    const submittedReports = incidents.filter((incident) => incident.status !== 'draft');
 
     const handleSort = (column: SortColumn) => {
         if (sortBy === column) {
@@ -102,6 +106,50 @@ export default function MyReportsPage() {
                         {/* Drafts Section (from localStorage) */}
                         {userId && <DraftsSection userId={userId} />}
 
+                        {/* Rejected Drafts (from backend) */}
+                        {rejectedDrafts.length > 0 && (
+                            <Box>
+                                <Typography variant="h6" fontWeight={600} gutterBottom>
+                                    Returned by QI
+                                </Typography>
+                                <Stack spacing={1.5}>
+                                    {rejectedDrafts.map((incident) => (
+                                        <Paper key={incident.id} sx={{ p: 2 }}>
+                                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography variant="subtitle2" fontWeight={700}>
+                                                        {incident.id}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        Rejected draft — requires reporter update and resubmission
+                                                    </Typography>
+
+                                                    <Alert severity="warning" sx={{ mt: 1.5 }}>
+                                                        <Typography variant="subtitle2" fontWeight={600}>
+                                                            Rejection Reason
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            {incident.qiRejectionReason || 'No rejection reason provided'}
+                                                        </Typography>
+                                                    </Alert>
+                                                </Box>
+
+                                                <Button
+                                                    component={Link}
+                                                    href={`/incidents/new?draft=${incident.id}`}
+                                                    variant="contained"
+                                                    size="small"
+                                                    startIcon={<Edit />}
+                                                >
+                                                    Edit Draft
+                                                </Button>
+                                            </Stack>
+                                        </Paper>
+                                    ))}
+                                </Stack>
+                            </Box>
+                        )}
+
                         <IncidentsFilters
                             filters={filters}
                             onFilterChange={setFilters}
@@ -115,7 +163,7 @@ export default function MyReportsPage() {
                                 Submitted Reports
                             </Typography>
                             <IncidentsList
-                                incidents={incidents}
+                                incidents={submittedReports}
                                 isLoading={isLoading}
                                 showReporter={false}
                                 linkPrefix="/incidents/view"

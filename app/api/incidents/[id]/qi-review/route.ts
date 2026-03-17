@@ -59,16 +59,19 @@ export async function POST(
 
         if (body.decision === 'approve') {
             // Approved - move to investigating status
-            updateData.status = 'investigating';
+            updateData.status = 'qi_review';
             updateData.qiReviewedBy = parseInt(session.user.id);
             updateData.qiReviewedAt = new Date();
             updateData.qiAssignedBy = parseInt(session.user.id);
             updateData.qiAssignedDate = new Date();
+            updateData.qiRejectionReason = null;
         } else {
-            // Rejected - send back to draft with reason
+            // Rejected - return to draft for reporter follow-up
             updateData.status = 'draft';
             updateData.qiRejectionReason = body.rejectionReason;
-            updateData.submittedAt = null; // Clear submission timestamp
+            updateData.qiReviewedBy = parseInt(session.user.id);
+            updateData.qiReviewedAt = new Date();
+            updateData.submittedAt = null;
         }
 
         const [updated] = await db
@@ -81,7 +84,7 @@ export async function POST(
             success: true,
             message: body.decision === 'approve'
                 ? 'Incident reviewed and moved to investigation'
-                : 'Incident rejected and returned to reporter',
+                : 'Incident rejected and returned to reporter as draft',
             incident: updated,
         });
     } catch (error) {
