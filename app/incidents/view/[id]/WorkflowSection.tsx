@@ -7,7 +7,7 @@
 
 'use client';
 
-import { Box, Divider } from '@mui/material';
+import { Alert, Box, Divider, Typography } from '@mui/material';
 import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
 import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
 import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
@@ -71,10 +71,10 @@ export function WorkflowSection({
     }
 
     /**
-     * STATUS: INVESTIGATING
+     * STATUS: qi_review
      * QI manages investigation and invites investigators
      */
-    if (incident.status === 'investigating') {
+    if (incident.status === 'qi_review') {
         return (
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />

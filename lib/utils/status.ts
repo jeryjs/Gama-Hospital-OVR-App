@@ -5,6 +5,7 @@
  * Used across the entire application for consistent status display
  */
 
+import { ovrStatusEnum } from '@/db/schema';
 import type { Theme } from '@mui/material';
 
 /**
@@ -18,6 +19,8 @@ export type OVRStatus =
     | 'investigating'
     | 'qi_final_actions'
     | 'closed';
+
+const workflow = ovrStatusEnum.enumValues as OVRStatus[];
 
 /**
  * Status Display Configuration
@@ -132,15 +135,6 @@ export function isClosedStatus(status: OVRStatus | string): boolean {
  * Get next status in workflow
  */
 export function getNextStatus(currentStatus: OVRStatus): OVRStatus | null {
-    const workflow: OVRStatus[] = [
-        'draft',
-        'submitted',
-        'qi_review',
-        'investigating',
-        'qi_final_actions',
-        'closed',
-    ];
-
     const currentIndex = workflow.indexOf(currentStatus);
     if (currentIndex === -1 || currentIndex === workflow.length - 1) {
         return null;
@@ -153,19 +147,37 @@ export function getNextStatus(currentStatus: OVRStatus): OVRStatus | null {
  * Get workflow progress percentage
  */
 export function getWorkflowProgress(status: OVRStatus | string): number {
-    const workflow: OVRStatus[] = [
-        'draft',
-        'submitted',
-        'qi_review',
-        'investigating',
-        'qi_final_actions',
-        'closed',
-    ];
-
     const index = workflow.indexOf(status as OVRStatus);
     if (index === -1) return 0;
 
     return Math.round((index / (workflow.length - 1)) * 100);
+}
+
+/**
+ * Check if status is at least a certain stage in the workflow
+ */
+export function statusAtLeast(status: OVRStatus | string, compareTo: OVRStatus): boolean {
+    const statusIndex = workflow.indexOf(status as OVRStatus);
+    const compareIndex = workflow.indexOf(compareTo);
+    if (statusIndex === -1 || compareIndex === -1) return false;
+    return statusIndex >= compareIndex;
+}
+
+/**
+ * Check if status is at most a certain stage in the workflow
+ */
+export function statusAtMost(status: OVRStatus | string, compareTo: OVRStatus): boolean {
+    const statusIndex = workflow.indexOf(status as OVRStatus);
+    const compareIndex = workflow.indexOf(compareTo);
+    if (statusIndex === -1 || compareIndex === -1) return false;
+    return statusIndex <= compareIndex;
+}
+
+/**
+ * Check if status is in a list of statuses
+ */
+export function statusIn(status: OVRStatus | string, statusList: OVRStatus[]): boolean {
+    return statusList.includes(status as OVRStatus);
 }
 
 /**
