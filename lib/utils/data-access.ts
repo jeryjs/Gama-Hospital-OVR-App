@@ -24,7 +24,6 @@ import type { AppRole } from '@/lib/constants';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
 import { NotFoundError, AuthorizationError } from '@/lib/api/middleware';
-import { isRejectedStatus } from './status';
 
 /**
  * User context for access control
@@ -140,17 +139,6 @@ export function buildIncidentVisibilityFilter(
 ) {
     const { userId, roles } = userContext;
     const { includeDrafts = false, myReportsOnly = false } = options;
-    const rejectedDraftForReporter = and(
-        eq(ovrReports.reporterId, userId),
-        eq(ovrReports.status, 'draft'),
-        sql`${ovrReports.qiRejectionReason} IS NOT NULL`
-    );
-
-    const rejectedDraftForReviewer = and(
-        eq(ovrReports.status, 'draft'),
-        eq(ovrReports.qiReviewedBy, userId),
-        sql`${ovrReports.qiRejectionReason} IS NOT NULL`
-    );
 
     // If requesting only user's own reports (for /incidents/me)
     if (myReportsOnly) {
@@ -166,19 +154,13 @@ export function buildIncidentVisibilityFilter(
         APP_ROLES.QUALITY_MANAGER,
         APP_ROLES.QUALITY_ANALYST,
     ])) {
-        // Show all non-draft incidents + reviewer-owned rejected drafts.
-        // includeDrafts=true adds reporter's own regular drafts for specific endpoints.
         if (includeDrafts) {
             return or(
                 sql`${ovrReports.status} != 'draft'`,
-                eq(ovrReports.reporterId, userId),
-                rejectedDraftForReviewer
+                eq(ovrReports.reporterId, userId)
             );
         }
-        return or(
-            sql`${ovrReports.status} != 'draft'`,
-            rejectedDraftForReviewer
-        );
+        return sql`${ovrReports.status} != 'draft'`;
     }
 
     // Supervisors see their team's non-draft incidents + their own drafts (if includeDrafts)
@@ -201,10 +183,7 @@ export function buildIncidentVisibilityFilter(
                 eq(ovrReports.reporterId, userId),
                 eq(ovrReports.supervisorId, userId)
             ),
-            or(
-                sql`${ovrReports.status} != 'draft'`,
-                rejectedDraftForReporter
-            )
+            sql`${ovrReports.status} != 'draft'`
         );
     }
 
@@ -212,13 +191,10 @@ export function buildIncidentVisibilityFilter(
     if (includeDrafts) {
         return eq(ovrReports.reporterId, userId);
     }
-    // Default employee visibility: own non-draft + own rejected drafts
+    // Default employee visibility: own reports excluding drafts
     return and(
         eq(ovrReports.reporterId, userId),
-        or(
-            sql`${ovrReports.status} != 'draft'`,
-            rejectedDraftForReporter
-        )
+        sql`${ovrReports.status} != 'draft'`
     );
 }
 
@@ -247,19 +223,6 @@ export async function getIncidentSecure(
     // If incident doesn't exist at all, return 404
     if (!existingIncident) {
         throw new NotFoundError('Incident');
-    }
-
-    // Explicit fast-path for rejected drafts:
-    // - reporter can access own rejected draft
-    // - reviewer can access drafts they rejected
-    if (
-        isRejectedStatus(existingIncident) &&
-        (
-            existingIncident.reporterId === userContext.userId ||
-            existingIncident.qiReviewedBy === userContext.userId
-        )
-    ) {
-        return existingIncident;
     }
 
     // Step 2: Check if user has permission to view this incident

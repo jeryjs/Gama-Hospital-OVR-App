@@ -4,7 +4,7 @@
  * POST /api/incidents/[id]/qi-review
  * - QI reviews submitted incident
  * - Approves → Status changes to 'investigating'
- * - Rejects → Status changes back to 'draft' with rejection reason
+ * - Rejects → Status changes to 'qi_review' with rejection reason
  */
 
 import { db } from '@/db';
@@ -58,7 +58,7 @@ export async function POST(
         };
 
         if (body.decision === 'approve') {
-            // Approved - move to investigating status
+            // Approved - move to QI review stage
             updateData.status = 'qi_review';
             updateData.qiReviewedBy = parseInt(session.user.id);
             updateData.qiReviewedAt = new Date();
@@ -66,12 +66,11 @@ export async function POST(
             updateData.qiAssignedDate = new Date();
             updateData.qiRejectionReason = null;
         } else {
-            // Rejected - return to draft for reporter follow-up
-            updateData.status = 'draft';
+            // Rejected - keep in QI review with rejection reason
+            updateData.status = 'qi_review';
             updateData.qiRejectionReason = body.rejectionReason;
             updateData.qiReviewedBy = parseInt(session.user.id);
             updateData.qiReviewedAt = new Date();
-            updateData.submittedAt = null;
         }
 
         const [updated] = await db
@@ -84,7 +83,7 @@ export async function POST(
             success: true,
             message: body.decision === 'approve'
                 ? 'Incident reviewed and moved to investigation'
-                : 'Incident rejected and returned to reporter as draft',
+                : 'Incident rejected with feedback',
             incident: updated,
         });
     } catch (error) {

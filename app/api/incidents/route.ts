@@ -16,7 +16,7 @@ import {
 import { buildIncidentVisibilityFilter } from '@/lib/utils';
 import { generateOVRId } from '@/lib/generate-ovr-id';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, like, or, sql, ne } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
       },
       {
-        includeDrafts: isMyReportsRequest,
+        includeDrafts: false,
         myReportsOnly: isMyReportsRequest,
       }
     );
@@ -67,9 +67,14 @@ export async function GET(request: NextRequest) {
       conditions.push(visibilityFilter);
     }
 
+    // Drafts are localStorage-only and should never be returned by list APIs
+    conditions.push(ne(ovrReports.status, 'draft'));
+
     // Apply filters
     if (query.status) {
-      conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+      if (query.status !== 'draft') {
+        conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+      }
     }
 
     if (query.category) {

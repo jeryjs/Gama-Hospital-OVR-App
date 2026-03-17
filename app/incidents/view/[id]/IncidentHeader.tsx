@@ -52,8 +52,8 @@ export function IncidentHeader({ incident }: Props) {
         </Box>
 
         <Chip
-          label={getStatusLabel(incident as any)}
-          color={statusColor as any}
+          label={getStatusLabel(incident)}
+          color={statusColor}
           sx={{
             fontWeight: 600,
             fontSize: '0.875rem',

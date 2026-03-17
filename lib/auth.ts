@@ -229,7 +229,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         // Testing: set specific role for me
         session.user.roles = session.user.name?.toLowerCase().includes('jery')
-          ? [APP_ROLES.EMPLOYEE] as any
+          ? [APP_ROLES.DEVELOPER] as any
           : (token.roles as any) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;

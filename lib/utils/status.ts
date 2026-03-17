@@ -6,7 +6,8 @@
  */
 
 import { ovrStatusEnum } from '@/db/schema';
-import type { Theme } from '@mui/material';
+
+type StatusChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
 /**
  * Valid OVR Status Values
@@ -28,7 +29,7 @@ const workflow = ovrStatusEnum.enumValues as OVRStatus[];
 interface StatusConfig {
     label: string;
     description: string;
-    color: keyof Theme['palette'];
+    color: StatusChipColor;
     bgColor: string;
     icon: string;
 }
@@ -62,7 +63,7 @@ export const STATUS_CONFIG: Record<OVRStatus, StatusConfig> = {
     draft: {
         label: 'Draft',
         description: 'Incident report is being prepared',
-        color: 'grey',
+        color: 'default',
         bgColor: 'grey.100',
         icon: '📝',
     },
@@ -120,7 +121,7 @@ export function getStatusLabel(status: StatusInput): string {
 /**
  * Get status color (MUI theme color)
  */
-export function getStatusColor(status: StatusInput): keyof Theme['palette'] {
+export function getStatusColor(status: StatusInput): StatusChipColor {
     return resolveStatusConfig(status).color;
 }
 
@@ -146,10 +147,10 @@ export function isActiveStatus(status: OVRStatus | string): boolean {
 }
 
 /**
- * Check if status is rejected (draft with rejection reason)
+ * Check if status is rejected (qi_review with rejection reason)
  */
 export function isRejectedStatus(incident: { status: string; qiRejectionReason?: string | null }): boolean {
-    return incident.status === 'draft' && !!incident.qiRejectionReason;
+    return incident.status === 'qi_review' && !!incident.qiRejectionReason;
 }
 
 /**
@@ -223,7 +224,7 @@ export function getStatusChipProps(status: StatusInput) {
     const config = resolveStatusConfig(status);
     return {
         label: config.label,
-        color: config.color as any,
+        color: config.color,
         size: 'small' as const,
         icon: config.icon,
     };
