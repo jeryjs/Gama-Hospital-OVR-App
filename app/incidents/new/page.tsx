@@ -1496,14 +1496,27 @@ export default function NewIncidentPage() {
     if (!session?.user || !draftId) return;
 
     const userId = parseInt(session.user.id);
+
+    // If we were auto‑saving, promote this to a real "saved draft" id
+    const isAutoDraft = draftId.startsWith('auto-');
+    const savedDraftId = isAutoDraft ? generateDraftId() : draftId;
+
     const draft = prepareLocalDraft(
       formData,
-      draftId,
+      savedDraftId,
       userId,
       session.user.email || '',
       existingDraftCreatedAt
     );
     saveDraft(draft);
+
+    // If we promoted the draft, update state so future changes edit the saved draft
+    if (isAutoDraft) {
+      setDraftId(savedDraftId);
+      // Optional: remove the old auto‑save so it doesn't overwrite later
+      deleteDraft(draftId);
+    }
+
     setHasDraftSnapshot(true);
     setDraftUpdatedAt(draft.updatedAt);
     alert('Draft saved successfully!');
