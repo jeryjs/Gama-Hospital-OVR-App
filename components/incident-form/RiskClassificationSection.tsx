@@ -5,8 +5,9 @@ import {
     getRiskLevel
 } from '@/lib/constants';
 import { Assessment } from '@mui/icons-material';
-import { alpha, Box, Grid, Paper, Stack, Typography } from '@mui/material';
+import { alpha, Box, Paper, Stack, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
+import { theme } from '@/lib/theme';
 
 interface Props {
     incident: OVRReport;
@@ -41,7 +42,97 @@ export function RiskClassificationSection({ incident }: Props) {
             {/* Risk Assessment Result */}
             {score && riskLevel ? (
                 <>
-                    <Paper sx={{ p: 3, mt: 2, bgcolor: riskLevel.bgColor, border: `2px solid ${riskLevel.color}` }}>
+                    {/* Risk Matrix */}
+                    <Box sx={{ mt: 3 }}>
+                        <Typography variant="body2" fontWeight={600} gutterBottom>
+                            Risk Assessment Matrix
+                        </Typography>
+                        <Box sx={{ overflowX: 'auto', mt: 2 }}>
+                            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <Box component="thead">
+                                    <Box component="tr">
+                                        <Box
+                                            component="th"
+                                            sx={(theme) => ({
+                                                border: `1px solid ${theme.palette.divider}`,
+                                                p: 1,
+                                                minWidth: 120,
+                                                textAlign: 'left',
+                                                background: theme.palette.mode === 'dark'
+                                                    ? alpha(theme.palette.background.paper, 0.08)
+                                                    : alpha(theme.palette.grey[100], 0.9),
+                                            })}
+                                        >
+                                            Impact / Likelihood
+                                        </Box>
+                                        {RISK_LIKELIHOOD_LEVELS.map(level => (
+                                            <Box
+                                                key={level.value}
+                                                component="th"
+                                                sx={(theme) => ({
+                                                    border: `1px solid ${theme.palette.divider}`,
+                                                    p: 1,
+                                                    minWidth: 80,
+                                                    textAlign: 'center',
+                                                    background: theme.palette.mode === 'dark'
+                                                        ? alpha(theme.palette.background.paper, 0.08)
+                                                        : alpha(theme.palette.grey[100], 0.9),
+                                                })}
+                                            >
+                                                {level.value}<br /><small>{level.label}</small>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </Box>
+                                <Box component="tbody">
+                                    {RISK_MATRIX.map((row, impactIdx) => {
+                                        const impactValue = 5 - impactIdx;
+                                        const impactLabelRow = RISK_IMPACT_LEVELS.find(l => l.value === impactValue)?.label;
+                                        return (
+                                            <Box component="tr" key={impactIdx}>
+                                                <Box
+                                                    component="td"
+                                                    sx={(theme) => ({
+                                                        border: `1px solid ${theme.palette.divider}`,
+                                                        p: 1,
+                                                        fontWeight: 600,
+                                                        fontSize: 13,
+                                                        background: theme.palette.mode === 'dark'
+                                                            ? alpha(theme.palette.background.paper, 0.08)
+                                                            : alpha(theme.palette.grey[100], 0.9),
+                                                    })}
+                                                >
+                                                    {impactValue}. {impactLabelRow}
+                                                </Box>
+                                                {row.map((cellScore, likelihoodIdx) => {
+                                                    const cellLevel = getRiskLevel(cellScore);
+                                                    const isSelected = impact === (5 - impactIdx) && likelihood === (likelihoodIdx + 1);
+                                                    return (
+                                                        <Box
+                                                            component="td"
+                                                            key={likelihoodIdx}
+                                                            sx={(theme) => ({
+                                                                border: `2px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
+                                                                p: 1.5,
+                                                                textAlign: 'center',
+                                                                background: alpha(cellLevel.color, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+                                                                fontWeight: isSelected ? 700 : 600,
+                                                                fontSize: isSelected ? 18 : 14,
+                                                            })}
+                                                        >
+                                                            {cellScore}
+                                                        </Box>
+                                                    );
+                                                })}
+                                            </Box>
+                                        );
+                                    })}
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    <Paper sx={{ p: 3, mt: 3, bgcolor: alpha(riskLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.08), border: `2px solid ${riskLevel.color}` }}>
                         <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
                             <Box>
                                 <Typography variant="caption" color="text.secondary">
@@ -61,61 +152,6 @@ export function RiskClassificationSection({ incident }: Props) {
                             </Box>
                         </Stack>
                     </Paper>
-
-                    {/* Risk Matrix */}
-                    <Box sx={{ mt: 3 }}>
-                        <Typography variant="body2" fontWeight={600} gutterBottom>
-                            Risk Assessment Matrix
-                        </Typography>
-                        <Box sx={{ overflowX: 'auto', mt: 2 }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={{ border: '1px solid #ddd', padding: '8px', background: '#f5f5f5', minWidth: '120px' }}>
-                                            Impact / Likelihood
-                                        </th>
-                                        {RISK_LIKELIHOOD_LEVELS.map(level => (
-                                            <th key={level.value} style={{ border: '1px solid #ddd', padding: '8px', background: '#f5f5f5', textAlign: 'center', minWidth: '80px' }}>
-                                                {level.value}<br /><small>{level.label}</small>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {RISK_MATRIX.map((row, impactIdx) => {
-                                        const impactValue = 5 - impactIdx;
-                                        const impactLabelRow = RISK_IMPACT_LEVELS.find(l => l.value === impactValue)?.label;
-                                        return (
-                                            <tr key={impactIdx}>
-                                                <td style={{ border: '1px solid #ddd', padding: '8px', background: '#f5f5f5', fontWeight: 600, fontSize: '13px' }}>
-                                                    {impactValue}. {impactLabelRow}
-                                                </td>
-                                                {row.map((cellScore, likelihoodIdx) => {
-                                                    const cellLevel = getRiskLevel(cellScore);
-                                                    const isSelected = impact === (5 - impactIdx) && likelihood === (likelihoodIdx + 1);
-                                                    return (
-                                                        <td
-                                                            key={likelihoodIdx}
-                                                            style={{
-                                                                border: '3px solid ' + (isSelected ? '#1976d2' : '#ddd'),
-                                                                padding: '12px',
-                                                                textAlign: 'center',
-                                                                background: cellLevel.bgColor,
-                                                                fontWeight: isSelected ? 700 : 600,
-                                                                fontSize: isSelected ? '18px' : '14px',
-                                                            }}
-                                                        >
-                                                            {cellScore}
-                                                        </td>
-                                                    );
-                                                })}
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </Box>
-                    </Box>
                 </>
             ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontStyle: 'italic' }}>

@@ -163,7 +163,205 @@ export function deserializeFromHTML(html: string | undefined | null): EditorValu
  * @returns Plate editor value with basic formatting preserved
  */
 export function deserializeFromMarkdown(markdown: string | undefined | null): EditorValue {
-    // For now, use plain text conversion
-    // TODO: Implement proper markdown parsing with marks if needed
-    return deserializeFromPlainText(markdown);
+    if (!markdown || markdown.trim() === '') {
+        return [
+            {
+                type: 'p',
+                children: [{ text: '' }],
+            },
+        ];
+    }
+
+    const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+    const nodes: EditorValue = [];
+
+    const parseInline = (text: string): any[] => {
+        const segments: any[] = [];
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+        let cursor = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = linkRegex.exec(text)) !== null) {
+            const [full, label, url] = match;
+            const index = match.index;
+
+            if (index > cursor) {
+                segments.push({ text: text.slice(cursor, index) });
+            }
+
+            segments.push({
+                type: 'a',
+                url,
+                children: [{ text: label }],
+            });
+
+            cursor = index + full.length;
+        }
+
+        if (cursor < text.length) {
+            segments.push({ text: text.slice(cursor) });
+        }
+
+        const applyPattern = (input: any[], regex: RegExp, toNode: (content: string) => any) =>
+            input.flatMap((segment) => {
+                if (!segment || typeof segment !== 'object' || !('text' in segment)) {
+                    return [segment];
+                }
+
+                const source = String(segment.text || '');
+                const parts: any[] = [];
+                let localCursor = 0;
+                let localMatch: RegExpExecArray | null;
+                regex.lastIndex = 0;
+
+                while ((localMatch = regex.exec(source)) !== null) {
+                    const [full, content] = localMatch;
+                    const at = localMatch.index;
+
+                    if (at > localCursor) {
+                        parts.push({ ...segment, text: source.slice(localCursor, at) });
+                    }
+
+                    parts.push(toNode(content));
+                    localCursor = at + full.length;
+                }
+
+                if (localCursor < source.length) {
+                    parts.push({ ...segment, text: source.slice(localCursor) });
+                }
+
+                return parts.length ? parts : [segment];
+            });
+
+        let output = segments;
+        output = applyPattern(output, /<u>(.*?)<\/u>/g, (content) => ({ text: content, underline: true }));
+        output = applyPattern(output, /\*\*([^*]+)\*\*/g, (content) => ({ text: content, bold: true }));
+        output = applyPattern(output, /\*([^*]+)\*/g, (content) => ({ text: content, italic: true }));
+
+        return output.length ? output : [{ text: text }];
+    };
+
+    const isBullet = (line: string) => /^[-*]\s+/.test(line.trim());
+    const isNumbered = (line: string) => /^\d+\.\s+/.test(line.trim());
+    const isHeading = (line: string) => /^#{1,3}\s*/.test(line.trim());
+    const isQuote = (line: string) => /^>\s+/.test(line.trim());
+
+    let i = 0;
+    while (i < lines.length) {
+        const raw = lines[i];
+        const line = raw.trim();
+
+        if (!line) {
+            i += 1;
+            continue;
+        }
+
+        if (isHeading(line)) {
+            const depth = Math.min((line.match(/^#+/)?.[0].length || 1), 3);
+            const text = line.replace(/^#{1,3}\s*/, '');
+            nodes.push({
+                type: depth === 1 ? 'h1' : depth === 2 ? 'h2' : 'h3',
+                children: parseInline(text),
+            } as any);
+            i += 1;
+            continue;
+        }
+
+        if (isQuote(line)) {
+            const quoteLines: string[] = [];
+            while (i < lines.length && isQuote(lines[i])) {
+                quoteLines.push(lines[i].trim().replace(/^>\s+/, ''));
+                i += 1;
+            }
+            nodes.push({
+                type: 'blockquote',
+                children: parseInline(quoteLines.join('\n')),
+            } as any);
+            continue;
+        }
+
+        if (isBullet(line)) {
+            const items: any[] = [];
+            while (i < lines.length) {
+                const current = lines[i].trim();
+                if (!current) {
+                    i += 1;
+                    continue;
+                }
+                if (!isBullet(current)) break;
+
+                const itemText = current.replace(/^[-*]\s+/, '');
+                items.push({
+                    type: 'li',
+                    children: [
+                        {
+                            type: 'lic',
+                            children: parseInline(itemText),
+                        },
+                    ],
+                });
+                i += 1;
+            }
+
+            nodes.push({
+                type: 'ul',
+                children: items,
+            } as any);
+            continue;
+        }
+
+        if (isNumbered(line)) {
+            const items: any[] = [];
+            while (i < lines.length) {
+                const current = lines[i].trim();
+                if (!current) {
+                    i += 1;
+                    continue;
+                }
+                if (!isNumbered(current)) break;
+
+                const itemText = current.replace(/^\d+\.\s+/, '');
+                items.push({
+                    type: 'li',
+                    children: [
+                        {
+                            type: 'lic',
+                            children: parseInline(itemText),
+                        },
+                    ],
+                });
+                i += 1;
+            }
+
+            nodes.push({
+                type: 'ol',
+                children: items,
+            } as any);
+            continue;
+        }
+
+        const paragraphLines: string[] = [line];
+        i += 1;
+        while (i < lines.length) {
+            const current = lines[i].trim();
+            if (!current) break;
+            if (isHeading(current) || isQuote(current) || isBullet(current) || isNumbered(current)) break;
+            paragraphLines.push(current);
+            i += 1;
+        }
+
+        nodes.push({
+            type: 'p',
+            children: parseInline(paragraphLines.join('\n')),
+        } as any);
+    }
+
+    return nodes.length
+        ? nodes
+        : [
+            {
+                type: 'p',
+                children: [{ text: '' }],
+            },
+        ];
 }

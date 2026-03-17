@@ -24,6 +24,7 @@ interface IncidentsSidebarProps {
 }
 
 export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps) {
+    return <></>    // disable sidebar for now
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();

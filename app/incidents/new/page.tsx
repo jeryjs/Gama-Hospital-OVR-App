@@ -149,14 +149,7 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
   let description: EditorValue | undefined = undefined;
   if (draftFields.description) {
     if (typeof draftFields.description === 'string') {
-      try {
-        const parsed = JSON.parse(draftFields.description);
-        description = Array.isArray(parsed)
-          ? parsed as EditorValue
-          : deserializeFromMarkdown(draftFields.description);
-      } catch {
-        description = deserializeFromMarkdown(draftFields.description);
-      }
+      description = deserializeFromMarkdown(draftFields.description);
     } else {
       description = draftFields.description as EditorValue;
     }
@@ -594,9 +587,11 @@ function PersonDetailsFields({
  */
 function ClassificationSection({
   formData,
+  editorSeed,
   onChange,
 }: {
   formData: FormData;
+  editorSeed: number;
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
   const descriptionLength = formData.description ? getCharacterCount(formData.description) : 0;
@@ -630,6 +625,7 @@ function ClassificationSection({
               Description of Occurrence / Variance *
             </Typography>
             <RichTextEditor
+              key={`description-editor-${editorSeed}`}
               value={formData.description}
               onChange={(value) => onChange('description', value)}
               placeholder="Please provide a detailed description of what occurred..."
@@ -1354,6 +1350,7 @@ export default function NewIncidentPage() {
   const [hasDraftSnapshot, setHasDraftSnapshot] = useState(false);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
+  const [descriptionEditorSeed, setDescriptionEditorSeed] = useState(0);
 
   // Draft management - using localStorage
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -1372,6 +1369,7 @@ export default function NewIncidentPage() {
       const existingDraft = getDraftById(draftParam);
       if (existingDraft) {
         setFormData(parseDraftFromLocalStorage(existingDraft));
+        setDescriptionEditorSeed((seed) => seed + 1);
         setExistingDraftCreatedAt(existingDraft.createdAt);
         setHasDraftSnapshot(true);
         setDraftUpdatedAt(existingDraft.updatedAt);
@@ -1388,6 +1386,7 @@ export default function NewIncidentPage() {
       const existingAutoDraft = getDraftById(autoDraftId);
       if (existingAutoDraft) {
         setFormData(parseDraftFromLocalStorage(existingAutoDraft));
+        setDescriptionEditorSeed((seed) => seed + 1);
         setExistingDraftCreatedAt(existingAutoDraft.createdAt);
         setHasDraftSnapshot(true);
         setDraftUpdatedAt(existingAutoDraft.updatedAt);
@@ -1460,6 +1459,7 @@ export default function NewIncidentPage() {
     setHasDraftSnapshot(false);
     setDraftUpdatedAt(undefined);
     setFormData(getEmptyFormData());
+    setDescriptionEditorSeed((seed) => seed + 1);
   }, [draftId]);
 
   // Save draft handler (explicit save)
@@ -1559,7 +1559,7 @@ export default function NewIncidentPage() {
 
               <PersonDetailsFields formData={formData} onChange={handleChange} />
 
-              <ClassificationSection formData={formData} onChange={handleChange} />
+              <ClassificationSection formData={formData} editorSeed={descriptionEditorSeed} onChange={handleChange} />
 
               <ImmediateActionsSection
                 formData={formData}

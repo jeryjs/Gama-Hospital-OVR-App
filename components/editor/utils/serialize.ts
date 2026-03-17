@@ -146,6 +146,12 @@ function serializeNodeToMarkdown(node: unknown): string {
         ?.map((child) => serializeNodeToMarkdown(child))
         .join('') || '';
 
+    const normalizeListItemText = (text: string) =>
+        text
+            .replace(/^[-*]\s+/, '')
+            .replace(/^\d+\.\s+/, '')
+            .trim();
+
     switch (node.type) {
         case 'h1':
             return `# ${childText}`;
@@ -160,18 +166,18 @@ function serializeNodeToMarkdown(node: unknown): string {
                 .join('\n');
         case 'ul':
             return node.children
-                ?.map((child) => serializeNodeToMarkdown(child))
+                ?.map((child) => `- ${normalizeListItemText(serializeNodeToMarkdown(child))}`)
                 .join('\n') || '';
         case 'ol':
             return node.children
                 ?.map((child, index) => {
-                    const line = serializeNodeToMarkdown(child).replace(/^[-*]\s+/, '');
+                    const line = normalizeListItemText(serializeNodeToMarkdown(child));
                     return `${index + 1}. ${line}`;
                 })
                 .join('\n') || '';
         case 'li':
         case 'lic':
-            return `- ${childText}`;
+            return childText;
         case 'a': {
             const url = typeof (node as { url?: unknown }).url === 'string'
                 ? (node as { url: string }).url
