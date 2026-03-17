@@ -41,7 +41,10 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.67.0",
     "recharts": "^3.5.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
     "swr": "^2.3.7",
+    "unified": "^11.0.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {

@@ -1,4 +1,7 @@
 import type { EditorValue } from '../plate-types';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 
 /**
  * Deserialize plain text to Plate editor value
@@ -172,196 +175,138 @@ export function deserializeFromMarkdown(markdown: string | undefined | null): Ed
         ];
     }
 
-    const lines = markdown.replace(/\r\n/g, '\n').split('\n');
-    const nodes: EditorValue = [];
+    const ast = unified()
+        .use(remarkParse)
+        .use(remarkGfm)
+        .parse(markdown) as any;
 
-    const parseInline = (text: string): any[] => {
-        const segments: any[] = [];
-        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-        let cursor = 0;
-        let match: RegExpExecArray | null;
-
-        while ((match = linkRegex.exec(text)) !== null) {
-            const [full, label, url] = match;
-            const index = match.index;
-
-            if (index > cursor) {
-                segments.push({ text: text.slice(cursor, index) });
+    const withMark = (nodes: any[], mark: 'bold' | 'italic' | 'underline'): any[] =>
+        nodes.map((node) => {
+            if (node && typeof node === 'object' && 'text' in node) {
+                return { ...node, [mark]: true };
             }
 
-            segments.push({
-                type: 'a',
-                url,
-                children: [{ text: label }],
-            });
+            if (node?.type === 'a' && Array.isArray(node.children)) {
+                return { ...node, children: withMark(node.children, mark) };
+            }
 
-            cursor = index + full.length;
-        }
+            return node;
+        });
 
-        if (cursor < text.length) {
-            segments.push({ text: text.slice(cursor) });
-        }
+    const inlineFromMd = (inlineNodes: any[]): any[] => {
+        const output: any[] = [];
 
-        const applyPattern = (input: any[], regex: RegExp, toNode: (content: string) => any) =>
-            input.flatMap((segment) => {
-                if (!segment || typeof segment !== 'object' || !('text' in segment)) {
-                    return [segment];
-                }
+        for (const node of inlineNodes || []) {
+            if (!node) continue;
 
-                const source = String(segment.text || '');
-                const parts: any[] = [];
-                let localCursor = 0;
-                let localMatch: RegExpExecArray | null;
-                regex.lastIndex = 0;
+            switch (node.type) {
+                case 'text':
+                    output.push({ text: node.value || '' });
+                    break;
 
-                while ((localMatch = regex.exec(source)) !== null) {
-                    const [full, content] = localMatch;
-                    const at = localMatch.index;
+                case 'strong':
+                    output.push(...withMark(inlineFromMd(node.children || []), 'bold'));
+                    break;
 
-                    if (at > localCursor) {
-                        parts.push({ ...segment, text: source.slice(localCursor, at) });
+                case 'emphasis':
+                    output.push(...withMark(inlineFromMd(node.children || []), 'italic'));
+                    break;
+
+                case 'link':
+                    output.push({
+                        type: 'a',
+                        url: node.url || '',
+                        children: inlineFromMd(node.children || []),
+                    });
+                    break;
+
+                case 'inlineCode':
+                    output.push({ text: node.value || '' });
+                    break;
+
+                case 'break':
+                    output.push({ text: '\n' });
+                    break;
+
+                case 'html': {
+                    const value = String(node.value || '');
+                    const underlineMatch = value.match(/^<u>(.*?)<\/u>$/i);
+                    if (underlineMatch) {
+                        output.push(...withMark([{ text: underlineMatch[1] || '' }], 'underline'));
                     }
-
-                    parts.push(toNode(content));
-                    localCursor = at + full.length;
+                    break;
                 }
 
-                if (localCursor < source.length) {
-                    parts.push({ ...segment, text: source.slice(localCursor) });
-                }
+                default:
+                    if (typeof node.value === 'string') {
+                        output.push({ text: node.value });
+                    }
+            }
+        }
 
-                return parts.length ? parts : [segment];
-            });
-
-        let output = segments;
-        output = applyPattern(output, /<u>(.*?)<\/u>/g, (content) => ({ text: content, underline: true }));
-        output = applyPattern(output, /\*\*([^*]+)\*\*/g, (content) => ({ text: content, bold: true }));
-        output = applyPattern(output, /\*([^*]+)\*/g, (content) => ({ text: content, italic: true }));
-
-        return output.length ? output : [{ text: text }];
+        return output.length ? output : [{ text: '' }];
     };
 
-    const isBullet = (line: string) => /^[-*]\s+/.test(line.trim());
-    const isNumbered = (line: string) => /^\d+\.\s+/.test(line.trim());
-    const isHeading = (line: string) => /^#{1,3}\s*/.test(line.trim());
-    const isQuote = (line: string) => /^>\s+/.test(line.trim());
+    const blockFromMd = (node: any): any[] => {
+        if (!node) return [];
 
-    let i = 0;
-    while (i < lines.length) {
-        const raw = lines[i];
-        const line = raw.trim();
-
-        if (!line) {
-            i += 1;
-            continue;
-        }
-
-        if (isHeading(line)) {
-            const depth = Math.min((line.match(/^#+/)?.[0].length || 1), 3);
-            const text = line.replace(/^#{1,3}\s*/, '');
-            nodes.push({
-                type: depth === 1 ? 'h1' : depth === 2 ? 'h2' : 'h3',
-                children: parseInline(text),
-            } as any);
-            i += 1;
-            continue;
-        }
-
-        if (isQuote(line)) {
-            const quoteLines: string[] = [];
-            while (i < lines.length && isQuote(lines[i])) {
-                quoteLines.push(lines[i].trim().replace(/^>\s+/, ''));
-                i += 1;
+        switch (node.type) {
+            case 'heading': {
+                const depth = Math.min(Math.max(Number(node.depth || 1), 1), 3);
+                return [{
+                    type: depth === 1 ? 'h1' : depth === 2 ? 'h2' : 'h3',
+                    children: inlineFromMd(node.children || []),
+                }];
             }
-            nodes.push({
-                type: 'blockquote',
-                children: parseInline(quoteLines.join('\n')),
-            } as any);
-            continue;
-        }
 
-        if (isBullet(line)) {
-            const items: any[] = [];
-            while (i < lines.length) {
-                const current = lines[i].trim();
-                if (!current) {
-                    i += 1;
-                    continue;
-                }
-                if (!isBullet(current)) break;
+            case 'paragraph':
+                return [{
+                    type: 'p',
+                    children: inlineFromMd(node.children || []),
+                }];
 
-                const itemText = current.replace(/^[-*]\s+/, '');
-                items.push({
-                    type: 'li',
-                    children: [
-                        {
-                            type: 'lic',
-                            children: parseInline(itemText),
-                        },
-                    ],
+            case 'blockquote': {
+                const quoteChildren = (node.children || []).flatMap((child: any) => {
+                    if (child.type === 'paragraph') return inlineFromMd(child.children || []);
+                    return blockFromMd(child).flatMap((b: any) => b.children || [{ text: '' }]);
                 });
-                i += 1;
+
+                return [{
+                    type: 'blockquote',
+                    children: quoteChildren.length ? quoteChildren : [{ text: '' }],
+                }];
             }
 
-            nodes.push({
-                type: 'ul',
-                children: items,
-            } as any);
-            continue;
+            case 'list':
+                return [{
+                    type: node.ordered ? 'ol' : 'ul',
+                    children: (node.children || []).map((item: any) => {
+                        const firstParagraph = (item.children || []).find((c: any) => c.type === 'paragraph');
+                        const licChildren = firstParagraph
+                            ? inlineFromMd(firstParagraph.children || [])
+                            : [{ text: '' }];
+
+                        return {
+                            type: 'li',
+                            children: [{
+                                type: 'lic',
+                                children: licChildren,
+                            }],
+                        };
+                    }),
+                }];
+
+            case 'thematicBreak':
+                return [{ type: 'p', children: [{ text: '---' }] }];
+
+            default:
+                return [];
         }
+    };
 
-        if (isNumbered(line)) {
-            const items: any[] = [];
-            while (i < lines.length) {
-                const current = lines[i].trim();
-                if (!current) {
-                    i += 1;
-                    continue;
-                }
-                if (!isNumbered(current)) break;
+    const plateNodes = (ast.children || []).flatMap((node: any) => blockFromMd(node));
 
-                const itemText = current.replace(/^\d+\.\s+/, '');
-                items.push({
-                    type: 'li',
-                    children: [
-                        {
-                            type: 'lic',
-                            children: parseInline(itemText),
-                        },
-                    ],
-                });
-                i += 1;
-            }
-
-            nodes.push({
-                type: 'ol',
-                children: items,
-            } as any);
-            continue;
-        }
-
-        const paragraphLines: string[] = [line];
-        i += 1;
-        while (i < lines.length) {
-            const current = lines[i].trim();
-            if (!current) break;
-            if (isHeading(current) || isQuote(current) || isBullet(current) || isNumbered(current)) break;
-            paragraphLines.push(current);
-            i += 1;
-        }
-
-        nodes.push({
-            type: 'p',
-            children: parseInline(paragraphLines.join('\n')),
-        } as any);
-    }
-
-    return nodes.length
-        ? nodes
-        : [
-            {
-                type: 'p',
-                children: [{ text: '' }],
-            },
-        ];
+    return plateNodes.length
+        ? (plateNodes as EditorValue)
+        : [{ type: 'p', children: [{ text: '' }] }];
 }
