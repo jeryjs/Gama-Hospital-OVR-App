@@ -62,7 +62,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ============================================
 // FORM DATA TYPE
@@ -145,10 +145,14 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
     }
   }
 
+  const parsedTime = draft.occurrenceTime
+    ? dayjs(draft.occurrenceTime, 'HH:mm:ss')
+    : undefined;
+
   return {
     ...draft,
     occurrenceDate: draft.occurrenceDate ? dayjs(draft.occurrenceDate) : undefined,
-    occurrenceTime: draft.occurrenceTime ? dayjs(draft.occurrenceTime) : undefined,
+    occurrenceTime: parsedTime?.isValid() ? parsedTime : undefined,
     description,
   } as unknown as FormData;
 }
@@ -1383,6 +1387,7 @@ export default function NewIncidentPage() {
   // Draft management - using localStorage
   const [draftId, setDraftId] = useState<string | null>(null);
   const [existingDraftCreatedAt, setExistingDraftCreatedAt] = useState<string | undefined>();
+  const didLoadDraftRef = useRef(false);
 
   // Initialize draft once session state is ready
   useEffect(() => {
@@ -1391,6 +1396,7 @@ export default function NewIncidentPage() {
     const params = new URLSearchParams(window.location.search);
     const draftParam = params.get('draft');
 
+    // Explicit draft request – load it (if it exists), but don't fall back to "latest saved draft"
     if (draftParam && isDraftId(draftParam)) {
       const existingDraft = getDraftById(draftParam);
       if (existingDraft) {
@@ -1404,21 +1410,20 @@ export default function NewIncidentPage() {
       return;
     }
 
+    // /new: load the auto-save draft only (don't load other saved drafts)
     const userId = Number(session?.user?.id);
     if (Number.isFinite(userId) && userId > 0) {
-      const latestDraft = getUserDrafts(userId).sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )[0];
-
-      if (latestDraft) {
-        setDraftId(latestDraft.id);
-        setFormData(parseDraftFromLocalStorage(latestDraft));
-        setExistingDraftCreatedAt(latestDraft.createdAt);
+      const autoDraftId = `auto-${userId}`;
+      const existingAutoDraft = getDraftById(autoDraftId);
+      if (existingAutoDraft) {
+        setFormData(parseDraftFromLocalStorage(existingAutoDraft));
+        setExistingDraftCreatedAt(existingAutoDraft.createdAt);
         setHasDraftSnapshot(true);
-        setDraftUpdatedAt(latestDraft.updatedAt);
-        setDraftLoaded(true);
-        return;
+        setDraftUpdatedAt(existingAutoDraft.updatedAt);
       }
+      setDraftId(autoDraftId);
+      setDraftLoaded(true);
+      return;
     }
 
     setDraftId(generateDraftId());
@@ -1430,6 +1435,11 @@ export default function NewIncidentPage() {
   // Auto-save to localStorage with debounce
   useEffect(() => {
     if (!draftLoaded || !session?.user || !draftId) return;
+
+    if (!didLoadDraftRef.current) {
+      didLoadDraftRef.current = true;
+      return;
+    }
 
     const timer = setTimeout(() => {
       const userId = parseInt(session.user.id);
@@ -1497,6 +1507,7 @@ export default function NewIncidentPage() {
     setHasDraftSnapshot(true);
     setDraftUpdatedAt(draft.updatedAt);
     alert('Draft saved successfully!');
+    router.push('/incidents/me')
   }, [formData, draftId, session?.user, existingDraftCreatedAt]);
 
   // Submit handler - sends to API and deletes draft on success
