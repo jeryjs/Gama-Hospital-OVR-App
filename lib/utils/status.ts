@@ -147,10 +147,10 @@ export function isActiveStatus(status: OVRStatus | string): boolean {
 }
 
 /**
- * Check if status is rejected (qi_review with rejection reason)
+ * Check if status is rejected (draft with rejection reason)
  */
 export function isRejectedStatus(incident: { status: string; qiRejectionReason?: string | null }): boolean {
-    return incident.status === 'qi_review' && !!incident.qiRejectionReason;
+    return incident.status === 'draft' && !!incident.qiRejectionReason;
 }
 
 /**

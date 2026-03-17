@@ -194,7 +194,8 @@ function prepareIncidentPayload(formData: FormData, status: 'draft' | 'submitted
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
     // Serialize rich text description to Markdown string
     description: serializeToMarkdown(formData.description),
-    status,
+    // Status is always submitted when sent to API
+    status: 'submitted',
   };
 }
 
@@ -1356,6 +1357,7 @@ export default function NewIncidentPage() {
   const [hasDraftSnapshot, setHasDraftSnapshot] = useState(false);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
+  const [serverDraftIncidentId, setServerDraftIncidentId] = useState<string | null>(null);
   const [descriptionEditorSeed, setDescriptionEditorSeed] = useState(0);
   const [isFetchingServerDraft, setIsFetchingServerDraft] = useState(false);
 
@@ -1371,7 +1373,7 @@ export default function NewIncidentPage() {
     const params = new URLSearchParams(window.location.search);
     const draftParam = params.get('draft');
 
-    // Explicit draft request – only local draft IDs are editable in /new
+    // Explicit draft request – load local draft or backend rejected draft
     if (draftParam && isDraftId(draftParam)) {
       const existingDraft = getDraftById(draftParam);
       if (existingDraft) {
@@ -1402,9 +1404,20 @@ export default function NewIncidentPage() {
             return;
           }
 
-          if (!cancelled) {
-            await showError(new Error('Editing by incident ID is not allowed on this page. Open your local draft from My Reports.'));
+          const incidentDraft = await res.json();
+          if (cancelled) return;
+
+          if (incidentDraft.status !== 'draft') {
+            await showError(new Error('Only draft or rejected reports can be edited from this page.'));
+            setIsFetchingServerDraft(false);
+            setDraftLoaded(true);
+            return;
           }
+
+          setFormData(parseDraftFromLocalStorage(incidentDraft as unknown as LocalDraft));
+          setServerDraftIncidentId(draftParam);
+          setHasDraftSnapshot(true);
+          setDraftUpdatedAt(incidentDraft.updatedAt || new Date().toISOString());
           setIsFetchingServerDraft(false);
           setDraftLoaded(true);
         } catch (error) {
@@ -1434,11 +1447,13 @@ export default function NewIncidentPage() {
         setDraftUpdatedAt(existingAutoDraft.updatedAt);
       }
       setDraftId(autoDraftId);
+      setServerDraftIncidentId(null);
       setDraftLoaded(true);
       return;
     }
 
     setDraftId(generateDraftId());
+    setServerDraftIncidentId(null);
     setHasDraftSnapshot(false);
     setDraftUpdatedAt(undefined);
     setDraftLoaded(true);
@@ -1446,7 +1461,7 @@ export default function NewIncidentPage() {
 
   // Auto-save to localStorage with debounce
   useEffect(() => {
-    if (!draftLoaded || !session?.user || !draftId) return;
+    if (!draftLoaded || !session?.user || !draftId || serverDraftIncidentId) return;
 
     if (!didLoadDraftRef.current) {
       didLoadDraftRef.current = true;
@@ -1468,7 +1483,7 @@ export default function NewIncidentPage() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [formData, draftLoaded, draftId, session?.user, existingDraftCreatedAt]);
+  }, [formData, draftLoaded, draftId, session?.user, existingDraftCreatedAt, serverDraftIncidentId]);
 
   // Handle field changes
   const handleChange = useCallback((key: keyof FormData, value: unknown) => {
@@ -1492,6 +1507,10 @@ export default function NewIncidentPage() {
 
   // Clear draft
   const handleClearDraft = useCallback(() => {
+    if (serverDraftIncidentId) {
+      setServerDraftIncidentId(null);
+    }
+
     if (draftId) {
       deleteDraft(draftId);
     }
@@ -1502,11 +1521,38 @@ export default function NewIncidentPage() {
     setDraftUpdatedAt(undefined);
     setFormData(getEmptyFormData());
     setDescriptionEditorSeed((seed) => seed + 1);
-  }, [draftId]);
+  }, [draftId, serverDraftIncidentId]);
 
   // Save draft handler (explicit save)
   const handleSaveDraft = useCallback(() => {
     if (!session?.user) return;
+
+    if (serverDraftIncidentId) {
+      (async () => {
+        try {
+          const payload = prepareIncidentPayload(formData, 'draft');
+          const res = await fetch(`/api/incidents/${serverDraftIncidentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            await showError(res);
+            return;
+          }
+
+          const updated = await res.json();
+          setHasDraftSnapshot(true);
+          setDraftUpdatedAt(updated.updatedAt || new Date().toISOString());
+          alert('Draft updated successfully!');
+        } catch (error) {
+          void showError(error);
+        }
+      })();
+
+      return;
+    }
 
     if (!draftId) return;
 
@@ -1536,7 +1582,7 @@ export default function NewIncidentPage() {
     setDraftUpdatedAt(draft.updatedAt);
     alert('Draft saved successfully!');
     router.push('/incidents/me')
-  }, [formData, draftId, session?.user, existingDraftCreatedAt, router]);
+  }, [formData, draftId, session?.user, existingDraftCreatedAt, serverDraftIncidentId, router, showError]);
 
   // Submit handler - sends to API and deletes draft on success
   const handleSubmit = async () => {
@@ -1544,11 +1590,17 @@ export default function NewIncidentPage() {
     try {
       const payload = preparePayload(formData);
 
-      const res = await fetch('/api/incidents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = serverDraftIncidentId
+        ? await fetch(`/api/incidents/${serverDraftIncidentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        : await fetch('/api/incidents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
       if (!res.ok) {
         await showError(res);
@@ -1557,7 +1609,7 @@ export default function NewIncidentPage() {
 
       const data = await res.json();
 
-      if (draftId) {
+      if (draftId && !serverDraftIncidentId) {
         deleteDraft(draftId);
       }
 
