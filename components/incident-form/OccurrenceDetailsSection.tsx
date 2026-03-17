@@ -1,6 +1,7 @@
 'use client';
 
 import { PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
+import { RichTextPreview } from '@/components/editor';
 import { getTaxonomyItem, loadTaxonomy, type TaxonomyData } from '@/lib/services/taxonomyService';
 import { Person, Place, Warning } from '@mui/icons-material';
 import { Box, Chip, Grid, Paper, Typography, alpha } from '@mui/material';
@@ -159,9 +160,7 @@ export function OccurrenceDetailsSection({ incident }: Props) {
             border: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-            {incident.description}
-          </Typography>
+          <RichTextPreview value={incident.description} emptyText="No description provided" />
         </Box>
       </Box>
     </Paper>

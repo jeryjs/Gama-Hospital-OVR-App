@@ -15,6 +15,7 @@ import {
     BulletedListElement,
     NumberedListElement,
     ListItemElement,
+    ListItemContentElement,
     LinkElement,
 } from './elements';
 import type { EditorValue } from './plate-types';
@@ -41,7 +42,7 @@ const editorComponents = {
     ul: BulletedListElement,
     ol: NumberedListElement,
     li: ListItemElement,
-    lic: ListItemElement,
+    lic: ListItemContentElement,
     a: LinkElement,
 };
 
@@ -136,15 +137,17 @@ export function RichTextEditor({
                         ? 'divider'
                         : 'divider',
                 borderRadius: 2,
-                backgroundColor: disabled
-                    ? alpha('#141414', 0.5)
-                    : '#141414',
+                backgroundColor: (theme) => disabled
+                    ? alpha(theme.palette.action.disabledBackground, 0.6)
+                    : theme.palette.background.paper,
                 transition: 'all 0.2s ease',
                 overflow: 'hidden',
                 cursor: isInPreviewMode ? 'pointer' : 'text',
-                '&:hover': {
-                    borderColor: !disabled && !isFocused ? alpha('#00E599', 0.5) : undefined,
-                },
+                '&:hover': !disabled && !isFocused
+                    ? {
+                        borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+                    }
+                    : undefined,
             }}
         >
             <Plate

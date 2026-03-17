@@ -201,7 +201,7 @@ export function FloatingToolbar() {
                                 alignItems: 'center',
                                 gap: 0.25,
                                 p: 0.5,
-                                backgroundColor: alpha('#1A1A1A', 0.95),
+                                backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.96),
                                 backdropFilter: 'blur(8px)',
                                 border: '1px solid',
                                 borderColor: 'divider',

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Typography, Link, alpha } from '@mui/material';
 import type { EditorValue, TElement, TText } from './plate-types';
 import { isEmptyValue } from './plate-types';
 import { deserializeFromMarkdown } from './utils';
@@ -108,18 +108,18 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                 <Box
                     key={index}
                     component="blockquote"
-                    sx={{
+                    sx={(theme) => ({
                         borderLeft: '4px solid',
                         borderColor: 'primary.main',
                         pl: 2,
                         py: 0.5,
                         my: 1.5,
                         mx: 0,
-                        backgroundColor: 'rgba(0, 229, 153, 0.05)',
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
                         borderRadius: '0 8px 8px 0',
                         fontStyle: 'italic',
                         color: 'text.secondary',
-                    }}
+                    })}
                 >
                     {children}
                 </Box>
@@ -133,6 +133,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     sx={{
                         pl: 3,
                         my: 1,
+                        listStyleType: 'disc',
+                        '& > li': {
+                            display: 'list-item',
+                        },
                         '& > li::marker': {
                             color: 'primary.main',
                         },
@@ -150,6 +154,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     sx={{
                         pl: 3,
                         my: 1,
+                        listStyleType: 'decimal',
+                        '& > li': {
+                            display: 'list-item',
+                        },
                         '& > li::marker': {
                             color: 'primary.main',
                             fontWeight: 600,
@@ -161,13 +169,26 @@ function renderNode(node: unknown, index: number): React.ReactNode {
             );
 
         case 'li':
-        case 'lic':
             return (
                 <Box
                     key={index}
                     component="li"
                     sx={{
                         py: 0.25,
+                        lineHeight: 1.7,
+                        color: 'text.primary',
+                    }}
+                >
+                    {children}
+                </Box>
+            );
+
+        case 'lic':
+            return (
+                <Box
+                    key={index}
+                    component="span"
+                    sx={{
                         lineHeight: 1.7,
                         color: 'text.primary',
                     }}
@@ -184,14 +205,14 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     href={linkNode.url || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{
+                    sx={(theme) => ({
                         color: 'primary.main',
                         textDecoration: 'underline',
-                        textDecorationColor: 'rgba(0, 229, 153, 0.4)',
+                        textDecorationColor: alpha(theme.palette.primary.main, 0.45),
                         '&:hover': {
                             textDecorationColor: 'primary.main',
                         },
-                    }}
+                    })}
                 >
                     {children}
                 </Link>
@@ -263,8 +284,7 @@ export function RichTextPreview({
     emptyText = 'No content',
 }: RichTextPreviewProps) {
     // If it's a Plate Editor value (array) and empty, show emptyText.
-    // If a string or other formats are passed, we still handle them below.
-    if (isEmptyValue(Array.isArray(value) ? (value as EditorValue) : undefined)) {
+    if (Array.isArray(value) && isEmptyValue(value as EditorValue)) {
         return (
             <Typography
                 variant="body2"

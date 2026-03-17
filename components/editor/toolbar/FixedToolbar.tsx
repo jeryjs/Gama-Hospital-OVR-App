@@ -149,7 +149,7 @@ export function FixedToolbar() {
                     p: 0.75,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    backgroundColor: alpha('#141414', 0.5),
+                    backgroundColor: (theme) => alpha(theme.palette.background.default, 0.7),
                     flexWrap: 'wrap',
                 }}
             >

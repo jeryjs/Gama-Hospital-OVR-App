@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from '@mui/material';
+import { Link, alpha } from '@mui/material';
 import type { PlateElementProps } from 'platejs/react';
 import type { TElement } from 'platejs';
 
@@ -25,18 +25,18 @@ export function LinkElement({ children, attributes, element }: PlateElementProps
             {...attributes}
             href={url}
             onClick={handleClick}
-            sx={{
+            sx={(theme) => ({
                 color: 'primary.main',
                 textDecoration: 'underline',
-                textDecorationColor: 'rgba(0, 229, 153, 0.4)',
+                textDecorationColor: alpha(theme.palette.primary.main, 0.45),
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
                     textDecorationColor: 'primary.main',
-                    backgroundColor: 'rgba(0, 229, 153, 0.1)',
+                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
                     borderRadius: '2px',
                 },
-            }}
+            })}
         >
             {children}
         </Link>
