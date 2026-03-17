@@ -30,6 +30,8 @@ import { useState } from 'react';
 import { useIncidentActions } from '@/lib/hooks';
 import type { QIReviewInput } from '@/lib/api/schemas';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useSession } from 'next-auth/react';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 interface QIReviewSectionProps {
     incidentId: string;
@@ -41,6 +43,9 @@ interface QIReviewSectionProps {
  * Handles approval/rejection workflow for submitted incidents
  */
 export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps) {
+    const { data: session } = useSession();
+    const canEditQIReview = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user?.roles || []);
+
     const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
@@ -74,6 +79,19 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
     const isReasonRequired = decision === 'reject';
     const isReasonValid = !isReasonRequired || rejectionReason.trim().length >= 20;
     const canSubmit = decision !== null && isReasonValid && !submitting;
+
+    if (!canEditQIReview) {
+        return (
+            <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                    Awaiting QI Review
+                </Typography>
+                <Typography variant="body2">
+                    This report is submitted and pending review by the Quality Improvement department.
+                </Typography>
+            </Alert>
+        );
+    }
 
     return (
         <Card elevation={2}>

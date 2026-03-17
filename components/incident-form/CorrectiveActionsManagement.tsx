@@ -45,6 +45,8 @@ import { useCorrectiveAction, useSharedAccess } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import type { CreateCorrectiveActionInput } from '@/lib/api/schemas';
 import { format, isPast, isToday } from 'date-fns';
+import { useSession } from 'next-auth/react';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 interface CorrectiveActionsManagementProps {
     incidentId: string;
@@ -60,6 +62,9 @@ export function CorrectiveActionsManagement({
     actionIds = [],
     onActionCreated,
 }: CorrectiveActionsManagementProps) {
+    const { data: session } = useSession();
+    const canManage = ACCESS_CONTROL.ui.incidentForm.canManageCorrectiveActions(session?.user?.roles || []);
+
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [selectedActionId, setSelectedActionId] = useState<number | null>(null);
@@ -171,6 +176,19 @@ export function CorrectiveActionsManagement({
         descriptionLength >= 20 &&
         dueDate &&
         checklistItems.some((item) => item.trim().length > 0);
+
+    if (!canManage) {
+        return (
+            <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                    Corrective Actions In Progress
+                </Typography>
+                <Typography variant="body2">
+                    Corrective action management is restricted to authorized QI roles.
+                </Typography>
+            </Alert>
+        );
+    }
 
     return (
         <Card elevation={2}>

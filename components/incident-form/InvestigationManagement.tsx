@@ -42,6 +42,8 @@ import { useState } from 'react';
 import { useInvestigation, useSharedAccess } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 interface InvestigationManagementProps {
     incidentId: string;
@@ -58,6 +60,9 @@ export function InvestigationManagement({
     investigationId,
     onInvestigationCreated,
 }: InvestigationManagementProps) {
+    const { data: session } = useSession();
+    const canManage = ACCESS_CONTROL.ui.incidentForm.canManageInvestigations(session?.user?.roles || []);
+
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -150,6 +155,19 @@ export function InvestigationManagement({
                 return 'default';
         }
     };
+
+    if (!canManage) {
+        return (
+            <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                    Investigation In Progress
+                </Typography>
+                <Typography variant="body2">
+                    Investigation management is restricted to authorized QI roles.
+                </Typography>
+            </Alert>
+        );
+    }
 
     // If no investigation yet, show create button
     if (!investigationId) {

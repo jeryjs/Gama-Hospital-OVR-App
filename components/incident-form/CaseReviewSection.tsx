@@ -25,6 +25,8 @@ import { useState } from 'react';
 import { useIncidentActions } from '@/lib/hooks';
 import type { CloseIncidentInput } from '@/lib/api/schemas';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useSession } from 'next-auth/react';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 
 interface CaseReviewSectionProps {
     incidentId: string;
@@ -41,6 +43,9 @@ export function CaseReviewSection({
     allActionsClosed,
     onSuccess,
 }: CaseReviewSectionProps) {
+    const { data: session } = useSession();
+    const canCloseCase = ACCESS_CONTROL.ui.incidentForm.canCloseCaseWithReview(session?.user?.roles || []);
+
     const [caseReview, setCaseReview] = useState<EditorValue | undefined>();
     const [reporterFeedback, setReporterFeedback] = useState<EditorValue | undefined>();
 
@@ -70,6 +75,19 @@ export function CaseReviewSection({
     const isCaseReviewValid = caseReviewLength >= 100;
     const isFeedbackValid = feedbackLength >= 50;
     const canSubmit = allActionsClosed && isCaseReviewValid && isFeedbackValid && !submitting;
+
+    if (!canCloseCase) {
+        return (
+            <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                    Awaiting Final QI Review
+                </Typography>
+                <Typography variant="body2">
+                    Final case closure is restricted to authorized QI leadership roles.
+                </Typography>
+            </Alert>
+        );
+    }
 
     return (
         <Card elevation={2}>
