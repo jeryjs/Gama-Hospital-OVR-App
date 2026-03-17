@@ -16,10 +16,11 @@ const steps = [
   { key: 'qi_review', label: 'QI Review', description: { current: 'QI reviewing incident', final: 'Reviewed by QI' } },
   { key: 'investigating', label: 'Investigation', description: { current: 'Investigators collecting findings', final: 'Investigation completed' } },
   { key: 'qi_final_actions', label: 'Corrective Actions', description: { current: 'Implementing action items', final: 'All actions completed' } },
-  { key: 'closed', label: 'Closed', description: { current: 'Case closed and archived', final: 'Case closed and archived' } },
+  { key: 'closed', label: 'Closed', description: { current: 'Closing case and archiving', final: 'Case closed and archived' } },
 ];
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
+  top: 24,
   alternativeLabel: {
     top: 22,
   },
@@ -90,8 +91,8 @@ export function StatusTimeline({ status, submittedAt }: Props) {
               optional={
                 <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                   {step.description && (
-                    <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 400 }}>
-                      {index === activeStep
+                    <Box component="span" sx={{ fontSize: '0.75rem', fontWeight: 400 }}>
+                      {index >= activeStep
                         ? step.description.current
                         : step.description.final}
                     </Box>
