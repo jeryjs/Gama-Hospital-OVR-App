@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, type FocusEvent } from 'react';
 import { Box, alpha } from '@mui/material';
 import { Plate, PlateContent, usePlateEditor } from 'platejs/react';
 import { editorPlugins } from './plate-plugins';
@@ -57,6 +57,20 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const rootRef = useRef<HTMLDivElement | null>(null);
+
+    const isEditorRelatedTarget = useCallback((target: EventTarget | null) => {
+        if (!(target instanceof HTMLElement)) return false;
+
+        if (rootRef.current?.contains(target)) return true;
+
+        return Boolean(
+            target.closest('.MuiPopper-root') ||
+            target.closest('.MuiPopover-root') ||
+            target.closest('.MuiDialog-root') ||
+            target.closest('[role="listbox"]')
+        );
+    }, []);
 
     // Initialize with provided value or empty
     const initialValue = useMemo(() => {
@@ -85,13 +99,20 @@ export function RichTextEditor({
         setIsEditing(true);
     }, []);
 
-    const handleBlur = useCallback(() => {
+    const handleBlur = useCallback((event: FocusEvent<HTMLElement>) => {
         setIsFocused(false);
-        // Delay setting isEditing to false to allow click events on toolbar
+
+        if (isEditorRelatedTarget(event.relatedTarget)) {
+            return;
+        }
+
         setTimeout(() => {
+            if (isEditorRelatedTarget(document.activeElement)) {
+                return;
+            }
             setIsEditing(false);
         }, 200);
-    }, []);
+    }, [isEditorRelatedTarget]);
 
     const handleContainerClick = useCallback(() => {
         if (!readOnly && !disabled && !isEditing) {
@@ -104,6 +125,7 @@ export function RichTextEditor({
 
     return (
         <Box
+            ref={rootRef}
             onClick={handleContainerClick}
             sx={{
                 position: 'relative',

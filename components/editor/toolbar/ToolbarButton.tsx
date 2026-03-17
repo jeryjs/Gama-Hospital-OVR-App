@@ -24,6 +24,9 @@ export function ToolbarButton({
         <Tooltip title={tooltip} placement="top" arrow>
             <IconButton
                 size={size}
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                }}
                 onClick={onClick}
                 disabled={disabled}
                 sx={{

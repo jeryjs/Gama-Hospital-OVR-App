@@ -40,6 +40,7 @@ export { createEmptyValue, isEmptyValue } from './plate-types';
 // Utilities
 export {
     serializeToPlainText,
+    serializeToMarkdown,
     getCharacterCount,
     getWordCount,
     truncateToPlainText,

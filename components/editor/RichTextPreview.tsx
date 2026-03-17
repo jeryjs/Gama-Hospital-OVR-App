@@ -3,6 +3,7 @@
 import { Box, Typography, Link } from '@mui/material';
 import type { EditorValue, TElement, TText } from './plate-types';
 import { isEmptyValue } from './plate-types';
+import { deserializeFromMarkdown } from './utils';
 
 interface RichTextPreviewProps {
     value?: EditorValue | string | TElement | null;
@@ -242,21 +243,9 @@ function normalizeValueToNodes(value: EditorValue | string | TElement | null | u
             const parsed = JSON.parse(value);
             if (Array.isArray(parsed)) return parsed;
             if (isElementNode(parsed)) return [parsed];
-            // Not an element; render text inside a paragraph node
-            return [
-                {
-                    type: 'p',
-                    children: [{ text: String(parsed) }],
-                },
-            ];
+            return deserializeFromMarkdown(String(parsed));
         } catch {
-            // Not JSON — treat as plain text
-            return [
-                {
-                    type: 'p',
-                    children: [{ text: value }],
-                },
-            ];
+            return deserializeFromMarkdown(value);
         }
     }
 

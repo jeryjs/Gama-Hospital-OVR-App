@@ -17,7 +17,7 @@ import {
     Typography,
     alpha,
 } from '@mui/material';
-import { RichTextPreview, type EditorValue } from '@/components/editor';
+import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
 import {
     Task as TaskIcon,
     CheckCircle as CheckIcon,
@@ -52,10 +52,13 @@ function parseRichTextValue(value: unknown): EditorValue | undefined {
     if (!value) return undefined;
     if (typeof value === 'string') {
         try {
-            return JSON.parse(value);
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed as EditorValue;
         } catch {
-            return undefined;
+            return deserializeFromMarkdown(value);
         }
+
+        return deserializeFromMarkdown(value);
     }
     return value as EditorValue;
 }

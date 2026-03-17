@@ -119,3 +119,79 @@ export function truncateToPlainText(
 
     return truncated + suffix;
 }
+
+function serializeTextNodeToMarkdown(node: TText): string {
+    const text = node.text || '';
+    if (!text) return '';
+
+    let output = text;
+
+    if (node.bold) output = `**${output}**`;
+    if (node.italic) output = `*${output}*`;
+    if (node.underline) output = `<u>${output}</u>`;
+
+    return output;
+}
+
+function serializeNodeToMarkdown(node: unknown): string {
+    if (isTextNode(node)) {
+        return serializeTextNodeToMarkdown(node);
+    }
+
+    if (!isElementNode(node)) {
+        return '';
+    }
+
+    const childText = node.children
+        ?.map((child) => serializeNodeToMarkdown(child))
+        .join('') || '';
+
+    switch (node.type) {
+        case 'h1':
+            return `# ${childText}`;
+        case 'h2':
+            return `## ${childText}`;
+        case 'h3':
+            return `### ${childText}`;
+        case 'blockquote':
+            return childText
+                .split('\n')
+                .map((line) => `> ${line}`)
+                .join('\n');
+        case 'ul':
+            return node.children
+                ?.map((child) => serializeNodeToMarkdown(child))
+                .join('\n') || '';
+        case 'ol':
+            return node.children
+                ?.map((child, index) => {
+                    const line = serializeNodeToMarkdown(child).replace(/^[-*]\s+/, '');
+                    return `${index + 1}. ${line}`;
+                })
+                .join('\n') || '';
+        case 'li':
+        case 'lic':
+            return `- ${childText}`;
+        case 'a': {
+            const url = typeof (node as { url?: unknown }).url === 'string'
+                ? (node as { url: string }).url
+                : '';
+            return url ? `[${childText || url}](${url})` : childText;
+        }
+        case 'p':
+        default:
+            return childText;
+    }
+}
+
+export function serializeToMarkdown(value: EditorValue | undefined | null): string {
+    if (!value || value.length === 0) {
+        return '';
+    }
+
+    return value
+        .map((node) => serializeNodeToMarkdown(node))
+        .filter(Boolean)
+        .join('\n\n')
+        .trim();
+}

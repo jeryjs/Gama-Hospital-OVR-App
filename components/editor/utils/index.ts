@@ -1,5 +1,6 @@
 export {
     serializeToPlainText,
+    serializeToMarkdown,
     getCharacterCount,
     getWordCount,
     truncateToPlainText,

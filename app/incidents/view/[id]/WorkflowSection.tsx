@@ -8,7 +8,7 @@
 'use client';
 
 import { Box, Divider } from '@mui/material';
-import { RichTextPreview, type EditorValue } from '@/components/editor';
+import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
 import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
 import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
 import { CorrectiveActionsSummary } from '@/components/incident-form/CorrectiveActionsSummary';
@@ -183,21 +183,14 @@ export function WorkflowSection({
 function parseRichTextValue(value: unknown): EditorValue | undefined {
     if (!value) return undefined;
     if (typeof value === 'string') {
-        // Try to parse as JSON (rich text)
         try {
             const parsed = JSON.parse(value);
-            // If parsed is an array, assume it's EditorValue
             if (Array.isArray(parsed)) return parsed as EditorValue;
         } catch {
-            // Not JSON, treat as markdown (legacy)
-            // Convert markdown string to EditorValue format
-            return [
-                {
-                    type: 'paragraph',
-                    children: [{ text: value }],
-                },
-            ] as EditorValue;
+            return deserializeFromMarkdown(value);
         }
+
+        return deserializeFromMarkdown(value);
     }
     return value as EditorValue;
 }

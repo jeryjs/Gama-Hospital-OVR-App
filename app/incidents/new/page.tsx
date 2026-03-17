@@ -4,7 +4,13 @@ import { AppLayout } from '@/components/AppLayout';
 import TaxonomySelector from '@/components/incident-form/TaxonomySelector';
 import { ReporterPreview } from '@/components/incident-form/ReporterPreview';
 import { PeoplePicker } from '@/components/shared';
-import { RichTextEditor, type EditorValue, getCharacterCount, serializeToPlainText } from '@/components/editor';
+import {
+  RichTextEditor,
+  type EditorValue,
+  getCharacterCount,
+  serializeToMarkdown,
+  deserializeFromMarkdown,
+} from '@/components/editor';
 import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
 import { useDepartmentsWithLocations } from '@/lib/hooks';
 import {
@@ -130,28 +136,40 @@ function getEmptyFormData(): FormData {
  * Parses localStorage draft with Dayjs conversion
  */
 function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
-  // Parse description from JSON string if stored
+  const {
+    id: _id,
+    reporterId: _reporterId,
+    reporterEmail: _reporterEmail,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...draftFields
+  } = draft as LocalDraft & Record<string, unknown>;
+
+  // Parse description from JSON (legacy) or Markdown (current)
   let description: EditorValue | undefined = undefined;
-  if (draft.description) {
-    if (typeof draft.description === 'string') {
+  if (draftFields.description) {
+    if (typeof draftFields.description === 'string') {
       try {
-        description = JSON.parse(draft.description);
+        const parsed = JSON.parse(draftFields.description);
+        description = Array.isArray(parsed)
+          ? parsed as EditorValue
+          : deserializeFromMarkdown(draftFields.description);
       } catch {
-        // If it's not valid JSON, ignore it (old format)
-        description = undefined;
+        description = deserializeFromMarkdown(draftFields.description);
       }
     } else {
-      description = draft.description as EditorValue;
+      description = draftFields.description as EditorValue;
     }
   }
 
-  const parsedTime = draft.occurrenceTime
-    ? dayjs(draft.occurrenceTime, 'HH:mm:ss')
+  const parsedTime = draftFields.occurrenceTime
+    ? dayjs(draftFields.occurrenceTime as string, 'HH:mm:ss')
     : undefined;
 
   return {
-    ...draft,
-    occurrenceDate: draft.occurrenceDate ? dayjs(draft.occurrenceDate) : undefined,
+    ...getEmptyFormData(),
+    ...draftFields,
+    occurrenceDate: draftFields.occurrenceDate ? dayjs(draftFields.occurrenceDate as string) : undefined,
     occurrenceTime: parsedTime?.isValid() ? parsedTime : undefined,
     description,
   } as unknown as FormData;
@@ -161,12 +179,21 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
  * Converts FormData to API payload (Dayjs to string dates)
  */
 function preparePayload(formData: FormData) {
+  const {
+    id: _id,
+    reporterId: _reporterId,
+    reporterEmail: _reporterEmail,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...cleanFormData
+  } = formData as FormData & Record<string, unknown>;
+
   return {
-    ...formData,
+    ...cleanFormData,
     occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
-    // Serialize rich text description to JSON string
-    description: formData.description ? JSON.stringify(formData.description) : '',
+    // Serialize rich text description to Markdown string
+    description: serializeToMarkdown(formData.description),
     // Status is always submitted when sent to API (drafts are localStorage only)
     status: 'submitted',
   };
@@ -182,15 +209,24 @@ function prepareLocalDraft(
   email: string,
   existingCreatedAt?: string
 ): LocalDraft {
+  const {
+    id: _id,
+    reporterId: _reporterId,
+    reporterEmail: _reporterEmail,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...cleanFormData
+  } = formData as FormData & Record<string, unknown>;
+
   return {
-    ...formData,
+    ...cleanFormData,
     id: draftId,
     reporterId: userId,
     reporterEmail: email,
     occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
-    // Serialize rich text description to JSON string for localStorage
-    description: formData.description ? JSON.stringify(formData.description) : '',
+    // Serialize rich text description to Markdown string for localStorage
+    description: serializeToMarkdown(formData.description),
     createdAt: existingCreatedAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } as LocalDraft;
