@@ -92,6 +92,11 @@ export interface ParsedError {
   isServerError: boolean;
 }
 
+function normalizeFieldPath(path: unknown): string {
+  if (Array.isArray(path)) return path.join('.');
+  return typeof path === 'string' ? path : '';
+}
+
 // ============================================
 // ERROR PARSING
 // ============================================
@@ -114,8 +119,10 @@ export function parseApiError(error: ApiError): ParsedError {
   if (error.code === 'VALIDATION_ERROR' && error.details?.length) {
     result.message = 'Please correct the following errors:';
     result.fieldErrors = error.details.map((detail) => ({
-      field: detail.path,
-      displayName: FIELD_DISPLAY_NAMES[detail.path] || formatFieldName(detail.path),
+      field: normalizeFieldPath((detail as { path?: unknown }).path),
+      displayName:
+        FIELD_DISPLAY_NAMES[normalizeFieldPath((detail as { path?: unknown }).path)] ||
+        formatFieldName(normalizeFieldPath((detail as { path?: unknown }).path)),
       message: detail.message,
     }));
   }

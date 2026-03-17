@@ -26,11 +26,13 @@ import { CreateIncidentInput } from '@/lib/api/schemas';
 import {
   generateDraftId,
   getDraftById,
+  getUserDrafts,
   saveDraft,
   deleteDraft,
   isDraftId,
   type LocalDraft,
 } from '@/lib/utils/draft-storage';
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import {
@@ -190,26 +192,6 @@ function prepareLocalDraft(
   } as LocalDraft;
 }
 
-/**
- * Submits form data to API (always creates as submitted)
- */
-async function submitToApi(formData: FormData): Promise<{ success: boolean; id?: string }> {
-  try {
-    const payload = preparePayload(formData);
-    const res = await fetch('/api/incidents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    return res.ok ? { success: true, id: data.id } : { success: false };
-  } catch (error) {
-    console.error('Error submitting:', error);
-    return { success: false };
-  }
-}
-
 // ============================================
 // FORM FIELD COMPONENTS (Modular Sections)
 // ============================================
@@ -267,7 +249,7 @@ function OccurrenceDetailsSection({
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <DatePicker
-            label="Occurrence Date *"
+            label="Occurrence Date"
             value={formData.occurrenceDate}
             onChange={(date) => onChange('occurrenceDate', date)}
             slotProps={{ textField: { fullWidth: true, required: true } }}
@@ -275,7 +257,7 @@ function OccurrenceDetailsSection({
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <TimePicker
-            label="Occurrence Time *"
+            label="Occurrence Time"
             value={formData.occurrenceTime}
             onChange={(time) => onChange('occurrenceTime', time)}
             slotProps={{ textField: { fullWidth: true, required: true } }}
@@ -289,7 +271,7 @@ function OccurrenceDetailsSection({
             value={selectedLocation}
             onChange={(_, value) => onChange('locationId', value?.id)}
             isOptionEqualToValue={(option, value) => option.id === value?.id}
-            renderInput={(params) => <TextField {...params} label="Location / Dept *" required />}
+            renderInput={(params) => <TextField {...params} label="Location / Dept" required />}
             renderGroup={(params) => (
               <li key={params.key}>
                 <Typography
@@ -344,8 +326,8 @@ function PersonInvolvedSection({
     <Box sx={{ mb: 4 }}>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <FormControl component="fieldset">
-            <FormLabel component="legend">Person Involved *</FormLabel>
+          <FormControl component="fieldset" required>
+            <FormLabel component="legend">Person Involved</FormLabel>
             <RadioGroup
               value={formData.personInvolved}
               onChange={(e) => onChange('personInvolved', e.target.value)}
@@ -460,7 +442,7 @@ function PersonDetailsFields({
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             fullWidth
-            label={`${type === 'patient' ? 'Patient' : isStaff ? 'Staff' : 'Person'} Name *`}
+            label={`${type === 'patient' ? 'Patient' : isStaff ? 'Staff' : 'Person'} Name`}
             value={formData.involvedPersonName}
             onChange={(e) => onChange('involvedPersonName', e.target.value)}
             required
@@ -472,7 +454,7 @@ function PersonDetailsFields({
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
-              label="MR # *"
+              label="MR #"
               value={formData.involvedPersonMRN}
               onChange={(e) => onChange('involvedPersonMRN', e.target.value)}
               required
@@ -639,7 +621,7 @@ function ClassificationSection({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Level of Harm *"
+                label="Level of Harm"
                 required
                 helperText={
                   formData.occurrenceCategory === 'CAT019'
@@ -725,7 +707,7 @@ function ImmediateActionsSection({
       </Typography>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        {/* Physician Informed, Seen & Injury Outcome - Side by side */}
+        {/* Physician Informed & Seen - First row */}
         <Grid size={{ xs: 12, md: 3 }}>
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
@@ -758,11 +740,11 @@ function ImmediateActionsSection({
           </FormControl>
         </Grid>
 
-        {/* Injury Outcome */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <FormControl component="fieldset" sx={{ width: '100%' }}>
+        {/* Injury Outcome - Second row */}
+        <Grid size={{ xs: 12 }}>
+          <FormControl component="fieldset" required sx={{ width: '100%' }}>
             <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
-              Injury Outcome:
+              Injury Outcome
             </FormLabel>
             <RadioGroup row value={formData.injuryOutcome || ''} onChange={(e) => handleChange('injuryOutcome', e.target.value)}>
               {INJURY_OUTCOMES.map(outcome => (
@@ -784,7 +766,8 @@ function ImmediateActionsSection({
                   handleChange('physicianId', val.id.toString());
                 }
               }}
-              label={formData.physicianSawPatient ? "Physician's Name *" : "Physician's Name"}
+              label="Physician's Name"
+              required={!!formData.physicianSawPatient}
               placeholder="Search for physician..."
               variant="ms-modern"
               showManualToggle
@@ -969,7 +952,7 @@ function SupervisorSelector({
       value={selectedUser}
       onChange={handleChange}
       filterByRoles={['supervisor', 'team_lead', 'quality_manager', 'quality_analyst', 'admin', 'super_admin']}
-      label="Select Supervisor *"
+      label="Select Supervisor"
       placeholder="Search by name or employee ID..."
       required
     />
@@ -1260,10 +1243,12 @@ function FooterSection() {
  * Form Header
  */
 function FormHeader({
-  draftLoaded,
+  hasDraftSnapshot,
+  draftUpdatedAt,
   onClearDraft,
 }: {
-  draftLoaded: boolean;
+  hasDraftSnapshot: boolean;
+  draftUpdatedAt?: string;
   onClearDraft: () => void;
 }) {
   return (
@@ -1280,13 +1265,13 @@ function FormHeader({
         <Typography variant="h4" fontWeight={700}>
           New Report
         </Typography>
-        {draftLoaded && (
+        {hasDraftSnapshot && draftUpdatedAt && (
           <Typography variant="caption" color="text.secondary">
-            Loaded from draft
+            Updated draft at {dayjs(draftUpdatedAt).format('HH:mm, MMM DD')}
           </Typography>
         )}
       </Box>
-      {draftLoaded && (
+      {hasDraftSnapshot && (
         <Box>
           <Button
             size="small"
@@ -1389,11 +1374,14 @@ function FormActions({
 
 export default function NewIncidentPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { departments, isLoading: isLoadingDepartments } = useDepartmentsWithLocations();
+  const { showError, ErrorDialogComponent } = useErrorDialog();
 
   const [loading, setLoading] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [hasDraftSnapshot, setHasDraftSnapshot] = useState(false);
+  const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
 
   // Physician selection state
@@ -1404,38 +1392,48 @@ export default function NewIncidentPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [existingDraftCreatedAt, setExistingDraftCreatedAt] = useState<string | undefined>();
 
-  // Read draft id from URL once on client
+  // Initialize draft once session state is ready
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || draftLoaded || sessionStatus === 'loading') return;
+
     const params = new URLSearchParams(window.location.search);
     const draftParam = params.get('draft');
-    if (draftParam && isDraftId(draftParam)) {
-      setDraftId(draftParam);
-    }
-  }, []);
 
-  // Initialize draft on mount - load from localStorage
-  useEffect(() => {
-    if (draftId) {
-      // Load existing draft from localStorage
-      const existingDraft = getDraftById(draftId);
+    if (draftParam && isDraftId(draftParam)) {
+      const existingDraft = getDraftById(draftParam);
       if (existingDraft) {
         setFormData(parseDraftFromLocalStorage(existingDraft));
         setExistingDraftCreatedAt(existingDraft.createdAt);
-        setDraftLoaded(true);
-      } else {
-        // Draft not found, generate new ID
-        const newDraftId = generateDraftId();
-        setDraftId(newDraftId);
-        setDraftLoaded(true);
+        setHasDraftSnapshot(true);
+        setDraftUpdatedAt(existingDraft.updatedAt);
       }
-    } else {
-      // New draft - generate ID
-      const newDraftId = generateDraftId();
-      setDraftId(newDraftId);
+      setDraftId(draftParam);
       setDraftLoaded(true);
+      return;
     }
-  }, [draftId]);
+
+    const userId = Number(session?.user?.id);
+    if (Number.isFinite(userId) && userId > 0) {
+      const latestDraft = getUserDrafts(userId).sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )[0];
+
+      if (latestDraft) {
+        setDraftId(latestDraft.id);
+        setFormData(parseDraftFromLocalStorage(latestDraft));
+        setExistingDraftCreatedAt(latestDraft.createdAt);
+        setHasDraftSnapshot(true);
+        setDraftUpdatedAt(latestDraft.updatedAt);
+        setDraftLoaded(true);
+        return;
+      }
+    }
+
+    setDraftId(generateDraftId());
+    setHasDraftSnapshot(false);
+    setDraftUpdatedAt(undefined);
+    setDraftLoaded(true);
+  }, [draftLoaded, session?.user?.id, sessionStatus]);
 
   // Auto-save to localStorage with debounce
   useEffect(() => {
@@ -1451,6 +1449,8 @@ export default function NewIncidentPage() {
         existingDraftCreatedAt
       );
       saveDraft(draft);
+      setHasDraftSnapshot(true);
+      setDraftUpdatedAt(draft.updatedAt);
     }, 2000);
 
     return () => clearTimeout(timer);
@@ -1469,6 +1469,8 @@ export default function NewIncidentPage() {
     const newDraftId = generateDraftId();
     setDraftId(newDraftId);
     setExistingDraftCreatedAt(undefined);
+    setHasDraftSnapshot(false);
+    setDraftUpdatedAt(undefined);
     setFormData(getEmptyFormData());
   }, [draftId]);
 
@@ -1485,25 +1487,39 @@ export default function NewIncidentPage() {
       existingDraftCreatedAt
     );
     saveDraft(draft);
+    setHasDraftSnapshot(true);
+    setDraftUpdatedAt(draft.updatedAt);
     alert('Draft saved successfully!');
   }, [formData, draftId, session?.user, existingDraftCreatedAt]);
 
   // Submit handler - sends to API and deletes draft on success
   const handleSubmit = async () => {
     setLoading(true);
-    const result = await submitToApi(formData);
+    try {
+      const payload = preparePayload(formData);
+      const res = await fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (result.success) {
-      // Delete draft from localStorage on successful submission
+      if (!res.ok) {
+        await showError(res);
+        return;
+      }
+
+      const data = await res.json();
+
       if (draftId) {
         deleteDraft(draftId);
       }
-      router.replace(`/incidents/view/${result.id}`);
-    } else {
-      alert('Failed to submit report');
-    }
 
-    setLoading(false);
+      router.replace(`/incidents/view/${data.id}`);
+    } catch (error) {
+      await showError(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1515,7 +1531,11 @@ export default function NewIncidentPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <FormHeader draftLoaded={draftLoaded} onClearDraft={handleClearDraft} />
+            <FormHeader
+              hasDraftSnapshot={hasDraftSnapshot}
+              draftUpdatedAt={draftUpdatedAt}
+              onClearDraft={handleClearDraft}
+            />
 
             <Paper
               sx={{
@@ -1596,6 +1616,7 @@ export default function NewIncidentPage() {
           </motion.div>
         </Box>
       </LocalizationProvider>
+      {ErrorDialogComponent}
     </AppLayout>
   );
 }

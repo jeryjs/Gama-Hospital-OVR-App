@@ -41,10 +41,14 @@ export interface ApiErrorData {
     code: string; // Error code
     message?: string; // Additional context
     details?: Array<{
-        path: string;
+        path: string | string[];
         message: string;
     }>;
     timestamp?: string;
+}
+
+function formatDetailPath(path: string | string[]): string {
+    return Array.isArray(path) ? path.join('.') : path;
 }
 
 /**
@@ -199,7 +203,7 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                                     </ListItemIcon>
                                     <ListItemText
                                         primary={detail.message}
-                                        secondary={detail.path}
+                                        secondary={formatDetailPath(detail.path)}
                                         primaryTypographyProps={{ variant: 'body2' }}
                                         secondaryTypographyProps={{ variant: 'caption' }}
                                     />

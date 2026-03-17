@@ -2,5 +2,6 @@
     "editor.codeActionsOnSave": {
         "source.organizeimports": "always"
     },
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "tasksync.autopilot": false
 }
