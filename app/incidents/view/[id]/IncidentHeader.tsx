@@ -17,7 +17,7 @@ interface Props {
 export function IncidentHeader({ incident }: Props) {
   const searchParams = useSearchParams();
   const source = searchParams.get('source') || 'all';
-  const statusColor = getStatusColor(incident.status);
+  const statusColor = getStatusColor(incident);
 
   // Determine back link based on source
   const backHref = source === 'me' ? '/incidents/me' : '/incidents';
@@ -52,7 +52,7 @@ export function IncidentHeader({ incident }: Props) {
         </Box>
 
         <Chip
-          label={getStatusLabel(incident.status)}
+          label={getStatusLabel(incident as any)}
           color={statusColor as any}
           sx={{
             fontWeight: 600,

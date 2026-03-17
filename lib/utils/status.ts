@@ -33,6 +33,27 @@ interface StatusConfig {
     icon: string;
 }
 
+type StatusInput = OVRStatus | string | { status: string; qiRejectionReason?: string | null };
+
+const REJECTED_STATUS_CONFIG: StatusConfig = {
+    label: 'Rejected',
+    description: 'Returned by QI for reporter follow-up',
+    color: 'error',
+    bgColor: 'error.lighter',
+    icon: '⛔',
+};
+
+function resolveStatusConfig(input: StatusInput): StatusConfig {
+    if (typeof input === 'object' && input !== null) {
+        if (isRejectedStatus(input)) {
+            return REJECTED_STATUS_CONFIG;
+        }
+        return STATUS_CONFIG[input.status as OVRStatus] || STATUS_CONFIG.draft;
+    }
+
+    return STATUS_CONFIG[input as OVRStatus] || STATUS_CONFIG.draft;
+}
+
 /**
  * Status Configuration Map
  * Centralized configuration for all status displays
@@ -92,22 +113,22 @@ export function getStatusConfig(status: OVRStatus | string): StatusConfig {
 /**
  * Get status label
  */
-export function getStatusLabel(status: OVRStatus | string): string {
-    return getStatusConfig(status).label;
+export function getStatusLabel(status: StatusInput): string {
+    return resolveStatusConfig(status).label;
 }
 
 /**
  * Get status color (MUI theme color)
  */
-export function getStatusColor(status: OVRStatus | string): keyof Theme['palette'] {
-    return getStatusConfig(status).color;
+export function getStatusColor(status: StatusInput): keyof Theme['palette'] {
+    return resolveStatusConfig(status).color;
 }
 
 /**
  * Get status description
  */
-export function getStatusDescription(status: OVRStatus | string): string {
-    return getStatusConfig(status).description;
+export function getStatusDescription(status: StatusInput): string {
+    return resolveStatusConfig(status).description;
 }
 
 /**
@@ -190,16 +211,16 @@ export function statusIn(status: OVRStatus | string, statusList: OVRStatus[]): b
 /**
  * Format status for display with emoji
  */
-export function formatStatus(status: OVRStatus | string): string {
-    const config = getStatusConfig(status);
+export function formatStatus(status: StatusInput): string {
+    const config = resolveStatusConfig(status);
     return `${config.icon} ${config.label}`;
 }
 
 /**
  * Get status badge props for MUI Chip component
  */
-export function getStatusChipProps(status: OVRStatus | string) {
-    const config = getStatusConfig(status);
+export function getStatusChipProps(status: StatusInput) {
+    const config = resolveStatusConfig(status);
     return {
         label: config.label,
         color: config.color as any,

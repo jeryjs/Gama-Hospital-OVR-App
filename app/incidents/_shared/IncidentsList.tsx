@@ -249,8 +249,8 @@ export function IncidentsList({
                                     )}
                                     <TableCell>
                                         <Chip
-                                            label={getStatusLabel(incident.status)}
-                                            color={getStatusColor(incident.status) as any}
+                                            label={getStatusLabel(incident)}
+                                            color={getStatusColor(incident) as any}
                                             size="small"
                                             sx={{
                                                 fontWeight: 600,

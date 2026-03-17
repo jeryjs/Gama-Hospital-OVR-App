@@ -46,9 +46,12 @@ import {
   alpha,
   Autocomplete,
   Box,
+  CircularProgress,
   Button,
   Checkbox,
   Chip,
+  Dialog,
+  DialogContent,
   Divider,
   FormControl,
   FormControlLabel,
@@ -1356,6 +1359,7 @@ export default function NewIncidentPage() {
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
   const [serverDraftIncidentId, setServerDraftIncidentId] = useState<string | null>(null);
   const [descriptionEditorSeed, setDescriptionEditorSeed] = useState(0);
+  const [isFetchingServerDraft, setIsFetchingServerDraft] = useState(false);
 
   // Draft management - using localStorage
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -1388,27 +1392,38 @@ export default function NewIncidentPage() {
       let cancelled = false;
 
       (async () => {
+        setIsFetchingServerDraft(true);
         try {
           const res = await fetch(`/api/incidents/${draftParam}`);
           if (!res.ok) {
             if (!cancelled) {
               await showError(res);
+              setIsFetchingServerDraft(false);
+              setDraftLoaded(true);
             }
-            setDraftLoaded(true);
             return;
           }
 
           const incidentDraft = await res.json();
           if (cancelled) return;
 
+          if (incidentDraft.status !== 'draft') {
+            await showError(new Error('Only draft or rejected reports can be edited from this page.'));
+            setIsFetchingServerDraft(false);
+            setDraftLoaded(true);
+            return;
+          }
+
           setFormData(parseDraftFromLocalStorage(incidentDraft as unknown as LocalDraft));
           setServerDraftIncidentId(draftParam);
           setHasDraftSnapshot(true);
           setDraftUpdatedAt(incidentDraft.updatedAt || new Date().toISOString());
+          setIsFetchingServerDraft(false);
           setDraftLoaded(true);
         } catch (error) {
           if (!cancelled) {
             await showError(error);
+            setIsFetchingServerDraft(false);
             setDraftLoaded(true);
           }
         }
@@ -1608,6 +1623,14 @@ export default function NewIncidentPage() {
 
   return (
     <AppLayout>
+      <Dialog open={isFetchingServerDraft} maxWidth="xs" fullWidth>
+        <DialogContent sx={{ py: 4 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+            <CircularProgress size={20} />
+            <Typography variant="body2">Fetching draft...</Typography>
+          </Stack>
+        </DialogContent>
+      </Dialog>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
           <motion.div

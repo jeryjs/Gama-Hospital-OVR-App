@@ -90,8 +90,8 @@ export function IncidentCard({
                 </Box>
 
                 <Chip
-                    label={getStatusLabel(incident.status)}
-                    color={getStatusColor(incident.status) as any}
+                    label={getStatusLabel(incident)}
+                    color={getStatusColor(incident) as any}
                     size={isCompact ? 'small' : 'medium'}
                 />
             </Box>

@@ -131,7 +131,7 @@ export const ovrReportInsertSchema = createInsertSchema(ovrReports);
 const ovrColumns = getTableColumns(ovrReports);
 
 // Extract column keys programmatically - single source of truth!
-const LIST_COLUMN_KEYS = ['id', 'status', 'occurrenceDate', 'occurrenceCategory', 'createdAt'] as const;
+const LIST_COLUMN_KEYS = ['id', 'status', 'occurrenceDate', 'occurrenceCategory', 'createdAt', 'qiRejectionReason'] as const;
 
 /**
  * Column selections for list view
@@ -260,6 +260,7 @@ export const ovrReportListItemSchema = ovrReportSelectSchema.pick({
   occurrenceDate: true,
   occurrenceCategory: true,
   createdAt: true,
+  qiRejectionReason: true,
 }).extend({
   reporter: userPublicSchema.optional(),
 });
