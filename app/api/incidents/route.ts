@@ -209,7 +209,19 @@ export async function POST(request: NextRequest) {
         assessment: body.assessment,
         diagnosis: body.diagnosis,
         injuryOutcome: body.injuryOutcome,
+        treatmentTypes: body.treatmentTypes,
+        hospitalizedDetails: body.hospitalizedDetails,
         treatmentProvided: body.treatmentProvided,
+
+        // Risk Assessment
+        riskImpact: body.riskImpact,
+        riskLikelihood: body.riskLikelihood,
+        riskScore: body.riskScore,
+
+        // Supervisor Notification
+        supervisorNotified: body.supervisorNotified,
+        supervisorId: body.supervisorId,
+        supervisorAction: body.supervisorAction,
 
         // Reporter Info
         reporterDepartment: body.reporterDepartment || session.user.department,
