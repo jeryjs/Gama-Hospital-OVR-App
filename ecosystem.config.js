@@ -6,7 +6,11 @@ module.exports = {
             name: 'ovr-app',
             script: 'pnpm',
             args: 'start',
-            env: { PORT: 5000, NODE_ENV: 'development' },
+            env: {
+                PORT: 3005,
+                NODE_ENV: 'development',
+                NEXTAUTH_URL: 'http://localhost:3005'
+            },
             env_production: {
                 NODE_ENV: "production",
                 PORT: "6203",
@@ -21,7 +25,7 @@ module.exports = {
             log_date_format: "YYYY-MM-DD HH:mm Z",
         },
     ],
-
+    // ssh ju_jery "cd ~/all-projects/Gama-Hospital-OVR-App && git pull && pnpm i && pnpm build && pm2 reload ovr-app"
     deploy: {
         production: {
             user: process.env.DEPLOY_SSH_USER,
