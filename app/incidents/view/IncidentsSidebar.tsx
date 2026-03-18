@@ -24,7 +24,6 @@ interface IncidentsSidebarProps {
 }
 
 export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps) {
-    return <></>    // disable sidebar for now
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -37,6 +36,8 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
 
     // Get user ID safely
     const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
+
+    return <></>    // disable sidebar for now
 
     // Fetch incidents based on source
     const { incidents, isLoading, error } = useIncidents(
@@ -233,8 +234,8 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                                                 label={getStatusLabel(incident.status)}
                                                 size="small"
                                                 sx={{
-                                                    bgcolor: alpha(statusColor === 'grey' ? '#9E9E9E' : statusColor === 'info' ? '#2196F3' : statusColor === 'warning' ? '#FF9800' : statusColor === 'primary' ? '#6366F1' : statusColor === 'secondary' ? '#9C27B0' : statusColor === 'success' ? '#4CAF50' : '#9E9E9E', 0.15),
-                                                    color: statusColor === 'grey' ? '#616161' : statusColor === 'info' ? '#1565C0' : statusColor === 'warning' ? '#E65100' : statusColor === 'primary' ? '#4338CA' : statusColor === 'secondary' ? '#7B1FA2' : statusColor === 'success' ? '#2E7D32' : '#616161',
+                                                    bgcolor: alpha(statusColor === 'default' ? '#9E9E9E' : statusColor === 'info' ? '#2196F3' : statusColor === 'warning' ? '#FF9800' : statusColor === 'primary' ? '#6366F1' : statusColor === 'secondary' ? '#9C27B0' : statusColor === 'success' ? '#4CAF50' : '#9E9E9E', 0.15),
+                                                    color: statusColor === 'default' ? '#616161' : statusColor === 'info' ? '#1565C0' : statusColor === 'warning' ? '#E65100' : statusColor === 'primary' ? '#4338CA' : statusColor === 'secondary' ? '#7B1FA2' : statusColor === 'success' ? '#2E7D32' : '#616161',
                                                     fontWeight: 500,
                                                     fontSize: '0.65rem',
                                                     height: 20,
