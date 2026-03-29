@@ -14,8 +14,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
-import { useInvestigation } from '@/lib/hooks';
-import { ArrowBack, Save } from '@mui/icons-material';
+import { useIncident, useInvestigation } from '@/lib/hooks';
+import { ArrowBack, Save, Visibility } from '@mui/icons-material';
 import {
     Alert,
     Box,
@@ -23,6 +23,7 @@ import {
     Card,
     CardContent,
     CardHeader,
+    Chip,
     Divider,
     Grid,
     IconButton,
@@ -62,6 +63,12 @@ export default function InvestigationDetailPage() {
         investigationId,
         accessToken
     );
+    const linkedIncidentId = session?.user ? investigation?.ovrReportId : null;
+    const {
+        incident: linkedIncident,
+        isLoading: isLoadingLinkedIncident,
+        error: linkedIncidentError,
+    } = useIncident(linkedIncidentId);
 
     // Form state - using EditorValue for rich text fields
     const [findings, setFindings] = useState<EditorValue | undefined>();
@@ -71,7 +78,7 @@ export default function InvestigationDetailPage() {
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
-    useState(() => {
+    useEffect(() => {
         if (investigation) {
             // Rich text fields store JSON, parse if string
             setFindings(investigation.findings ? (typeof investigation.findings === 'string' ? JSON.parse(investigation.findings) : investigation.findings) : undefined);
@@ -79,11 +86,25 @@ export default function InvestigationDetailPage() {
             setCauseClassification(investigation.causeClassification || '');
             setCauseDetails(investigation.causeDetails ? (typeof investigation.causeDetails === 'string' ? JSON.parse(investigation.causeDetails) : investigation.causeDetails) : undefined);
         }
-    });
+    }, [investigation]);
 
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isSubmitted = Boolean(investigation?.submittedAt);
     const canEdit = !isSubmitted && (isQIUser || accessToken);
+    const linkedCorrectiveActions = linkedIncident?.correctiveActions || [];
+
+    const getChecklistProgress = (checklistRaw: string | null | undefined): number => {
+        if (!checklistRaw) return 0;
+        try {
+            const checklist = JSON.parse(checklistRaw);
+            if (!Array.isArray(checklist) || checklist.length === 0) return 0;
+
+            const completed = checklist.filter((item: any) => item?.completed).length;
+            return Math.round((completed / checklist.length) * 100);
+        } catch {
+            return 0;
+        }
+    };
 
     const handleSave = async () => {
         if (!canEdit) return;
@@ -320,6 +341,76 @@ export default function InvestigationDetailPage() {
                                         Future versions will include interactive tools for Root Cause Analysis (RCA) and
                                         Fishbone (Ishikawa) diagrams.
                                     </Alert>
+                                </CardContent>
+                            </Card>
+
+                            {/* Linked Corrective Actions */}
+                            <Card>
+                                <CardHeader
+                                    title="Linked Corrective Actions"
+                                    subheader="Actions created for this incident"
+                                    sx={{ bgcolor: 'warning.main', color: 'warning.contrastText' }}
+                                />
+                                <CardContent>
+                                    {!session?.user && accessToken ? (
+                                        <Alert severity="info">
+                                            Corrective action listing is available for authenticated users.
+                                        </Alert>
+                                    ) : isLoadingLinkedIncident ? (
+                                        <LinearProgress sx={{ my: 1 }} />
+                                    ) : linkedIncidentError ? (
+                                        <Alert severity="warning">
+                                            Unable to load linked corrective actions right now.
+                                        </Alert>
+                                    ) : linkedCorrectiveActions.length === 0 ? (
+                                        <Alert severity="info">
+                                            No corrective actions linked to this incident yet.
+                                        </Alert>
+                                    ) : (
+                                        <Stack spacing={1.5}>
+                                            {linkedCorrectiveActions.map((action) => {
+                                                const checklistProgress = getChecklistProgress(action.checklist);
+                                                const isOverdue =
+                                                    action.status !== 'closed' &&
+                                                    action.dueDate &&
+                                                    new Date(action.dueDate) < new Date();
+
+                                                return (
+                                                    <Paper key={action.id} variant="outlined" sx={{ p: 1.5 }}>
+                                                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                                                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                                                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                                        {action.title}
+                                                                    </Typography>
+                                                                    <Chip
+                                                                        size="small"
+                                                                        label={action.status === 'closed' ? 'Closed' : 'Open'}
+                                                                        color={action.status === 'closed' ? 'success' : 'warning'}
+                                                                    />
+                                                                    {isOverdue && (
+                                                                        <Chip size="small" label="Overdue" color="error" />
+                                                                    )}
+                                                                </Stack>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    Due: {format(new Date(action.dueDate), 'MMM dd, yyyy')} • Checklist: {checklistProgress}%
+                                                                </Typography>
+                                                            </Box>
+
+                                                            <Button
+                                                                component={Link}
+                                                                href={`/incidents/corrective-actions/${action.id}`}
+                                                                size="small"
+                                                                startIcon={<Visibility />}
+                                                            >
+                                                                View
+                                                            </Button>
+                                                        </Stack>
+                                                    </Paper>
+                                                );
+                                            })}
+                                        </Stack>
+                                    )}
                                 </CardContent>
                             </Card>
 
