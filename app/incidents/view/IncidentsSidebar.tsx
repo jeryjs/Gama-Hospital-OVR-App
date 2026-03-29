@@ -37,8 +37,6 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
     // Get user ID safely
     const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
 
-    return <></>    // disable sidebar for now
-
     // Fetch incidents based on source
     const { incidents, isLoading, error } = useIncidents(
         isMyReports && userId
