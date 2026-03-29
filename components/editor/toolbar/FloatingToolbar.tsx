@@ -87,7 +87,7 @@ export function FloatingToolbar() {
     );
 
     const anchorEl = useMemo(() => {
-        if (!hasSelection || typeof window === 'undefined') {
+        if (!hasSelection || !selectionSnapshot || typeof window === 'undefined') {
             return null;
         }
 
