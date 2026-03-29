@@ -50,6 +50,7 @@ import {
   Pagination,
   Paper,
   Select,
+  Snackbar,
   Stack,
   Switch,
   Tab,
@@ -130,6 +131,17 @@ interface StatCardProps {
   label: string;
   value: string | number;
   color?: string;
+}
+
+interface UserAdminAuditEntry {
+  id: number;
+  action: string;
+  changes: Record<string, any>;
+  createdAt: string;
+  actor: {
+    name: string;
+    email: string | null;
+  };
 }
 
 function StatCard({ icon, label, value, color = '#3B82F6' }: StatCardProps) {
@@ -419,6 +431,8 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
   const [formData, setFormData] = useState<UserUpdate>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<UserAdminAuditEntry[]>([]);
   const [employeeIdValid, setEmployeeIdValid] = useState(true);
   const [employeeIdChecking, setEmployeeIdChecking] = useState(false);
   const [showDeactivateWarning, setShowDeactivateWarning] = useState(false);
@@ -439,8 +453,48 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
       setError('');
       setEmployeeIdValid(true);
       setShowDeactivateWarning(false);
+      setAuditLogs([]);
+      setAuditLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!open || !user || activeTab !== 2) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAuditLogs = async () => {
+      setAuditLoading(true);
+
+      try {
+        const res = await fetch(`/api/users/audit?userId=${user.id}&limit=25`);
+        if (!res.ok) {
+          throw new Error('Failed to fetch user activity');
+        }
+
+        const payload = await res.json();
+        if (!cancelled) {
+          setAuditLogs(payload.data || []);
+        }
+      } catch {
+        if (!cancelled) {
+          setAuditLogs([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuditLoading(false);
+        }
+      }
+    };
+
+    void loadAuditLogs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, open, user]);
 
   // Debounced employee ID validation
   useEffect(() => {
@@ -966,6 +1020,67 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               </Stack>
             </Box>
 
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Admin Activity Audit
+              </Typography>
+
+              {auditLoading ? (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={16} />
+                  <Typography variant="body2" color="text.secondary">Loading activity...</Typography>
+                </Stack>
+              ) : auditLogs.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No admin activity logged yet for this user.
+                </Typography>
+              ) : (
+                <Stack spacing={1.5} sx={{ mt: 1 }}>
+                  {auditLogs.map((log) => {
+                    const entries = Object.entries(log.changes || {});
+
+                    return (
+                      <Paper key={log.id} variant="outlined" sx={{ p: 1.5 }}>
+                        <Stack spacing={0.5}>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Typography variant="body2" fontWeight={600}>
+                              {log.action === 'user_created' ? 'User created' : 'User updated'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                            </Typography>
+                          </Stack>
+
+                          <Typography variant="caption" color="text.secondary">
+                            By {log.actor?.name || 'Unknown'}{log.actor?.email ? ` (${log.actor.email})` : ''}
+                          </Typography>
+
+                          {entries.length > 0 && (
+                            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+                              {entries.slice(0, 5).map(([field, value]) => {
+                                const isDiff = value && typeof value === 'object' && 'from' in value && 'to' in value;
+                                const line = isDiff
+                                  ? `${field}: ${JSON.stringify((value as any).from)} → ${JSON.stringify((value as any).to)}`
+                                  : `${field}: ${JSON.stringify(value)}`;
+
+                                return (
+                                  <Typography key={`${log.id}-${field}`} component="li" variant="caption" color="text.secondary">
+                                    {line}
+                                  </Typography>
+                                );
+                              })}
+                            </Box>
+                          )}
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Box>
+
             {!user.isActive && (
               <Alert severity="warning" icon={<Warning />}>
                 This account is currently deactivated. The user cannot log in or access the system.
@@ -1015,6 +1130,11 @@ export default function UsersManagementPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   // Redirect non-admins
   useEffect(() => {
@@ -1082,16 +1202,28 @@ export default function UsersManagementPage() {
 
   const handleSaveUser = useCallback(
     async (userId: number, updates: UserUpdate) => {
-      await updateUser(userId, updates);
-      setEditUser(null);
+      try {
+        await updateUser(userId, updates);
+        setEditUser(null);
+        setToast({ open: true, message: 'User updated successfully', severity: 'success' });
+      } catch (error) {
+        setToast({ open: true, message: 'Failed to update user', severity: 'error' });
+        throw error;
+      }
     },
     [updateUser]
   );
 
   const handleCreateUser = useCallback(
     async (payload: UserCreate) => {
-      await createUser(payload);
-      setCreateUserOpen(false);
+      try {
+        await createUser(payload);
+        setCreateUserOpen(false);
+        setToast({ open: true, message: 'User created successfully', severity: 'success' });
+      } catch (error) {
+        setToast({ open: true, message: 'Failed to create user', severity: 'error' });
+        throw error;
+      }
     },
     [createUser]
   );
@@ -1398,6 +1530,22 @@ export default function UsersManagementPage() {
         onCreate={handleCreateUser}
         departments={departments.map((d) => ({ id: d.id, name: d.name }))}
       />
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ minWidth: 260 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </AppLayout>
   );
 }

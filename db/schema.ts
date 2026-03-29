@@ -334,6 +334,21 @@ export const ovrMailOutbox = pgTable('ovr_mail_outbox', {
 }));
 
 // ============================================
+// USER ADMIN AUDIT LOGS - Role/access management traceability
+// ============================================
+export const userAdminAuditLogs = pgTable('user_admin_audit_logs', {
+  id: serial('id').primaryKey(),
+  targetUserId: integer('target_user_id').notNull().references(() => users.id),
+  actorUserId: integer('actor_user_id').notNull().references(() => users.id),
+  action: varchar('action', { length: 40 }).notNull(), // user_created | user_updated
+  changes: text('changes').notNull(), // JSON payload
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  targetCreatedIdx: index('user_admin_audit_target_created_idx').on(table.targetUserId, table.createdAt),
+  actorCreatedIdx: index('user_admin_audit_actor_created_idx').on(table.actorUserId, table.createdAt),
+}));
+
+// ============================================
 // OVR ATTACHMENTS
 // ============================================
 export const ovrAttachments = pgTable('ovr_attachments', {
@@ -373,6 +388,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   comments: many(ovrComments),
   attachments: many(ovrAttachments),
   mailOutbox: many(ovrMailOutbox),
+  userAdminActions: many(userAdminAuditLogs, { relationName: 'user_admin_actor' }),
+  userAdminChanges: many(userAdminAuditLogs, { relationName: 'user_admin_target' }),
   headedDepartment: one(departments, {
     fields: [users.id],
     references: [departments.headOfDepartment],
@@ -513,5 +530,18 @@ export const ovrMailOutboxRelations = relations(ovrMailOutbox, ({ one }) => ({
   actor: one(users, {
     fields: [ovrMailOutbox.actorUserId],
     references: [users.id],
+  }),
+}));
+
+export const userAdminAuditLogsRelations = relations(userAdminAuditLogs, ({ one }) => ({
+  actor: one(users, {
+    fields: [userAdminAuditLogs.actorUserId],
+    references: [users.id],
+    relationName: 'user_admin_actor',
+  }),
+  target: one(users, {
+    fields: [userAdminAuditLogs.targetUserId],
+    references: [users.id],
+    relationName: 'user_admin_target',
   }),
 }));

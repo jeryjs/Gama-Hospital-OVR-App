@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { userAdminAuditLogs, users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
 import { userCreateSchema, userUpdateSchema } from '@/lib/api/schemas';
 import { APP_ROLES } from '@/lib/constants';
@@ -42,6 +42,14 @@ function validateRoles(roles: unknown): string[] | null {
   }
 
   return normalized;
+}
+
+function getActorUserId(sessionUserId: string): number {
+  const actorUserId = Number(sessionUserId);
+  if (!Number.isInteger(actorUserId) || actorUserId <= 0) {
+    throw new Error('Invalid actor session user id');
+  }
+  return actorUserId;
 }
 
 /**
@@ -163,6 +171,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await requireAuth(request);
+    const actorUserId = getActorUserId(session.user.id);
 
     if (!ACCESS_CONTROL.api.users.canManage(session.user.roles)) {
       return NextResponse.json(
@@ -200,6 +209,14 @@ export async function PATCH(request: NextRequest) {
 
     if (Object.keys(filteredUpdates).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.id, userIdNumber),
+    });
+
+    if (!existingUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if ('roles' in filteredUpdates) {
@@ -244,6 +261,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const trackedKeys = ['roles', 'department', 'position', 'isActive', 'employeeId'] as const;
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+
+    for (const key of trackedKeys) {
+      if (key in filteredUpdates) {
+        const fromValue = (existingUser as any)[key];
+        const toValue = (updatedUser as any)[key];
+        if (JSON.stringify(fromValue) !== JSON.stringify(toValue)) {
+          changes[key] = { from: fromValue, to: toValue };
+        }
+      }
+    }
+
+    await db.insert(userAdminAuditLogs).values({
+      targetUserId: updatedUser.id,
+      actorUserId,
+      action: 'user_updated',
+      changes: JSON.stringify(changes),
+    });
+
     return NextResponse.json({
       success: true,
       data: updatedUser,
@@ -256,6 +293,7 @@ export async function PATCH(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
+    const actorUserId = getActorUserId(session.user.id);
 
     if (!ACCESS_CONTROL.api.users.canManage(session.user.roles)) {
       return NextResponse.json(
@@ -316,6 +354,20 @@ export async function POST(request: NextRequest) {
         isActive: parsed.data.isActive,
       })
       .returning();
+
+    await db.insert(userAdminAuditLogs).values({
+      targetUserId: createdUser.id,
+      actorUserId,
+      action: 'user_created',
+      changes: JSON.stringify({
+        email: createdUser.email,
+        roles: createdUser.roles,
+        department: createdUser.department,
+        position: createdUser.position,
+        employeeId: createdUser.employeeId,
+        isActive: createdUser.isActive,
+      }),
+    });
 
     return NextResponse.json({
       success: true,
