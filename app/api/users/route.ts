@@ -9,6 +9,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 
 const VALID_ROLES = new Set(Object.values(APP_ROLES));
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com').toLowerCase();
+const MANAGEMENT_ROLES = [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER] as const;
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -50,6 +51,10 @@ function getActorUserId(sessionUserId: string): number {
     throw new Error('Invalid actor session user id');
   }
   return actorUserId;
+}
+
+function normalizeReason(reason: unknown): string {
+  return typeof reason === 'string' ? reason.trim() : '';
 }
 
 /**
@@ -181,7 +186,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, updates } = body;
+    const { userId, updates, reason, confirmHighRisk } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -219,12 +224,54 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const actorUser = await db.query.users.findFirst({ where: eq(users.id, actorUserId) });
+    if (!actorUser) {
+      return NextResponse.json({ error: 'Actor user not found' }, { status: 400 });
+    }
+
     if ('roles' in filteredUpdates) {
       const validRoles = validateRoles(filteredUpdates.roles);
       if (!validRoles) {
         return NextResponse.json({ error: 'Invalid roles. Use at least one valid application role.' }, { status: 400 });
       }
       filteredUpdates.roles = validRoles;
+    }
+
+    const beforeRoles = existingUser.roles || [];
+    const afterRoles = (filteredUpdates.roles as string[] | undefined) || beforeRoles;
+    const rolesChanged = JSON.stringify(beforeRoles) !== JSON.stringify(afterRoles);
+    const statusChanged = typeof filteredUpdates.isActive === 'boolean' && filteredUpdates.isActive !== existingUser.isActive;
+
+    const actorIsSuperAdmin = (actorUser.roles || []).includes(APP_ROLES.SUPER_ADMIN);
+    const targetHasSuperAdminBefore = beforeRoles.includes(APP_ROLES.SUPER_ADMIN);
+    const targetHasSuperAdminAfter = afterRoles.includes(APP_ROLES.SUPER_ADMIN);
+
+    if ((targetHasSuperAdminBefore !== targetHasSuperAdminAfter) && !actorIsSuperAdmin) {
+      return NextResponse.json(
+        { error: 'Only Super Admin can assign or remove Super Admin role' },
+        { status: 403 }
+      );
+    }
+
+    const targetHasManagementAccess = ACCESS_CONTROL.api.users.canManage(beforeRoles as any);
+    const isHighRisk =
+      targetHasSuperAdminBefore !== targetHasSuperAdminAfter ||
+      (statusChanged && filteredUpdates.isActive === false && targetHasManagementAccess);
+
+    const normalizedReason = normalizeReason(reason);
+
+    if ((rolesChanged || statusChanged) && normalizedReason.length < 10) {
+      return NextResponse.json(
+        { error: 'Reason is required (minimum 10 characters) for role or status changes' },
+        { status: 400 }
+      );
+    }
+
+    if (isHighRisk && confirmHighRisk !== true) {
+      return NextResponse.json(
+        { error: 'High-risk change requires explicit confirmation' },
+        { status: 400 }
+      );
     }
 
     // Prevent admin from deactivating themselves
@@ -278,6 +325,7 @@ export async function PATCH(request: NextRequest) {
       targetUserId: updatedUser.id,
       actorUserId,
       action: 'user_updated',
+      reason: normalizedReason || null,
       changes: JSON.stringify(changes),
     });
 
@@ -303,6 +351,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const reason = normalizeReason(body.reason);
+    const confirmHighRisk = body.confirmHighRisk === true;
+
     const parsed = userCreateSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -326,6 +377,35 @@ export async function POST(request: NextRequest) {
     if (!roles) {
       return NextResponse.json(
         { error: 'At least one valid role is required' },
+        { status: 400 }
+      );
+    }
+
+    const actorUser = await db.query.users.findFirst({ where: eq(users.id, actorUserId) });
+    if (!actorUser) {
+      return NextResponse.json({ error: 'Actor user not found' }, { status: 400 });
+    }
+
+    const actorIsSuperAdmin = (actorUser.roles || []).includes(APP_ROLES.SUPER_ADMIN);
+    const includesSuperAdmin = roles.includes(APP_ROLES.SUPER_ADMIN);
+
+    if (includesSuperAdmin && !actorIsSuperAdmin) {
+      return NextResponse.json(
+        { error: 'Only Super Admin can create users with Super Admin role' },
+        { status: 403 }
+      );
+    }
+
+    if (includesSuperAdmin && !confirmHighRisk) {
+      return NextResponse.json(
+        { error: 'High-risk role assignment requires explicit confirmation' },
+        { status: 400 }
+      );
+    }
+
+    if ((roles.some((role) => MANAGEMENT_ROLES.includes(role as any)) || includesSuperAdmin) && reason.length < 10) {
+      return NextResponse.json(
+        { error: 'Reason is required (minimum 10 characters) for privileged role assignment' },
         { status: 400 }
       );
     }
@@ -359,6 +439,7 @@ export async function POST(request: NextRequest) {
       targetUserId: createdUser.id,
       actorUserId,
       action: 'user_created',
+      reason: reason || null,
       changes: JSON.stringify({
         email: createdUser.email,
         roles: createdUser.roles,

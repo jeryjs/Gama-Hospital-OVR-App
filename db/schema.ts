@@ -341,6 +341,7 @@ export const userAdminAuditLogs = pgTable('user_admin_audit_logs', {
   targetUserId: integer('target_user_id').notNull().references(() => users.id),
   actorUserId: integer('actor_user_id').notNull().references(() => users.id),
   action: varchar('action', { length: 40 }).notNull(), // user_created | user_updated
+  reason: text('reason'),
   changes: text('changes').notNull(), // JSON payload
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({

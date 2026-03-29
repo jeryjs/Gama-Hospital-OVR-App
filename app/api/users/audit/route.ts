@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
         const data = logs.map((log) => ({
             id: log.id,
             action: log.action,
+            reason: log.reason,
             changes: (() => {
                 try {
                     return JSON.parse(log.changes || '{}');
