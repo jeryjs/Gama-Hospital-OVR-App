@@ -39,6 +39,7 @@ import {
 import { useState } from 'react';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
+import { buildSharedAccessUrl } from '@/lib/utils';
 
 export interface SharedAccessManagerProps {
     resourceType: 'investigation' | 'corrective_action';
@@ -135,9 +136,12 @@ export function SharedAccessManager({
     };
 
     const handleCopyLink = async (accessToken: string) => {
-        const baseUrl = window.location.origin;
-        const path = resourceType === 'investigation' ? 'investigations' : 'actions';
-        const url = `${baseUrl}/${path}/${resourceId}?token=${accessToken}`;
+        const url = buildSharedAccessUrl(
+            resourceType,
+            resourceId,
+            accessToken,
+            window.location.origin
+        );
 
         try {
             await navigator.clipboard.writeText(url);

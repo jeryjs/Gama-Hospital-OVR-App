@@ -19,11 +19,10 @@ import {
 import {
     createSharedAccessSchema,
     bulkCreateSharedAccessSchema,
-    revokeSharedAccessSchema,
 } from '@/lib/api/schemas';
-import { generateSharedAccessToken } from '@/lib/utils';
+import { buildSharedAccessUrl, generateSharedAccessToken } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
-import { and, eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -68,7 +67,12 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
-        const accessUrl = `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`;
+        const accessUrl = buildSharedAccessUrl(
+            body.resourceType,
+            body.resourceId,
+            token,
+            process.env.NEXTAUTH_URL
+        );
 
         await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
             incidentId: body.ovrReportId,
@@ -138,7 +142,12 @@ export async function PUT(request: NextRequest) {
                 })
                 .returning();
 
-            const accessUrl = `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`;
+            const accessUrl = buildSharedAccessUrl(
+                body.resourceType,
+                body.resourceId,
+                token,
+                process.env.NEXTAUTH_URL
+            );
 
             await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
                 incidentId: body.ovrReportId,

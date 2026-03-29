@@ -39,7 +39,10 @@ export {
     addEmailToCsv,
     removeEmailFromCsv,
     getEmailCount,
+    getSharedAccessPath,
+    buildSharedAccessUrl,
 } from './shared-access';
+export type { SharedAccessResourceType } from './shared-access';
 
 // Checklist utilities
 export {

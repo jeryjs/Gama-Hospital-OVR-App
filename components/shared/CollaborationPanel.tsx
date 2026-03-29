@@ -45,6 +45,7 @@ import type { Comment } from '@/lib/api/schemas';
 export interface CollaborationPanelProps {
     resourceType: 'investigation' | 'corrective_action';
     resourceId: number;
+    ovrReportId: string;
     variant?: 'full' | 'compact';
     canComment?: boolean;
     canAttach?: boolean;
@@ -70,6 +71,7 @@ export interface CollaborationPanelProps {
 export function CollaborationPanel({
     resourceType,
     resourceId,
+    ovrReportId,
     variant = 'full',
     canComment = true,
     canAttach = false,
@@ -81,10 +83,7 @@ export function CollaborationPanel({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
 
-    // Note: Using incident comments temporarily - will create dedicated endpoint
-    const { comments, addComment, updateComment, deleteComment } = useComments(
-        `${resourceType}-${resourceId}`
-    );
+    const { comments, addComment, updateComment, deleteComment } = useComments(ovrReportId);
     const isLoading = false; // Placeholder
 
     const handleAddComment = async () => {

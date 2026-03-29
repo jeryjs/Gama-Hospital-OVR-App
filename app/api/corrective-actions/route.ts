@@ -18,12 +18,113 @@ import {
 } from '@/lib/api/middleware';
 import {
     createCorrectiveActionSchema,
-    updateCorrectiveActionSchema,
 } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+/**
+ * GET /api/corrective-actions - List corrective actions
+ * Access: QI roles only (list view)
+ */
+export async function GET(request: NextRequest) {
+    try {
+        const session = await requireAuth(request);
+
+        if (!ACCESS_CONTROL.api.correctiveActions.canView(session.user.roles, false)) {
+            throw new AuthorizationError('Only authorized QI roles can view corrective actions');
+        }
+
+        const { searchParams } = new URL(request.url);
+        const search = searchParams.get('search')?.trim();
+        const status = searchParams.get('status');
+        const ovrReportId = searchParams.get('ovrReportId')?.trim();
+        const overdueOnly = searchParams.get('overdueOnly') === 'true';
+
+        const conditions: SQL[] = [];
+
+        if (ovrReportId) {
+            conditions.push(eq(ovrCorrectiveActions.ovrReportId, ovrReportId));
+        }
+
+        if (status === 'open' || status === 'closed') {
+            conditions.push(eq(ovrCorrectiveActions.status, status));
+        }
+
+        if (overdueOnly) {
+            conditions.push(eq(ovrCorrectiveActions.status, 'open'));
+            conditions.push(sql`${ovrCorrectiveActions.dueDate} < NOW()`);
+        }
+
+        if (search) {
+            conditions.push(
+                or(
+                    ilike(ovrCorrectiveActions.title, `%${search}%`),
+                    ilike(ovrCorrectiveActions.description, `%${search}%`),
+                    ilike(ovrCorrectiveActions.ovrReportId, `%${search}%`),
+                    ilike(ovrReports.occurrenceCategory, `%${search}%`)
+                )!
+            );
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        const rows = await db
+            .select({
+                id: ovrCorrectiveActions.id,
+                ovrReportId: ovrCorrectiveActions.ovrReportId,
+                title: ovrCorrectiveActions.title,
+                description: ovrCorrectiveActions.description,
+                dueDate: ovrCorrectiveActions.dueDate,
+                assignedTo: ovrCorrectiveActions.assignedTo,
+                status: ovrCorrectiveActions.status,
+                checklist: ovrCorrectiveActions.checklist,
+                actionTaken: ovrCorrectiveActions.actionTaken,
+                evidenceFiles: ovrCorrectiveActions.evidenceFiles,
+                createdBy: ovrCorrectiveActions.createdBy,
+                createdAt: ovrCorrectiveActions.createdAt,
+                updatedAt: ovrCorrectiveActions.updatedAt,
+                completedAt: ovrCorrectiveActions.completedAt,
+                handlerCount: sql<number>`COALESCE(array_length(${ovrCorrectiveActions.assignedTo}, 1), 0)::int`,
+                incidentId: ovrReports.id,
+                incidentCategory: ovrReports.occurrenceCategory,
+            })
+            .from(ovrCorrectiveActions)
+            .leftJoin(ovrReports, eq(ovrCorrectiveActions.ovrReportId, ovrReports.id))
+            .where(whereClause)
+            .orderBy(desc(ovrCorrectiveActions.createdAt));
+
+        const actions = rows.map((row) => ({
+            id: row.id,
+            ovrReportId: row.ovrReportId,
+            investigationId: null,
+            title: row.title,
+            description: row.description,
+            dueDate: row.dueDate,
+            assignedTo: Array.isArray(row.assignedTo) ? row.assignedTo.join(',') : null,
+            status: row.status,
+            checklist: row.checklist,
+            actionTaken: row.actionTaken,
+            evidenceFiles: row.evidenceFiles,
+            createdBy: row.createdBy,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            completedAt: row.completedAt,
+            handlerCount: row.handlerCount,
+            incident: row.incidentId
+                ? {
+                    id: row.incidentId,
+                    occurrenceCategory: row.incidentCategory || undefined,
+                }
+                : undefined,
+        }));
+
+        return NextResponse.json({ actions });
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
 
 /**
  * POST /api/corrective-actions - Create new corrective action

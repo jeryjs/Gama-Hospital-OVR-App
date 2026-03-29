@@ -195,7 +195,7 @@ export default function InvestigationsPage() {
                                                     <TableCell align="right">
                                                         <Button
                                                             component={Link}
-                                                            href={`/investigations/${investigation.id}`}
+                                                            href={`/incidents/investigations/${investigation.id}`}
                                                             size="small"
                                                             startIcon={<Visibility />}
                                                         >

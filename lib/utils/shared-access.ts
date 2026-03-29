@@ -129,3 +129,33 @@ function isValidEmail(email: string): boolean {
 export function getEmailCount(csv: string | null | undefined): number {
     return csvToEmails(csv).length;
 }
+
+export type SharedAccessResourceType = 'investigation' | 'corrective_action';
+
+/**
+ * Get the canonical app path for a shared-access resource
+ */
+export function getSharedAccessPath(
+    resourceType: SharedAccessResourceType,
+    resourceId: number
+): string {
+    if (resourceType === 'investigation') {
+        return `/incidents/investigations/${resourceId}`;
+    }
+
+    return `/incidents/corrective-actions/${resourceId}`;
+}
+
+/**
+ * Build a full shared-access URL with token
+ */
+export function buildSharedAccessUrl(
+    resourceType: SharedAccessResourceType,
+    resourceId: number,
+    token: string,
+    baseUrl?: string
+): string {
+    const resolvedBase = (baseUrl || process.env.NEXTAUTH_URL || 'http://localhost:3005').replace(/\/$/, '');
+    const path = getSharedAccessPath(resourceType, resourceId);
+    return `${resolvedBase}${path}?token=${encodeURIComponent(token)}`;
+}

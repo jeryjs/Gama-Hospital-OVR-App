@@ -429,6 +429,7 @@ export default function CorrectiveActionDetailPage() {
                             <CollaborationPanel
                                 resourceType="corrective_action"
                                 resourceId={action.id}
+                                ovrReportId={action.ovrReportId}
                                 canComment={true}
                                 canAttach={false}
                             />

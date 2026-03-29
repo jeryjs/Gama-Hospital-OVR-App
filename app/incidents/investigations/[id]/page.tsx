@@ -418,6 +418,7 @@ export default function InvestigationDetailPage() {
                             <CollaborationPanel
                                 resourceType="investigation"
                                 resourceId={investigation.id}
+                                ovrReportId={investigation.ovrReportId}
                                 canComment={true}
                                 canAttach={false}
                             />
