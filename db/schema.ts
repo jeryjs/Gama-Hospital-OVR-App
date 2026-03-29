@@ -60,7 +60,7 @@ export const users = pgTable('users', {
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
 
-  // Multi-role support - users can have multiple roles via Azure AD groups
+  // Multi-role support - roles are DB-managed and can be assigned independently
   roles: text('roles').array().notNull().default(sql`ARRAY['employee']::text[]`),
 
   department: varchar('department', { length: 100 }),

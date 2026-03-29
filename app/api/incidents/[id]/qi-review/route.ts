@@ -3,7 +3,7 @@
  * 
  * POST /api/incidents/[id]/qi-review
  * - QI reviews submitted incident
- * - Approves → Status changes to 'investigating'
+ * - Approves → Status changes to 'qi_review' for investigation setup
  * - Rejects → Status changes to 'qi_review' with rejection reason
  */
 
@@ -89,7 +89,7 @@ export async function POST(
         return NextResponse.json({
             success: true,
             message: body.decision === 'approve'
-                ? 'Incident reviewed and moved to investigation'
+                ? 'Incident reviewed and moved to QI review queue'
                 : 'Incident rejected with feedback',
             incident: updated,
         });

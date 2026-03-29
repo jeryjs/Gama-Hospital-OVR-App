@@ -194,8 +194,7 @@ function prepareIncidentPayload(formData: FormData, status: 'draft' | 'submitted
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
     // Serialize rich text description to Markdown string
     description: serializeToMarkdown(formData.description),
-    // Status is always submitted when sent to API
-    status: 'submitted',
+    status,
   };
 }
 

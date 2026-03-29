@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
 import { handleApiError, requireAuth, validateBody } from '@/lib/api/middleware';
 import { createCommentSchema } from '@/lib/api/schemas';
+import { getIncidentSecure } from '@/lib/utils';
 import { desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,8 +11,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAuth(req);
+    const session = await requireAuth(req);
     const { id } = await params;
+
+    await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
     const comments = await db.query.ovrComments.findMany({
       where: eq(ovrComments.ovrReportId, id),
@@ -41,6 +48,12 @@ export async function POST(
   try {
     const session = await requireAuth(req);
     const { id } = await params;
+
+    await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
     // Validate request body
     const body = await validateBody(req, createCommentSchema);

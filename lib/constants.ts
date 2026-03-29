@@ -16,57 +16,57 @@ export const APP_ROLE_DEFS = {
     // System Administration
     SUPER_ADMIN: {
         key: 'super_admin', label: 'Super Admin', color: '#DC2626',
-        description: 'Full system access', priority: 1, azureId: '73a2c9f3-9282-4b99-be01-2813c93a5458',
+        description: 'Full system access', priority: 1,
     },
     TECH_ADMIN: {
         key: 'tech_admin', label: 'Tech Admin', color: '#7C3AED',
-        description: 'System management access', priority: 5, azureId: '3909b6bd-c691-4d60-888c-a6a9c7dc4cef',
+        description: 'System management access', priority: 5,
     },
     DEVELOPER: {
         key: 'developer', label: 'Developer', color: '#059669',
-        description: 'Development and testing access', priority: 2, azureId: '0407bc66-a177-4a36-981a-c8109da6d7a7',
+        description: 'Development and testing access', priority: 2,
     },
 
     // Executive Leadership
     CEO: {
         key: 'ceo', label: 'CEO', color: '#1E40AF',
-        description: 'Executive oversight', priority: 3, azureId: 'CEO_GROUP_ID_PLACEHOLDER',
+        description: 'Executive oversight', priority: 3,
     },
     EXECUTIVE: {
         key: 'executive', label: 'Executive', color: '#4F46E5',
-        description: 'Executive level access', priority: 4, azureId: 'cbbffd0f-7b17-4e8b-93d4-9f9f4e5f0b1f',
+        description: 'Executive level access', priority: 4,
     },
 
     // Quality & Safety
     QUALITY_MANAGER: {
         key: 'quality_manager', label: 'Quality Manager', color: '#8B5CF6',
-        description: 'QI workflow management', priority: 6, azureId: '42e686a5-1f6a-46bd-98e3-cdb19020a999',
+        description: 'QI workflow management', priority: 6,
     },
     QUALITY_ANALYST: {
         key: 'quality_analyst', label: 'Quality Analyst', color: '#A78BFA',
-        description: 'Quality assurance support', priority: 7, azureId: 'QUALITY_ANALYST_GROUP_ID_PLACEHOLDER',
+        description: 'Quality assurance support', priority: 7,
     },
 
     // Team Management
     SUPERVISOR: {
         key: 'supervisor', label: 'Supervisor', color: '#3B82F6',
-        description: 'Team supervision', priority: 8, azureId: '6ed1d31f-e276-46ae-8bb3-da64c9efb8fe',
+        description: 'Team supervision', priority: 8,
     },
     TEAM_LEAD: {
         key: 'team_lead', label: 'Team Lead', color: '#60A5FA',
-        description: 'Team coordination', priority: 9, azureId: 'TEAM_LEAD_GROUP_ID_PLACEHOLDER',
+        description: 'Team coordination', priority: 9,
     },
 
     // Specialized Roles
     FACILITY_MANAGER: {
         key: 'facility_manager', label: 'Facility Manager', color: '#F59E0B',
-        description: 'Facility management', priority: 10, azureId: '437034f5-9a13-4d2d-b09a-30b454376f87',
+        description: 'Facility management', priority: 10,
     },
 
     // Standard Access
     EMPLOYEE: {
         key: 'employee', label: 'Employee', color: '#6B7280',
-        description: 'Standard user access', priority: 11, azureId: '677b3153-3137-47a0-8823-68b5eb3c1fa4',
+        description: 'Standard user access', priority: 11,
     },
 } as const;
 

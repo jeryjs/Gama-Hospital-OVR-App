@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
 import { AuthorizationError, handleApiError, NotFoundError, requireAuth, validateBody } from '@/lib/api/middleware';
 import { updateCommentSchema } from '@/lib/api/schemas';
+import { getIncidentSecure } from '@/lib/utils';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { APP_ROLES } from '@/lib/constants';
@@ -13,13 +14,28 @@ export async function PATCH(
 ) {
   try {
     const session = await requireAuth(req);
-    const { commentId } = await params;
+    const { id, commentId } = await params;
+    const parsedCommentId = Number(commentId);
+
+    if (!Number.isInteger(parsedCommentId) || parsedCommentId <= 0) {
+      throw new NotFoundError('Comment');
+    }
+
+    await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
     const comment = await db.query.ovrComments.findFirst({
-      where: eq(ovrComments.id, parseInt(commentId)),
+      where: eq(ovrComments.id, parsedCommentId),
     });
 
     if (!comment) {
+      throw new NotFoundError('Comment');
+    }
+
+    if (comment.ovrReportId !== id) {
       throw new NotFoundError('Comment');
     }
 
@@ -37,7 +53,7 @@ export async function PATCH(
         comment: body.comment.trim(),
         updatedAt: new Date(),
       })
-      .where(eq(ovrComments.id, parseInt(commentId)))
+      .where(eq(ovrComments.id, parsedCommentId))
       .returning();
 
     // Fetch the comment with user details
@@ -67,13 +83,28 @@ export async function DELETE(
 ) {
   try {
     const session = await requireAuth(req);
-    const { commentId } = await params;
+    const { id, commentId } = await params;
+    const parsedCommentId = Number(commentId);
+
+    if (!Number.isInteger(parsedCommentId) || parsedCommentId <= 0) {
+      throw new NotFoundError('Comment');
+    }
+
+    await getIncidentSecure(id, {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    });
 
     const comment = await db.query.ovrComments.findFirst({
-      where: eq(ovrComments.id, parseInt(commentId)),
+      where: eq(ovrComments.id, parsedCommentId),
     });
 
     if (!comment) {
+      throw new NotFoundError('Comment');
+    }
+
+    if (comment.ovrReportId !== id) {
       throw new NotFoundError('Comment');
     }
 
@@ -86,7 +117,7 @@ export async function DELETE(
       throw new AuthorizationError('You can only delete your own comments');
     }
 
-    await db.delete(ovrComments).where(eq(ovrComments.id, parseInt(commentId)));
+    await db.delete(ovrComments).where(eq(ovrComments.id, parsedCommentId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

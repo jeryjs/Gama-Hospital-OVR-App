@@ -147,9 +147,9 @@ export const authOptions: NextAuthOptions = {
           employeeId: graphData.employeeId,
           userPrincipalName: profile.preferred_username || graphData.userPrincipalName,
 
-          // Entra ID groups/roles - these will be used for role management
-          groups: profile.groups || [], // Group Object IDs from token
-          roles: profile.roles || [], // App role IDs (we use groups instead)
+          // Optional Entra claim snapshots (diagnostics only; DB roles are authoritative)
+          groups: profile.groups || [], // Raw group object IDs from token
+          roles: profile.roles || [], // Raw app-role claims from token
 
           // Additional metadata
           accountEnabled: graphData.accountEnabled,
@@ -195,8 +195,8 @@ export const authOptions: NextAuthOptions = {
         name: user.name,
         department: (user as any).department,
         jobTitle: (user as any).jobTitle,
-        groups: (user as any).groups,
-        roles: (user as any).roles,
+        entraGroupsClaim: (user as any).groups,
+        entraRolesClaim: (user as any).roles,
       });
 
       try {
