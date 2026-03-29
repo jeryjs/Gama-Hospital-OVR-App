@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 
 const VALID_ROLES = new Set(Object.values(APP_ROLES));
-const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com').toLowerCase();
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',').map((d) => d.trim().toLowerCase()) || ['gamahospital.com']);
 const MANAGEMENT_ROLES = [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER] as const;
 
 function normalizeEmail(email: string): string {
@@ -16,7 +16,7 @@ function normalizeEmail(email: string): string {
 }
 
 function isAllowedDomainEmail(email: string): boolean {
-  return email.endsWith(`@${ALLOWED_DOMAIN}`);
+  return ALLOWED_DOMAIN.includes(email.split('@')[1]);
 }
 
 function normalizeOptionalText(value: unknown): string | null | undefined {
@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
 
     if (!isAllowedDomainEmail(email)) {
       return NextResponse.json(
-        { error: `User email must be within the approved domain (@${ALLOWED_DOMAIN})` },
+        { error: `User email must be within the approved domain (@${ALLOWED_DOMAIN.join(', @')})` },
         { status: 400 }
       );
     }

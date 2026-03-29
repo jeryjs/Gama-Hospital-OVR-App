@@ -6,7 +6,7 @@ import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import { APP_ROLES } from './constants';
 
-const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com').toLowerCase();
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com']).map((d) => d.trim().toLowerCase());
 const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
 // const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -17,7 +17,8 @@ function normalizeEmail(email: string | null | undefined): string | null {
 }
 
 function isAllowedDomainEmail(email: string): boolean {
-  return email.endsWith(`@${ALLOWED_DOMAIN}`);
+  const domain = email.split('@')[1];
+  return ALLOWED_DOMAIN.includes(domain);
 }
 
 async function refreshAzureAccessToken(token: JWT): Promise<JWT> {
