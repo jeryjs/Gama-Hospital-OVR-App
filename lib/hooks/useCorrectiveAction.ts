@@ -40,7 +40,7 @@ export interface UseCorrectiveActionReturn {
     error: ParsedError | undefined;
     mutate: () => Promise<void>;
     update: (data: UpdateCorrectiveActionInput) => Promise<void>;
-    close: () => Promise<void>;
+    close: (data?: UpdateCorrectiveActionInput) => Promise<void>;
 }
 
 /**
@@ -112,11 +112,12 @@ export function useCorrectiveAction(
     /**
      * Close action (QI only)
      */
-    const close = async () => {
+    const close = async (closeData?: UpdateCorrectiveActionInput) => {
         if (!id) throw new Error('Action ID is required');
 
-        const { error } = await apiCall(`/api/corrective-actions/${id}/close`, {
+        const { error } = await apiCall(`/api/corrective-actions/${id}`, {
             method: 'POST',
+            body: JSON.stringify(closeData || {}),
         });
 
         if (error) {

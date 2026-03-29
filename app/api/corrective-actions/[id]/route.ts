@@ -12,6 +12,7 @@ import {
     handleApiError,
     NotFoundError,
     requireAuth,
+    ValidationError,
     validateBody,
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
@@ -128,7 +129,7 @@ export async function PATCH(
 }
 
 /**
- * POST /api/corrective-actions/[id]/close - Close action item
+ * POST /api/corrective-actions/[id] - Close action item
  */
 export async function POST(
     request: NextRequest,
@@ -144,10 +145,82 @@ export async function POST(
             throw new AuthorizationError('Only QI staff can close corrective actions');
         }
 
+        const body = await validateBody(request, updateCorrectiveActionSchema);
+
+        const [existingAction] = await db
+            .select()
+            .from(ovrCorrectiveActions)
+            .where(eq(ovrCorrectiveActions.id, actionId))
+            .limit(1);
+
+        if (!existingAction) {
+            throw new NotFoundError('Corrective Action');
+        }
+
+        if (existingAction.status === 'closed') {
+            throw new ValidationError('Corrective action is already closed');
+        }
+
+        const sanitizedUpdates = Object.fromEntries(
+            Object.entries(body).filter(([, value]) => value !== undefined)
+        ) as Record<string, string>;
+
+        const finalChecklistRaw =
+            typeof sanitizedUpdates.checklist === 'string'
+                ? sanitizedUpdates.checklist
+                : existingAction.checklist;
+
+        let checklistItems: Array<{ completed?: boolean }> = [];
+        try {
+            checklistItems = finalChecklistRaw ? JSON.parse(finalChecklistRaw) : [];
+        } catch {
+            throw new ValidationError('Checklist must be valid JSON');
+        }
+
+        const checklistComplete =
+            Array.isArray(checklistItems) &&
+            checklistItems.length > 0 &&
+            checklistItems.every((item) => item?.completed === true);
+
+        if (!checklistComplete) {
+            throw new ValidationError('All checklist items must be completed before closing');
+        }
+
+        const finalActionTaken = (
+            typeof sanitizedUpdates.actionTaken === 'string'
+                ? sanitizedUpdates.actionTaken
+                : (existingAction.actionTaken || '')
+        ).trim();
+
+        const finalEvidenceRaw =
+            typeof sanitizedUpdates.evidenceFiles === 'string'
+                ? sanitizedUpdates.evidenceFiles
+                : existingAction.evidenceFiles;
+
+        let hasEvidence = false;
+        if (typeof finalEvidenceRaw === 'string' && finalEvidenceRaw.trim().length > 0) {
+            try {
+                const parsedEvidence = JSON.parse(finalEvidenceRaw);
+                hasEvidence = Array.isArray(parsedEvidence) && parsedEvidence.length > 0;
+            } catch {
+                hasEvidence = true;
+            }
+        }
+
+        if (!finalActionTaken && !hasEvidence) {
+            throw new ValidationError('Provide action details or at least one attachment before closing');
+        }
+
+        if (typeof sanitizedUpdates.actionTaken === 'string') {
+            sanitizedUpdates.actionTaken = finalActionTaken;
+        }
+
         const [updated] = await db
             .update(ovrCorrectiveActions)
             .set({
+                ...sanitizedUpdates,
                 status: 'closed',
+                completedAt: new Date(),
                 closedBy: parseInt(session.user.id),
                 closedAt: new Date(),
                 updatedAt: new Date(),

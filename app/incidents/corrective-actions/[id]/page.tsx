@@ -15,7 +15,7 @@ import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
-import { ArrowBack, CheckCircle, Save } from '@mui/icons-material';
+import { ArrowBack, CheckCircle, DeleteOutline, Edit, Save, UploadFile } from '@mui/icons-material';
 import {
     Alert,
     Box,
@@ -26,6 +26,10 @@ import {
     Checkbox,
     Chip,
     Divider,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     FormControlLabel,
     Grid,
     IconButton,
@@ -39,7 +43,14 @@ import { format, isPast } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useState } from 'react';
+
+interface EvidenceFileMeta {
+    name: string;
+    size: number;
+    type: string;
+    uploadedAt: string;
+}
 
 /**
  * Corrective Action Detail Page
@@ -60,7 +71,7 @@ export default function CorrectiveActionDetailPage() {
     }, []);
 
     // Fetch action (with token support)
-    const { action, sharedAccess, isLoading, error, update } = useCorrectiveAction(
+    const { action, sharedAccess, isLoading, error, update, close } = useCorrectiveAction(
         actionId,
         accessToken
     );
@@ -68,10 +79,12 @@ export default function CorrectiveActionDetailPage() {
     // Form state
     const [actionTaken, setActionTaken] = useState('');
     const [checklist, setChecklist] = useState<any[]>([]);
+    const [evidenceFiles, setEvidenceFiles] = useState<EvidenceFileMeta[]>([]);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
-    useState(() => {
+    useEffect(() => {
         if (action) {
             setActionTaken(action.actionTaken || '');
             try {
@@ -79,14 +92,48 @@ export default function CorrectiveActionDetailPage() {
             } catch {
                 setChecklist([]);
             }
+
+            try {
+                const parsed = action.evidenceFiles ? JSON.parse(action.evidenceFiles) : [];
+                const normalized = Array.isArray(parsed)
+                    ? parsed
+                        .map((file) => {
+                            if (typeof file === 'string') {
+                                return {
+                                    name: file,
+                                    size: 0,
+                                    type: 'application/octet-stream',
+                                    uploadedAt: new Date().toISOString(),
+                                } as EvidenceFileMeta;
+                            }
+
+                            if (file && typeof file === 'object' && 'name' in file) {
+                                return {
+                                    name: String((file as any).name || 'attachment'),
+                                    size: Number((file as any).size || 0),
+                                    type: String((file as any).type || 'application/octet-stream'),
+                                    uploadedAt: String((file as any).uploadedAt || new Date().toISOString()),
+                                } as EvidenceFileMeta;
+                            }
+
+                            return null;
+                        })
+                        .filter((file): file is EvidenceFileMeta => file !== null)
+                    : [];
+
+                setEvidenceFiles(normalized);
+            } catch {
+                setEvidenceFiles([]);
+            }
         }
-    });
+    }, [action]);
 
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isClosed = action?.status === 'closed';
     const canEdit = !isClosed && (isQIUser || accessToken);
     const isOverdue = action && action.status === 'open' && isPast(new Date(action.dueDate));
     const checklistComplete = checklist.length > 0 && checklist.every((item) => item.completed);
+    const hasCompletionInput = Boolean(actionTaken.trim() || evidenceFiles.length > 0);
 
     const handleToggleChecklistItem = (itemId: string) => {
         if (!canEdit) return;
@@ -104,10 +151,32 @@ export default function CorrectiveActionDetailPage() {
             await update({
                 actionTaken: actionTaken.trim() || undefined,
                 checklist: JSON.stringify(checklist),
+                evidenceFiles: evidenceFiles.length > 0 ? JSON.stringify(evidenceFiles) : undefined,
             });
+            setIsEditDialogOpen(false);
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
         }
+    };
+
+    const handleEvidenceSelect = (event: ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
+
+        const appended = files.map((file) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type || 'application/octet-stream',
+            uploadedAt: new Date().toISOString(),
+        }));
+
+        setEvidenceFiles((prev) => [...prev, ...appended]);
+        event.target.value = '';
+    };
+
+    const handleRemoveEvidence = (index: number) => {
+        if (!canEdit) return;
+        setEvidenceFiles((prev) => prev.filter((_, idx) => idx !== index));
     };
 
     const handleClose = async () => {
@@ -118,8 +187,8 @@ export default function CorrectiveActionDetailPage() {
             return;
         }
 
-        if (!actionTaken.trim()) {
-            alert('Action Taken description is required');
+        if (!hasCompletionInput) {
+            alert('Please provide action details or at least one attachment before closing.');
             return;
         }
 
@@ -128,13 +197,13 @@ export default function CorrectiveActionDetailPage() {
         setSubmitting(true);
 
         try {
-            // Update with final data then navigate
-            // Note: Status update would be handled by dedicated close endpoint
-            await update({
+            await close({
                 actionTaken: actionTaken.trim(),
                 checklist: JSON.stringify(checklist),
+                evidenceFiles: evidenceFiles.length > 0 ? JSON.stringify(evidenceFiles) : undefined,
             });
 
+            setIsEditDialogOpen(false);
             alert('Action closed successfully!');
             router.push('/incidents/corrective-actions');
         } catch (error) {
@@ -308,46 +377,49 @@ export default function CorrectiveActionDetailPage() {
                                     sx={{ bgcolor: 'success.main', color: 'success.contrastText' }}
                                 />
                                 <CardContent>
-                                    <TextField
-                                        label="Describe the actions taken"
-                                        multiline
-                                        rows={6}
-                                        fullWidth
-                                        required
-                                        value={actionTaken}
-                                        onChange={(e) => setActionTaken(e.target.value)}
-                                        placeholder="Detail what was done to complete this action..."
-                                        disabled={!canEdit}
-                                        helperText={`${actionTaken.length} characters`}
-                                    />
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        Report / Details
+                                    </Typography>
+                                    <Paper variant="outlined" sx={{ p: 2, minHeight: 120 }}>
+                                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                            {actionTaken || 'No action report added yet.'}
+                                        </Typography>
+                                    </Paper>
 
-                                    {/* Evidence Upload Placeholder */}
                                     <Box sx={{ mt: 2 }}>
-                                        <Alert severity="info">
-                                            Evidence file upload feature coming soon.
-                                        </Alert>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                            Attached Documents ({evidenceFiles.length})
+                                        </Typography>
+
+                                        {evidenceFiles.length === 0 ? (
+                                            <Alert severity="info">No attachments added yet.</Alert>
+                                        ) : (
+                                            <Stack spacing={1}>
+                                                {evidenceFiles.map((file, index) => (
+                                                    <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
+                                                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                                                            <Box>
+                                                                <Typography variant="body2" fontWeight={600}>{file.name}</Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Stack>
+                                                    </Paper>
+                                                ))}
+                                            </Stack>
+                                        )}
                                     </Box>
 
                                     {canEdit && (
                                         <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
                                             <Button
-                                                variant="outlined"
-                                                onClick={handleSave}
-                                                startIcon={<Save />}
+                                                variant="contained"
+                                                onClick={() => setIsEditDialogOpen(true)}
+                                                startIcon={<Edit />}
                                             >
-                                                Save Progress
+                                                Edit
                                             </Button>
-                                            {isQIUser && (
-                                                <Button
-                                                    variant="contained"
-                                                    color="success"
-                                                    onClick={handleClose}
-                                                    disabled={!checklistComplete || !actionTaken.trim() || submitting}
-                                                    startIcon={<CheckCircle />}
-                                                >
-                                                    {submitting ? 'Closing...' : 'Close Action'}
-                                                </Button>
-                                            )}
                                         </Stack>
                                     )}
                                 </CardContent>
@@ -450,6 +522,104 @@ export default function CorrectiveActionDetailPage() {
                     </Grid>
                 </Grid>
             </Box>
+
+            <Dialog
+                open={isEditDialogOpen}
+                onClose={submitting ? undefined : () => setIsEditDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Edit Corrective Action</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <Alert severity="info">
+                            Add details/report and/or document attachments. Use <strong>Update</strong> to save progress, or <strong>Close</strong> to finalize the action.
+                        </Alert>
+
+                        <TextField
+                            label="Action Details / Report"
+                            multiline
+                            rows={6}
+                            fullWidth
+                            value={actionTaken}
+                            onChange={(e) => setActionTaken(e.target.value)}
+                            placeholder="Describe what was done to resolve this action..."
+                            helperText={`${actionTaken.length} characters`}
+                        />
+
+                        <Box>
+                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Button component="label" variant="outlined" startIcon={<UploadFile />}>
+                                    Attach Documents
+                                    <input hidden multiple type="file" onChange={handleEvidenceSelect} />
+                                </Button>
+                                <Typography variant="caption" color="text.secondary">
+                                    Files are stored as attachment metadata in this phase.
+                                </Typography>
+                            </Stack>
+
+                            {evidenceFiles.length === 0 ? (
+                                <Alert severity="info">No attachments selected.</Alert>
+                            ) : (
+                                <Stack spacing={1}>
+                                    {evidenceFiles.map((file, index) => (
+                                        <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
+                                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                                                <Box>
+                                                    <Typography variant="body2" fontWeight={600}>{file.name}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
+                                                    </Typography>
+                                                </Box>
+                                                <IconButton
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleRemoveEvidence(index)}
+                                                >
+                                                    <DeleteOutline fontSize="small" />
+                                                </IconButton>
+                                            </Stack>
+                                        </Paper>
+                                    ))}
+                                </Stack>
+                            )}
+                        </Box>
+
+                        {!checklistComplete && (
+                            <Alert severity="warning">
+                                All checklist items must be completed before closing this action.
+                            </Alert>
+                        )}
+                        {checklistComplete && !hasCompletionInput && (
+                            <Alert severity="warning">
+                                Provide action details or at least one attachment before closing.
+                            </Alert>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={() => setIsEditDialogOpen(false)} disabled={submitting}>Cancel</Button>
+                    <Button
+                        variant="outlined"
+                        onClick={handleSave}
+                        startIcon={<Save />}
+                        disabled={submitting}
+                    >
+                        Update
+                    </Button>
+                    {isQIUser && (
+                        <Button
+                            variant="contained"
+                            color="success"
+                            onClick={handleClose}
+                            disabled={!checklistComplete || !hasCompletionInput || submitting}
+                            startIcon={<CheckCircle />}
+                        >
+                            {submitting ? 'Closing...' : 'Close'}
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
         </AppLayout>
     );
 }
