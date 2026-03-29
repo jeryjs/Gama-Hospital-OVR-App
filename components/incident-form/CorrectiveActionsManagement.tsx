@@ -9,6 +9,7 @@
 
 import {
     Alert,
+    Autocomplete,
     Avatar,
     Box,
     Button,
@@ -33,7 +34,6 @@ import {
     Add as AddIcon,
     CheckCircle as CloseIcon,
     ContentCopy as CopyIcon,
-    Delete as DeleteIcon,
     Email as EmailIcon,
     Link as LinkIcon,
     PersonAdd as PersonAddIcon,
@@ -47,6 +47,7 @@ import type { CreateCorrectiveActionInput } from '@/lib/api/schemas';
 import { format, isPast, isToday } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS } from '@/lib/constants';
 
 interface CorrectiveActionsManagementProps {
     incidentId: string;
@@ -75,17 +76,32 @@ export function CorrectiveActionsManagement({
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState<EditorValue | undefined>();
     const [dueDate, setDueDate] = useState('');
-    const [checklistItems, setChecklistItems] = useState<string[]>(['']);
+    const [checklistItems, setChecklistItems] = useState<string[]>([]);
 
     const { showError, ErrorDialogComponent } = useErrorDialog();
     const { createInvitation } = useSharedAccess('corrective_action', selectedActionId);
+
+    const normalizeChecklistItems = (items: string[]) => {
+        const seen = new Set<string>();
+
+        return items
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0)
+            .filter((item) => {
+                const key = item.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    };
 
     // Create action
     const handleCreateAction = async () => {
         try {
             // Build checklist JSON
-            const checklist = checklistItems
-                .filter((item) => item.trim().length > 0)
+            const normalizedChecklist = normalizeChecklistItems(checklistItems);
+
+            const checklist = normalizedChecklist
                 .map((text, index) => ({
                     id: `item-${index + 1}`,
                     text: text.trim(),
@@ -117,7 +133,7 @@ export function CorrectiveActionsManagement({
             setTitle('');
             setDescription(undefined);
             setDueDate('');
-            setChecklistItems(['']);
+            setChecklistItems([]);
             setCreateDialogOpen(false);
         } catch (error) {
             showError(error);
@@ -152,30 +168,14 @@ export function CorrectiveActionsManagement({
         }
     };
 
-    // Add checklist item
-    const addChecklistItem = () => {
-        setChecklistItems([...checklistItems, '']);
-    };
-
-    // Update checklist item
-    const updateChecklistItem = (index: number, value: string) => {
-        const updated = [...checklistItems];
-        updated[index] = value;
-        setChecklistItems(updated);
-    };
-
-    // Remove checklist item
-    const removeChecklistItem = (index: number) => {
-        setChecklistItems(checklistItems.filter((_, i) => i !== index));
-    };
-
     // Validation using getCharacterCount for rich text
     const descriptionLength = description ? getCharacterCount(description) : 0;
+    const normalizedChecklistForValidation = normalizeChecklistItems(checklistItems);
     const isFormValid =
         title.trim().length >= 5 &&
         descriptionLength >= 20 &&
         dueDate &&
-        checklistItems.some((item) => item.trim().length > 0);
+        normalizedChecklistForValidation.length > 0;
 
     if (!canManage) {
         return (
@@ -295,31 +295,30 @@ export function CorrectiveActionsManagement({
                             <Typography variant="subtitle2" gutterBottom>
                                 Checklist Items *
                             </Typography>
-                            <Stack spacing={1}>
-                                {checklistItems.map((item, index) => (
-                                    <Box key={index} sx={{ display: 'flex', gap: 1 }}>
-                                        <TextField
-                                            size="small"
-                                            fullWidth
-                                            placeholder={`Item ${index + 1}`}
-                                            value={item}
-                                            onChange={(e) => updateChecklistItem(index, e.target.value)}
-                                        />
-                                        {checklistItems.length > 1 && (
-                                            <IconButton
-                                                size="small"
-                                                color="error"
-                                                onClick={() => removeChecklistItem(index)}
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        )}
-                                    </Box>
-                                ))}
-                                <Button size="small" onClick={addChecklistItem} startIcon={<AddIcon />}>
-                                    Add Item
-                                </Button>
-                            </Stack>
+                            <Autocomplete
+                                multiple
+                                freeSolo
+                                options={[...CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS]}
+                                value={checklistItems}
+                                onChange={(_, value) => {
+                                    setChecklistItems(normalizeChecklistItems(value.map((item) => String(item))));
+                                }}
+                                filterSelectedOptions
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        size="small"
+                                        placeholder="Select from suggestions or type custom item and press Enter"
+                                        helperText="Checklist supports prefilled suggestions and custom entries."
+                                    />
+                                )}
+                            />
+
+                            {normalizedChecklistForValidation.length === 0 && (
+                                <Typography variant="caption" color="error.main" sx={{ mt: 0.5, display: 'block' }}>
+                                    At least one checklist item is required.
+                                </Typography>
+                            )}
                         </Box>
                     </Stack>
                 </DialogContent>

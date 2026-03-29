@@ -232,6 +232,23 @@ export const CAUSE_CLASSIFICATIONS: CauseClassification[] = [
     { id: '10', label: 'Others (Specify)' },
 ];
 
+/**
+ * Default checklist suggestions for corrective actions
+ * Used by combobox-style checklist inputs (prefilled + custom values)
+ */
+export const CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS = [
+    'Assign action owner',
+    'Define completion deadline',
+    'Update relevant policy/SOP',
+    'Conduct staff briefing/training',
+    'Implement process/control change',
+    'Document completion evidence',
+    'Perform compliance audit/verification',
+    'Monitor effectiveness after implementation',
+    'Communicate update to concerned department',
+    'Close action after validation',
+] as const;
+
 // ============================================
 // PHYSICIAN FOLLOW-UP / TREATMENT
 // ============================================
