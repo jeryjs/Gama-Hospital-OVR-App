@@ -21,6 +21,7 @@ import {
     updateCorrectiveActionSchema,
 } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -64,6 +65,13 @@ export async function POST(request: NextRequest) {
                 createdBy: parseInt(session.user.id),
             })
             .returning();
+
+        await sendWorkflowMailSafely(request, session.user, 'corrective_action_created', {
+            incidentId: body.ovrReportId,
+            actionId: action.id,
+            title: action.title,
+            assigneeIds: action.assignedTo || [],
+        });
 
         return NextResponse.json(
             {

@@ -22,6 +22,7 @@ import {
     revokeSharedAccessSchema,
 } from '@/lib/api/schemas';
 import { generateSharedAccessToken } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -67,12 +68,23 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
+        const accessUrl = `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`;
+
+        await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
+            incidentId: body.ovrReportId,
+            resourceType: body.resourceType,
+            resourceId: body.resourceId,
+            inviteeEmail: body.email,
+            role: body.role,
+            accessUrl,
+        });
+
         return NextResponse.json(
             {
                 success: true,
                 message: 'Invitation created successfully',
                 invitation,
-                accessUrl: `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`,
+                accessUrl,
             },
             { status: 201 }
         );
@@ -126,9 +138,20 @@ export async function PUT(request: NextRequest) {
                 })
                 .returning();
 
+            const accessUrl = `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`;
+
+            await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
+                incidentId: body.ovrReportId,
+                resourceType: body.resourceType,
+                resourceId: body.resourceId,
+                inviteeEmail: invite.email,
+                role: invite.role,
+                accessUrl,
+            });
+
             invitations.push({
                 ...invitation,
-                accessUrl: `${process.env.NEXTAUTH_URL}/${body.resourceType}s/${body.resourceId}?token=${token}`,
+                accessUrl,
             });
         }
 

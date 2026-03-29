@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/middleware';
 import { qiReviewSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -78,6 +79,12 @@ export async function POST(
             .set(updateData)
             .where(eq(ovrReports.id, id))
             .returning();
+
+        await sendWorkflowMailSafely(request, session.user, 'incident_reviewed', {
+            incidentId: id,
+            decision: body.decision,
+            rejectionReason: body.rejectionReason,
+        });
 
         return NextResponse.json({
             success: true,

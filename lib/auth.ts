@@ -2,12 +2,58 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { NextAuthOptions } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import { mapAdGroupsToRoles } from './auth-helpers';
 import { APP_ROLES } from './constants';
 
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
+const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
 // const IS_DEV = process.env.NODE_ENV === 'development';
+
+async function refreshAzureAccessToken(token: JWT): Promise<JWT> {
+  const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
+
+  if (!tenantId) {
+    throw new Error('NEXT_PUBLIC_AZURE_AD_TENANT_ID is required to refresh Azure access token');
+  }
+
+  if (!token.refreshToken) {
+    throw new Error('Missing refresh token for Azure access token refresh');
+  }
+
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: process.env.AZURE_AD_CLIENT_ID!,
+      client_secret: process.env.AZURE_AD_CLIENT_SECRET!,
+      grant_type: 'refresh_token',
+      refresh_token: token.refreshToken,
+      scope: MAIL_SCOPE,
+    }),
+  });
+
+  const refreshed = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Azure token refresh failed: ${JSON.stringify(refreshed)}`);
+  }
+
+  const scope = String(refreshed.scope || '');
+
+  return {
+    ...token,
+    accessToken: refreshed.access_token,
+    accessTokenExpiresAt: Date.now() + Number(refreshed.expires_in || 3600) * 1000,
+    refreshToken: refreshed.refresh_token || token.refreshToken,
+    mailScopeGranted: scope.includes('Mail.Send') || token.mailScopeGranted === true,
+    tokenError: undefined,
+  };
+}
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -30,7 +76,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           prompt: 'select_account',
-          scope: 'openid profile email User.Read',
+          scope: MAIL_SCOPE,
         },
       },
       async profile(profile, tokens) {
@@ -213,6 +259,13 @@ export const authOptions: NextAuthOptions = {
           where: eq(users.email, user.email!),
         });
 
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token || token.refreshToken;
+        token.accessTokenExpiresAt = account.expires_at
+          ? account.expires_at * 1000
+          : Date.now() + 3600 * 1000;
+        token.mailScopeGranted = String(account.scope || '').includes('Mail.Send');
+
         if (dbUser) {
           token.id = dbUser.id.toString();
           token.roles = dbUser.roles;
@@ -221,8 +274,32 @@ export const authOptions: NextAuthOptions = {
           token.position = dbUser.position;
           token.image = dbUser.profilePicture;
         }
+
+        return token;
       }
-      return token;
+
+      // Keep existing token if not yet close to expiry
+      if (typeof token.accessTokenExpiresAt === 'number' && Date.now() < token.accessTokenExpiresAt - 60_000) {
+        return token;
+      }
+
+      // If we don't have refresh token, keep stale token and mark error
+      if (!token.refreshToken) {
+        return {
+          ...token,
+          tokenError: 'MissingRefreshToken',
+        };
+      }
+
+      try {
+        return await refreshAzureAccessToken(token);
+      } catch (error) {
+        console.error('Failed to refresh Azure access token:', error);
+        return {
+          ...token,
+          tokenError: 'RefreshAccessTokenError',
+        };
+      }
     },
     async session({ session, token }) {
       if (session.user) {

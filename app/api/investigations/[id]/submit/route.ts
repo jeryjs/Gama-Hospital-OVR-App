@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
 import { canAccessInvestigation } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -69,6 +70,11 @@ export async function POST(
                 updatedAt: new Date(),
             })
             .where(eq(ovrReports.id, updated.ovrReportId));
+
+        await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
+            incidentId: updated.ovrReportId,
+            investigationId,
+        });
 
         return NextResponse.json({
             success: true,

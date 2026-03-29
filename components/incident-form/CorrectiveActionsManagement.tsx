@@ -238,7 +238,7 @@ export function CorrectiveActionsManagement({
                 {/* Success message */}
                 {copiedUrl && (
                     <Alert severity="success" sx={{ mt: 2 }}>
-                        Access link copied to clipboard! Share it with the action handler.
+                        Invitation email sent automatically. Access link was also copied to clipboard as backup.
                     </Alert>
                 )}
             </CardContent>
@@ -345,7 +345,7 @@ export function CorrectiveActionsManagement({
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="handler@example.com"
-                        helperText="A secure access link will be generated and copied to your clipboard"
+                        helperText="A secure invitation email is sent automatically; the link is also copied as backup"
                     />
                 </DialogContent>
                 <DialogActions>

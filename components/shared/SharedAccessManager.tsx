@@ -196,7 +196,7 @@ export function SharedAccessManager({
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <LinkIcon />
                                 <Typography variant="body2">
-                                    Access link copied to clipboard! Share it with the {roleLabel.toLowerCase()}.
+                                    Invitation email sent automatically. Access link was also copied to clipboard as backup.
                                 </Typography>
                             </Box>
                         </Alert>
@@ -298,14 +298,14 @@ export function SharedAccessManager({
                             helperText={
                                 inviteEmail.length > 0 && !isValidEmail(inviteEmail)
                                     ? 'Please enter a valid email address'
-                                    : 'A secure access link will be generated and copied to your clipboard'
+                                    : 'A secure invitation email is sent automatically; link is copied as backup'
                             }
                         />
 
                         <Alert severity="info">
                             <Typography variant="body2">
-                                The {roleLabel.toLowerCase()} will receive a unique link to access this {resourceType}.
-                                No account required!
+                                The {roleLabel.toLowerCase()} will receive a unique email invitation to access this {resourceType}.
+                                No extra mail app steps required.
                             </Typography>
                         </Alert>
                     </Stack>

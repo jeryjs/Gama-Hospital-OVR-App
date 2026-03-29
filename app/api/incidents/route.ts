@@ -14,6 +14,7 @@ import {
   incidentRelations,
 } from '@/lib/api/schemas';
 import { buildIncidentVisibilityFilter } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { generateOVRId } from '@/lib/generate-ovr-id';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { and, asc, desc, eq, like, or, sql, ne } from 'drizzle-orm';
@@ -230,6 +231,10 @@ export async function POST(request: NextRequest) {
         submittedAt: new Date(),
       })
       .returning();
+
+    await sendWorkflowMailSafely(request, session.user, 'incident_submitted', {
+      incidentId: newIncident[0].id,
+    });
 
     return NextResponse.json(newIncident[0], { status: 201 });
   } catch (error) {

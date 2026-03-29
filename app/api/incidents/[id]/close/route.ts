@@ -17,6 +17,7 @@ import {
 } from '@/lib/api/middleware';
 import { closeIncidentSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -86,6 +87,10 @@ export async function POST(
             })
             .where(eq(ovrReports.id, id))
             .returning();
+
+        await sendWorkflowMailSafely(request, session.user, 'incident_closed', {
+            incidentId: id,
+        });
 
         return NextResponse.json({
             success: true,

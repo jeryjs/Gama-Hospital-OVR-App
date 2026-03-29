@@ -70,6 +70,13 @@ export {
 } from './data-access';
 export type { UserContext } from './data-access';
 
+// Mail notifications
+export {
+    sendWorkflowMail,
+    sendWorkflowMailSafely,
+    type WorkflowMailEvent,
+} from './mail';
+
 // Draft storage utilities (localStorage-based)
 export {
     generateDraftId,

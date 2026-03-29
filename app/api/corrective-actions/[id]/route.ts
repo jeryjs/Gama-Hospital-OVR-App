@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
 import { canAccessCorrectiveAction } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -153,6 +154,12 @@ export async function POST(
             })
             .where(eq(ovrCorrectiveActions.id, actionId))
             .returning();
+
+        await sendWorkflowMailSafely(request, session.user, 'corrective_action_closed', {
+            incidentId: updated.ovrReportId,
+            actionId,
+            title: updated.title,
+        });
 
         return NextResponse.json({
             success: true,

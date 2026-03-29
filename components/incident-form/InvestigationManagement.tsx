@@ -321,7 +321,7 @@ export function InvestigationManagement({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <LinkIcon />
                             <Typography variant="body2">
-                                Access link copied to clipboard! Share it with the investigator.
+                                Invitation email sent automatically. Access link was also copied to clipboard as backup.
                             </Typography>
                         </Box>
                     </Alert>
@@ -342,7 +342,7 @@ export function InvestigationManagement({
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="investigator@example.com"
-                        helperText="A secure access link will be generated and copied to your clipboard"
+                        helperText="A secure invitation email is sent automatically; the link is also copied as backup"
                     />
                 </DialogContent>
                 <DialogActions>

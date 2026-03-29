@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/middleware';
 import { createInvestigationSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
             email: session.user.email,
         });
 
-        if (incident.status !== 'investigating') {
+        if (incident.status !== 'investigating' && incident.status !== 'qi_review') {
             throw new AuthorizationError(
                 `Cannot create investigation for incident in status: ${incident.status}`
             );
@@ -55,6 +56,12 @@ export async function POST(request: NextRequest) {
                 createdBy: parseInt(session.user.id),
             })
             .returning();
+
+        await sendWorkflowMailSafely(request, session.user, 'investigation_created', {
+            incidentId: body.ovrReportId,
+            investigationId: investigation.id,
+            investigatorIds: investigation.investigators || [],
+        });
 
         return NextResponse.json(
             {

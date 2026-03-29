@@ -12,6 +12,8 @@ declare module 'next-auth' {
     employeeId?: string | null;
     department?: string | null;
     position?: string | null;
+    mailScopeGranted?: boolean;
+    tokenError?: string;
   }
 
   interface Session {
@@ -20,6 +22,11 @@ declare module 'next-auth' {
 }
 
 declare module 'next-auth/jwt' {
-  // Extend JWT to include User properties
-  interface JWT extends User { }  // eslint-disable-line @typescript-eslint/no-empty-object-type
+  interface JWT extends User {
+    accessToken?: string;
+    refreshToken?: string;
+    accessTokenExpiresAt?: number;
+    mailScopeGranted?: boolean;
+    tokenError?: string;
+  }
 }

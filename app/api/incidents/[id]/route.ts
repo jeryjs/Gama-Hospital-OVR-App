@@ -13,6 +13,7 @@ import {
   incidentRelations,
 } from '@/lib/api/schemas';
 import { getIncidentSecure, canEditIncident, populateInvestigationUsers, populateActionUsers } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -98,7 +99,9 @@ export async function PATCH(
     };
 
     // New workflow: draft -> submitted
-    if (body.status === 'submitted' && existingIncident.status === 'draft') {
+    const isResubmittingDraft = body.status === 'submitted' && existingIncident.status === 'draft';
+
+    if (isResubmittingDraft) {
       updateData.submittedAt = new Date();
     }
 
@@ -107,6 +110,12 @@ export async function PATCH(
       .set(updateData)
       .where(eq(ovrReports.id, id))
       .returning();
+
+    if (isResubmittingDraft) {
+      await sendWorkflowMailSafely(request, session.user, 'incident_submitted', {
+        incidentId: id,
+      });
+    }
 
     return NextResponse.json(updatedIncident[0]);
   } catch (error) {
