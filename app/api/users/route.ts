@@ -1,9 +1,43 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
+import { userCreateSchema, userUpdateSchema } from '@/lib/api/schemas';
+import { APP_ROLES } from '@/lib/constants';
 import { and, asc, count, desc, eq, ilike, or, SQL, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+
+const VALID_ROLES = new Set(Object.values(APP_ROLES));
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function normalizeOptionalText(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function validateRoles(roles: unknown): string[] | null {
+  if (!Array.isArray(roles) || roles.length === 0) {
+    return null;
+  }
+
+  const normalized = [...new Set(roles.map((role) => String(role).trim()).filter(Boolean))];
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  const hasInvalidRole = normalized.some((role) => !VALID_ROLES.has(role as any));
+  if (hasInvalidRole) {
+    return null;
+  }
+
+  return normalized;
+}
 
 /**
  * GET /api/users - Paginated user management endpoint (Admin only)
@@ -139,18 +173,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Validate allowed fields (roles and adGroups should come from AD sync, not manual updates)
-    const allowedFields = ['department', 'position', 'isActive', 'employeeId'];
+    const parsedUpdates = userUpdateSchema.safeParse(updates || {});
+    if (!parsedUpdates.success) {
+      return NextResponse.json({ error: 'Invalid update payload', details: parsedUpdates.error.issues }, { status: 400 });
+    }
+
+    // Validate allowed fields
+    const allowedFields = ['department', 'position', 'isActive', 'employeeId', 'roles'];
     const filteredUpdates: any = {};
 
     for (const key of allowedFields) {
-      if (key in updates) {
-        filteredUpdates[key] = updates[key];
+      if (key in parsedUpdates.data) {
+        filteredUpdates[key] = (parsedUpdates.data as any)[key];
       }
     }
 
     if (Object.keys(filteredUpdates).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    if ('roles' in filteredUpdates) {
+      const validRoles = validateRoles(filteredUpdates.roles);
+      if (!validRoles) {
+        return NextResponse.json({ error: 'Invalid roles. Use at least one valid application role.' }, { status: 400 });
+      }
+      filteredUpdates.roles = validRoles;
     }
 
     // Prevent admin from deactivating themselves
@@ -160,6 +207,20 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Prevent admin from removing own management access
+    if (userId === parseInt(session.user.id) && filteredUpdates.roles) {
+      if (!ACCESS_CONTROL.api.users.canManage(filteredUpdates.roles as any)) {
+        return NextResponse.json(
+          { error: 'Cannot remove your own administrative access' },
+          { status: 400 }
+        );
+      }
+    }
+
+    filteredUpdates.department = normalizeOptionalText(filteredUpdates.department);
+    filteredUpdates.position = normalizeOptionalText(filteredUpdates.position);
+    filteredUpdates.employeeId = normalizeOptionalText(filteredUpdates.employeeId);
 
     filteredUpdates.updatedAt = new Date();
 
@@ -177,6 +238,71 @@ export async function PATCH(request: NextRequest) {
       success: true,
       data: updatedUser,
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await requireAuth(request);
+
+    if (!ACCESS_CONTROL.api.users.canManage(session.user.roles)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const parsed = userCreateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid user payload', details: parsed.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const email = normalizeEmail(parsed.data.email);
+    const roles = validateRoles(parsed.data.roles);
+
+    if (!roles) {
+      return NextResponse.json(
+        { error: 'At least one valid role is required' },
+        { status: 400 }
+      );
+    }
+
+    const existing = await db.query.users.findFirst({
+      where: sql`LOWER(${users.email}) = ${email}`,
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'A user with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    const [createdUser] = await db
+      .insert(users)
+      .values({
+        email,
+        firstName: parsed.data.firstName.trim(),
+        lastName: parsed.data.lastName.trim(),
+        roles,
+        department: normalizeOptionalText(parsed.data.department),
+        position: normalizeOptionalText(parsed.data.position),
+        employeeId: normalizeOptionalText(parsed.data.employeeId),
+        isActive: parsed.data.isActive,
+      })
+      .returning();
+
+    return NextResponse.json({
+      success: true,
+      data: createdUser,
+    }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

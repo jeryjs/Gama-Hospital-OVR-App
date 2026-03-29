@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import { useCallback, useMemo } from 'react';
-import type { User, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
+import type { User, UserCreate, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
 
 const fetcher = async (url: string): Promise<UserListResponse> => {
     const res = await fetch(url);
@@ -83,6 +83,25 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
         [mutate]
     );
 
+    const createUser = useCallback(
+        async (payload: UserCreate) => {
+            const res = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to create user');
+            }
+
+            await mutate();
+            return await res.json();
+        },
+        [mutate]
+    );
+
     return {
         users: data?.data || [],
         pagination: data?.pagination || {
@@ -96,6 +115,7 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
         isLoading,
         error,
         updateUser,
+        createUser,
         refresh: mutate,
     };
 }

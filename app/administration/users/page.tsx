@@ -309,7 +309,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
   if (!user) return null;
 
   const userInitials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
-  // Note: Azure AD sync time is approximated by last update time
+  // Note: profile sync time is approximated by last update time
   const lastSyncTime = user.updatedAt
     ? formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })
     : 'Never';
@@ -395,7 +395,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                   </InputAdornment>
                 ),
               }}
-              helperText="Email cannot be changed (synced from Azure AD)"
+              helperText="Email cannot be changed once linked to identity"
             />
 
             <TextField
@@ -525,7 +525,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
           <Stack spacing={3}>
             <Alert severity="info" icon={<Info />}>
               <Typography variant="body2">
-                Roles are managed through Azure AD security groups and cannot be changed here.
+                Roles are currently read-only in this view.
                 Contact your IT administrator to modify role assignments.
               </Typography>
             </Alert>
@@ -566,7 +566,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
             <Box>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Last Synced with Azure AD
+                  Last profile sync
                 </Typography>
                 <Chip
                   label={lastSyncTime}

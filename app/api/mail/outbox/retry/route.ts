@@ -7,16 +7,16 @@ import { NextRequest, NextResponse } from 'next/server';
  * Process pending mail retries for the currently signed-in actor.
  */
 export async function POST(request: NextRequest) {
-  try {
-    const session = await requireAuth(request);
+    try {
+        const session = await requireAuth(request);
 
-    const result = await processMailOutboxForActor(request, session.user, 25);
+        const result = await processMailOutboxForActor(request, session.user, 25);
 
-    return NextResponse.json({
-      success: true,
-      ...result,
-    });
-  } catch (error) {
-    return handleApiError(error);
-  }
+        return NextResponse.json({
+            success: true,
+            ...result,
+        });
+    } catch (error) {
+        return handleApiError(error);
+    }
 }

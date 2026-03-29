@@ -4,12 +4,21 @@ import { eq, sql } from 'drizzle-orm';
 import { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
-import { mapAdGroupsToRoles } from './auth-helpers';
 import { APP_ROLES } from './constants';
 
-const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com';
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com').toLowerCase();
 const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
 // const IS_DEV = process.env.NODE_ENV === 'development';
+
+function normalizeEmail(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const normalized = email.trim().toLowerCase();
+  return normalized || null;
+}
+
+function isAllowedDomainEmail(email: string): boolean {
+  return email.endsWith(`@${ALLOWED_DOMAIN}`);
+}
 
 async function refreshAzureAccessToken(token: JWT): Promise<JWT> {
   const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
@@ -189,62 +198,76 @@ export const authOptions: NextAuthOptions = {
         roles: (user as any).roles,
       });
 
-      // Temp: Skip domain check while in preview
-      // if (!user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
-      //   console.log('❌ Sign in rejected: Invalid domain for', user.email);
-      //   return false;
-      // }
-
       try {
+        const normalizedEmail = normalizeEmail(user.email);
+        if (!normalizedEmail) {
+          console.log('❌ Sign in rejected: missing email claim');
+          return false;
+        }
+
+        // Pseudo auto-provision path: only verified in-domain emails may pass
+        if (!isAllowedDomainEmail(normalizedEmail)) {
+          console.log('❌ Sign in rejected: disallowed domain:', normalizedEmail);
+          return false;
+        }
+
+        if (!account?.providerAccountId) {
+          console.log('❌ Sign in rejected: missing Azure account object ID');
+          return false;
+        }
+
         const existingUser = await db.query.users.findFirst({
-          where: eq(users.email, user.email),
+          where: sql`LOWER(${users.email}) = ${normalizedEmail}`,
         });
 
-        // Map Azure AD security groups (using group IDs) to application roles
-        const adGroupIds = (user as any).roles || [];
-        const mappedRoles = mapAdGroupsToRoles(adGroupIds);
+        if (!existingUser) {
+          const nameParts = user.name?.trim().split(/\s+/) || [];
+          const firstName = (user as any).givenName || nameParts[0] || 'New';
+          const lastName = (user as any).surname || nameParts.slice(1).join(' ') || 'User';
 
-        if (existingUser) {
-          if (!existingUser.isActive) {
-            console.log('❌ User account is inactive:', user.email);
-            return false;
-          }
-
-          // Update user with all available information from Entra ID
-          await db
-            .update(users)
-            .set({
-              azureId: account?.providerAccountId,
-              firstName: (user as any).givenName || existingUser.firstName,
-              lastName: (user as any).surname || existingUser.lastName,
-              roles: mappedRoles.length > 0 ? mappedRoles : [APP_ROLES.EMPLOYEE],
-              department: (user as any).department || existingUser.department,
-              position: (user as any).jobTitle || existingUser.position,
-              employeeId: (user as any).employeeId || existingUser.employeeId,
-              profilePicture: (user.image?.startsWith('data:') ? undefined : user.image) || existingUser.profilePicture,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.id, existingUser.id));
-
-          console.log('✅ Updated existing user:', user.email, 'with roles:', mappedRoles);
-        } else {
-          // Create new user with all available information from Entra ID
-          const nameParts = user.name?.split(' ') || ['', ''];
           await db.insert(users).values({
-            email: user.email,
-            azureId: account?.providerAccountId,
-            firstName: (user as any).givenName || nameParts[0] || 'Unknown',
-            lastName: (user as any).surname || nameParts.slice(1).join(' ') || 'User',
-            roles: mappedRoles.length > 0 ? mappedRoles : [APP_ROLES.EMPLOYEE],
+            email: normalizedEmail,
+            azureId: account.providerAccountId,
+            firstName,
+            lastName,
+            roles: [APP_ROLES.EMPLOYEE],
             department: (user as any).department,
             position: (user as any).jobTitle,
             employeeId: (user as any).employeeId,
-            profilePicture: user.image,
+            profilePicture: user.image?.startsWith('data:') ? undefined : user.image,
             isActive: true,
           });
 
-          console.log('✅ Created new user:', user.email, 'with roles:', mappedRoles);
+          console.log('✅ Auto-provisioned new employee account:', normalizedEmail);
+          return true;
         }
+
+        // Only active users may sign in
+        if (!existingUser.isActive) {
+          console.log('❌ Sign in rejected: account inactive:', normalizedEmail);
+          return false;
+        }
+
+        // Harden identity binding: once bound, Azure object ID must match
+        if (existingUser.azureId && existingUser.azureId !== account.providerAccountId) {
+          console.log('❌ Sign in rejected: Azure identity mismatch for', normalizedEmail, {
+            expected: existingUser.azureId,
+            received: account.providerAccountId,
+          });
+          return false;
+        }
+
+        // Bind Azure object ID on first approved sign-in and keep profile picture fresh
+        await db
+          .update(users)
+          .set({
+            azureId: existingUser.azureId || account.providerAccountId,
+            profilePicture: (user.image?.startsWith('data:') ? undefined : user.image) || existingUser.profilePicture,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, existingUser.id));
+
+        console.log('✅ Sign in approved for existing DB user:', normalizedEmail);
 
         return true;
       } catch (error) {
@@ -255,9 +278,19 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (account && user) {
-        const dbUser = await db.query.users.findFirst({
-          where: eq(users.email, user.email!),
-        });
+        const normalizedEmail = normalizeEmail(user.email);
+
+        let dbUser = account.providerAccountId
+          ? await db.query.users.findFirst({
+            where: eq(users.azureId, account.providerAccountId),
+          })
+          : undefined;
+
+        if (!dbUser && normalizedEmail) {
+          dbUser = await db.query.users.findFirst({
+            where: sql`LOWER(${users.email}) = ${normalizedEmail}`,
+          });
+        }
 
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token || token.refreshToken;
@@ -266,14 +299,18 @@ export const authOptions: NextAuthOptions = {
           : Date.now() + 3600 * 1000;
         token.mailScopeGranted = String(account.scope || '').includes('Mail.Send');
 
-        if (dbUser) {
-          token.id = dbUser.id.toString();
-          token.roles = dbUser.roles;
-          token.employeeId = dbUser.employeeId;
-          token.department = dbUser.department;
-          token.position = dbUser.position;
-          token.image = dbUser.profilePicture;
+        if (!dbUser || !dbUser.isActive) {
+          token.tokenError = 'UserNotApproved';
+          return token;
         }
+
+        token.id = dbUser.id.toString();
+        token.roles = dbUser.roles;
+        token.employeeId = dbUser.employeeId;
+        token.department = dbUser.department;
+        token.position = dbUser.position;
+        token.image = dbUser.profilePicture;
+        token.tokenError = undefined;
 
         return token;
       }
@@ -304,14 +341,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        // Testing: set specific role for me
-        session.user.roles = session.user.name?.toLowerCase().includes('jery')
-          ? [APP_ROLES.DEVELOPER] as any
-          : (token.roles as any) || [APP_ROLES.EMPLOYEE];
+        session.user.roles = (token.roles as any) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;
         session.user.image = token.image as string | undefined;
+        session.user.mailScopeGranted = token.mailScopeGranted === true;
+        session.user.tokenError = token.tokenError as string | undefined;
       }
       return session;
     },

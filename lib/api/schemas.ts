@@ -698,6 +698,17 @@ export const userUpdateSchema = userInsertSchema.pick({
   employeeId: true,
 }).partial();
 
+export const userCreateSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Valid email is required'),
+  firstName: z.string().trim().min(1, 'First name is required').max(100),
+  lastName: z.string().trim().min(1, 'Last name is required').max(100),
+  roles: z.array(z.string().min(1)).min(1, 'At least one role is required').default(['employee']),
+  department: z.string().trim().max(100).optional().or(z.literal('')),
+  position: z.string().trim().max(100).optional().or(z.literal('')),
+  employeeId: z.string().trim().max(50).optional().or(z.literal('')),
+  isActive: z.boolean().default(true),
+});
+
 export const userListResponseSchema = z.object({
   data: z.array(userSelectSchema),
   pagination: paginationMetaSchema,
@@ -705,4 +716,5 @@ export const userListResponseSchema = z.object({
 
 export type UserListQuery = z.infer<typeof userListQuerySchema>;
 export type UserUpdate = z.infer<typeof userUpdateSchema>;
+export type UserCreate = z.infer<typeof userCreateSchema>;
 export type UserListResponse = z.infer<typeof userListResponseSchema>;

@@ -21,21 +21,26 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
 
-  // Initialize error state from URL params safely on client
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const errorParam = params.get('error');
+
     if (errorParam === 'AccessDenied') {
-      setError('Access denied. Please ensure you are using a @gamahospital.com email address.');
-    } else if (errorParam === 'Configuration') {
-      setError('Authentication configuration error. Please contact support.');
-    } else if (errorParam) {
-      setError('An authentication error occurred. Please try again.');
+      return 'Access denied. Your account is not approved or is inactive. Please contact an administrator.';
     }
-  }, []);
+
+    if (errorParam === 'Configuration') {
+      return 'Authentication configuration error. Please contact support.';
+    }
+
+    if (errorParam) {
+      return 'An authentication error occurred. Please try again.';
+    }
+
+    return null;
+  });
 
   useEffect(() => {
     // Redirect if already authenticated
@@ -221,7 +226,7 @@ export default function LoginPage() {
               {/* Sign In Section */}
               <Box>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  Sign in with your Gama Hospital account
+                  Sign in with your Microsoft account
                 </Typography>
 
                 <Button
@@ -273,7 +278,7 @@ export default function LoginPage() {
 
               {/* Footer Note */}
               <Typography variant="caption" color="text.secondary" sx={{ pt: 2 }}>
-                Access restricted to @gamahospital.com accounts only
+                Access is granted only to approved users configured by administrators
               </Typography>
             </Stack>
           </Paper>
