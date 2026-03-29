@@ -304,6 +304,36 @@ export const ovrSharedAccess = pgTable('ovr_shared_access', {
 }));
 
 // ============================================
+// MAIL OUTBOX - Reliable notification retries
+// ============================================
+export const ovrMailOutbox = pgTable('ovr_mail_outbox', {
+  id: serial('id').primaryKey(),
+
+  // Event metadata
+  event: varchar('event', { length: 64 }).notNull(),
+  payload: text('payload').notNull(), // JSON payload for workflow event
+
+  // Actor context (sender identity)
+  actorUserId: integer('actor_user_id').notNull().references(() => users.id),
+  actorEmail: varchar('actor_email', { length: 255 }).notNull(),
+
+  // Delivery tracking
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending | sent | failed
+  attempts: integer('attempts').notNull().default(0),
+  lastError: text('last_error'),
+  lastAttemptAt: timestamp('last_attempt_at'),
+  nextRetryAt: timestamp('next_retry_at').notNull().defaultNow(),
+  sentAt: timestamp('sent_at'),
+
+  // Timestamps
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  statusRetryIdx: index('ovr_mail_outbox_status_retry_idx').on(table.status, table.nextRetryAt),
+  actorIdx: index('ovr_mail_outbox_actor_idx').on(table.actorUserId),
+}));
+
+// ============================================
 // OVR ATTACHMENTS
 // ============================================
 export const ovrAttachments = pgTable('ovr_attachments', {
@@ -342,6 +372,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   sharedAccess: many(ovrSharedAccess, { relationName: 'shared_user' }),
   comments: many(ovrComments),
   attachments: many(ovrAttachments),
+  mailOutbox: many(ovrMailOutbox),
   headedDepartment: one(departments, {
     fields: [users.id],
     references: [departments.headOfDepartment],
@@ -474,6 +505,13 @@ export const ovrCommentsRelations = relations(ovrComments, ({ one }) => ({
   }),
   user: one(users, {
     fields: [ovrComments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const ovrMailOutboxRelations = relations(ovrMailOutbox, ({ one }) => ({
+  actor: one(users, {
+    fields: [ovrMailOutbox.actorUserId],
     references: [users.id],
   }),
 }));

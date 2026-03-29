@@ -74,6 +74,7 @@ export type { UserContext } from './data-access';
 export {
     sendWorkflowMail,
     sendWorkflowMailSafely,
+    processMailOutboxForActor,
     type WorkflowMailEvent,
 } from './mail';
 

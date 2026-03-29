@@ -1,7 +1,7 @@
 import { db } from '@/db';
-import { ovrReports, users } from '@/db/schema';
+import { ovrMailOutbox, ovrReports, users } from '@/db/schema';
 import { APP_ROLES, type AppRole } from '@/lib/constants';
-import { eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
@@ -9,6 +9,9 @@ import type { NextRequest } from 'next/server';
 const GRAPH_SEND_MAIL_URL = 'https://graph.microsoft.com/v1.0/me/sendMail';
 const MAIL_SUBJECT_PREFIX = process.env.MAIL_SUBJECT_PREFIX || '[OVR]';
 const MAIL_ENABLED = process.env.MAIL_NOTIFICATIONS_ENABLED !== 'false';
+const MAIL_OUTBOX_MAX_ATTEMPTS = Number(process.env.MAIL_OUTBOX_MAX_ATTEMPTS || 5);
+const MAIL_OUTBOX_BASE_RETRY_MINUTES = Number(process.env.MAIL_OUTBOX_BASE_RETRY_MINUTES || 5);
+const MAIL_OUTBOX_DEFAULT_BATCH = Number(process.env.MAIL_OUTBOX_RETRY_BATCH || 10);
 
 const QI_NOTIFICATION_ROLES: AppRole[] = [
   APP_ROLES.SUPER_ADMIN,
@@ -82,6 +85,18 @@ interface MailEnvelope {
   text: string;
 }
 
+interface ActorTokenContext {
+  accessToken: string;
+  tokenError?: string;
+}
+
+export interface MailOutboxProcessingResult {
+  processed: number;
+  sent: number;
+  failed: number;
+  pending: number;
+}
+
 function normalizeEmail(email: string | null | undefined): string | null {
   if (!email) return null;
 
@@ -99,6 +114,34 @@ function dedupeEmails(emails: Array<string | null | undefined>): string[] {
     .filter((email): email is string => Boolean(email));
 
   return [...new Set(normalized)];
+}
+
+function toActorUserId(actor: Actor): number {
+  const userId = Number(actor.id);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error(`Invalid actor user id: ${actor.id}`);
+  }
+
+  return userId;
+}
+
+function isWorkflowMailEvent(value: string): value is WorkflowMailEvent {
+  return [
+    'incident_submitted',
+    'incident_reviewed',
+    'investigation_created',
+    'shared_access_invited',
+    'investigation_submitted',
+    'corrective_action_created',
+    'corrective_action_closed',
+    'incident_closed',
+  ].includes(value);
+}
+
+function computeNextRetryAt(attempts: number): Date {
+  const multiplier = Math.max(1, 2 ** Math.max(0, attempts - 1));
+  const delayMinutes = Math.min(24 * 60, MAIL_OUTBOX_BASE_RETRY_MINUTES * multiplier);
+  return new Date(Date.now() + delayMinutes * 60_000);
 }
 
 function appUrl(path: string): string {
@@ -471,6 +514,151 @@ async function sendMailWithGraph(accessToken: string, envelope: MailEnvelope): P
   }
 }
 
+async function resolveActorToken(request: NextRequest): Promise<ActorTokenContext> {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  const accessToken = typeof token?.accessToken === 'string' ? token.accessToken : null;
+  if (!accessToken) {
+    throw new Error('No delegated access token available for workflow mail');
+  }
+
+  return {
+    accessToken,
+    tokenError: typeof token?.tokenError === 'string' ? token.tokenError : undefined,
+  };
+}
+
+async function enqueueMailOutbox<T extends WorkflowMailEvent>(
+  actor: Actor,
+  event: T,
+  payload: WorkflowMailPayloadMap[T],
+  error: unknown
+): Promise<void> {
+  const actorEmail = normalizeEmail(actor.email);
+  if (!actorEmail) {
+    return;
+  }
+
+  const actorUserId = toActorUserId(actor);
+  const now = new Date();
+
+  await db.insert(ovrMailOutbox).values({
+    event,
+    payload: JSON.stringify(payload),
+    actorUserId,
+    actorEmail,
+    status: 'pending',
+    attempts: 1,
+    lastError: error instanceof Error ? error.message : String(error),
+    lastAttemptAt: now,
+    nextRetryAt: computeNextRetryAt(1),
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+async function processOutboxBatchWithToken(
+  actor: Actor,
+  accessToken: string,
+  limit = MAIL_OUTBOX_DEFAULT_BATCH
+): Promise<MailOutboxProcessingResult> {
+  const actorUserId = toActorUserId(actor);
+  const now = new Date();
+
+  const pendingRows = await db
+    .select()
+    .from(ovrMailOutbox)
+    .where(
+      and(
+        eq(ovrMailOutbox.actorUserId, actorUserId),
+        eq(ovrMailOutbox.status, 'pending'),
+        lte(ovrMailOutbox.nextRetryAt, now)
+      )
+    )
+    .orderBy(asc(ovrMailOutbox.createdAt))
+    .limit(Math.max(1, limit));
+
+  const result: MailOutboxProcessingResult = {
+    processed: 0,
+    sent: 0,
+    failed: 0,
+    pending: 0,
+  };
+
+  for (const row of pendingRows) {
+    result.processed += 1;
+    const attempts = row.attempts + 1;
+    const attemptTime = new Date();
+
+    try {
+      if (!isWorkflowMailEvent(row.event)) {
+        throw new Error(`Unsupported outbox event: ${row.event}`);
+      }
+
+      const parsedPayload = JSON.parse(row.payload || '{}') as WorkflowMailPayloadMap[typeof row.event];
+      const envelope = await buildEnvelope(row.event, parsedPayload, actor);
+
+      if (!envelope || !envelope.to.length) {
+        await db
+          .update(ovrMailOutbox)
+          .set({
+            status: 'sent',
+            attempts,
+            lastAttemptAt: attemptTime,
+            sentAt: attemptTime,
+            lastError: null,
+            updatedAt: attemptTime,
+          })
+          .where(eq(ovrMailOutbox.id, row.id));
+
+        result.sent += 1;
+        continue;
+      }
+
+      await sendMailWithGraph(accessToken, envelope);
+
+      await db
+        .update(ovrMailOutbox)
+        .set({
+          status: 'sent',
+          attempts,
+          lastAttemptAt: attemptTime,
+          sentAt: attemptTime,
+          lastError: null,
+          updatedAt: attemptTime,
+        })
+        .where(eq(ovrMailOutbox.id, row.id));
+
+      result.sent += 1;
+    } catch (error) {
+      const reachedMaxAttempts = attempts >= MAIL_OUTBOX_MAX_ATTEMPTS;
+
+      await db
+        .update(ovrMailOutbox)
+        .set({
+          status: reachedMaxAttempts ? 'failed' : 'pending',
+          attempts,
+          lastAttemptAt: attemptTime,
+          lastError: error instanceof Error ? error.message : String(error),
+          nextRetryAt: reachedMaxAttempts ? row.nextRetryAt : computeNextRetryAt(attempts),
+          updatedAt: attemptTime,
+        })
+        .where(eq(ovrMailOutbox.id, row.id));
+
+      if (reachedMaxAttempts) {
+        result.failed += 1;
+      } else {
+        result.pending += 1;
+      }
+    }
+  }
+
+  return result;
+}
+
 export async function sendWorkflowMail<T extends WorkflowMailEvent>(
   request: NextRequest,
   actor: Actor,
@@ -481,27 +669,21 @@ export async function sendWorkflowMail<T extends WorkflowMailEvent>(
     return;
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  const token = await resolveActorToken(request);
 
-  const accessToken = typeof token?.accessToken === 'string' ? token.accessToken : null;
-
-  if (!accessToken) {
-    throw new Error('No delegated access token available for workflow mail');
-  }
-
-  if (token?.tokenError) {
+  if (token.tokenError) {
     throw new Error(`Delegated token unavailable: ${token.tokenError}`);
   }
+
+  // Opportunistically process pending retries for this actor before new sends
+  await processOutboxBatchWithToken(actor, token.accessToken, MAIL_OUTBOX_DEFAULT_BATCH);
 
   const envelope = await buildEnvelope(event, payload, actor);
   if (!envelope || !envelope.to.length) {
     return;
   }
 
-  await sendMailWithGraph(accessToken, envelope);
+  await sendMailWithGraph(token.accessToken, envelope);
 }
 
 export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
@@ -513,6 +695,17 @@ export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
   try {
     await sendWorkflowMail(request, actor, event, payload);
   } catch (error) {
+    try {
+      await enqueueMailOutbox(actor, event, payload, error);
+    } catch (queueError) {
+      console.error('Workflow mail enqueue failed:', {
+        event,
+        actorEmail: actor.email,
+        payload,
+        queueError,
+      });
+    }
+
     console.error('Workflow mail dispatch failed:', {
       event,
       actorEmail: actor.email,
@@ -520,4 +713,27 @@ export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
       error,
     });
   }
+}
+
+export async function processMailOutboxForActor(
+  request: NextRequest,
+  actor: Actor,
+  limit = MAIL_OUTBOX_DEFAULT_BATCH
+): Promise<MailOutboxProcessingResult> {
+  if (!MAIL_ENABLED) {
+    return {
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      pending: 0,
+    };
+  }
+
+  const token = await resolveActorToken(request);
+
+  if (token.tokenError) {
+    throw new Error(`Delegated token unavailable: ${token.tokenError}`);
+  }
+
+  return processOutboxBatchWithToken(actor, token.accessToken, limit);
 }
