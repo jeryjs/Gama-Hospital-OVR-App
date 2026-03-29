@@ -16,20 +16,15 @@ import {
 import { alpha, Box, Button, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 export default function EmployeeDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
   const router = useRouter();
 
-  // Get draft count from localStorage
-  const [localDraftCount, setLocalDraftCount] = useState(0);
-
-  useEffect(() => {
-    if (session?.user?.id) {
-      const userId = parseInt(session.user.id);
-      const drafts = getUserDrafts(userId);
-      setLocalDraftCount(drafts.length);
-    }
+  const localDraftCount = useMemo(() => {
+    if (!session?.user?.id) return 0;
+    const userId = parseInt(session.user.id);
+    return getUserDrafts(userId).length;
   }, [session?.user?.id]);
 
   const statCards = [

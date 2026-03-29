@@ -158,6 +158,17 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
+        // Mark incident as actively under investigation
+        if (incident.status !== 'investigating') {
+            await db
+                .update(ovrReports)
+                .set({
+                    status: 'investigating',
+                    updatedAt: new Date(),
+                })
+                .where(eq(ovrReports.id, body.ovrReportId));
+        }
+
         await sendWorkflowMailSafely(request, session.user, 'investigation_created', {
             incidentId: body.ovrReportId,
             investigationId: investigation.id,

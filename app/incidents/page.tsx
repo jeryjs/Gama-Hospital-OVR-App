@@ -26,9 +26,17 @@ export default function IncidentsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<IncidentFilters>({
-    search: '',
-    status: '',
+  const [filters, setFilters] = useState<IncidentFilters>(() => {
+    if (typeof window === 'undefined') {
+      return { search: '', status: '' };
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status') || '';
+    return {
+      search: '',
+      status: status && status !== 'draft' ? status : '',
+    };
   });
   const [sortBy, setSortBy] = useState<SortColumn>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -44,17 +52,6 @@ export default function IncidentsPage() {
       router.replace('/incidents/me');
     }
   }, [sessionStatus, hasElevatedAccess, router]);
-
-  // Initialize filters from URL once on client
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get('status') || '';
-    // Don't allow 'draft' status filter on this page
-    if (status && status !== 'draft') {
-      setFilters((prev) => ({ ...prev, status }));
-    }
-  }, []);
 
   const { incidents, pagination, isLoading, error } = useIncidents({
     page,

@@ -161,7 +161,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
 
     return items;
-  }, [session?.user.roles, stats?.byStatus, navItemsOpen]);
+  }, [session?.user.roles, stats?.byStatus, stats?.myReports?.drafts, navItemsOpen]);
 
   const handleMenuItemClick = (item: NavItem) => {
     if (item.children) {

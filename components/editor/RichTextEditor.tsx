@@ -79,7 +79,7 @@ export function RichTextEditor({
             return value;
         }
         return createEmptyValue();
-    }, []);
+    }, [value]);
 
     // Create editor with plugins and components
     const editor = usePlateEditor({

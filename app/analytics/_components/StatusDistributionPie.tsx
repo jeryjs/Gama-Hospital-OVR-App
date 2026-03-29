@@ -56,14 +56,19 @@ const DonutChart = ({
 
     // Pre-calculate all segment data to avoid mutation during render
     const segmentData = useMemo((): SegmentData[] => {
-        let accumulated = 0;
-        return data.map((segment) => {
-            const percentage = segment.count / total;
-            const strokeDasharray = `${circumference * percentage} ${circumference * (1 - percentage)}`;
-            const strokeDashoffset = -circumference * accumulated;
-            accumulated += percentage;
-            return { segment, strokeDasharray, strokeDashoffset };
-        });
+        return data.reduce<{ accumulated: number; segments: SegmentData[] }>(
+            (state, segment) => {
+                const percentage = segment.count / total;
+                const strokeDasharray = `${circumference * percentage} ${circumference * (1 - percentage)}`;
+                const strokeDashoffset = -circumference * state.accumulated;
+
+                return {
+                    accumulated: state.accumulated + percentage,
+                    segments: [...state.segments, { segment, strokeDasharray, strokeDashoffset }],
+                };
+            },
+            { accumulated: 0, segments: [] }
+        ).segments;
     }, [data, total, circumference]);
 
     return (

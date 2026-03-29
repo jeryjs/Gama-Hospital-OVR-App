@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import {
     Paper,
     Popper,
@@ -36,7 +36,6 @@ import {
 
 export function FloatingToolbar() {
     const editor = useEditorRef();
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState('');
     const toolbarRef = useRef<HTMLDivElement>(null);
@@ -48,6 +47,17 @@ export function FloatingToolbar() {
         const isCollapsed = selection.anchor.offset === selection.focus.offset &&
             JSON.stringify(selection.anchor.path) === JSON.stringify(selection.focus.path);
         return !isCollapsed;
+    }, []);
+
+    const selectionSnapshot = useEditorSelector((editor) => {
+        const selection = editor.selection;
+        if (!selection) return null;
+        return [
+            selection.anchor.path.join('.'),
+            selection.anchor.offset,
+            selection.focus.path.join('.'),
+            selection.focus.offset,
+        ].join('|');
     }, []);
 
     // Check active mark states using editor.api.mark
@@ -76,40 +86,25 @@ export function FloatingToolbar() {
         []
     );
 
-    // Update toolbar position when selection changes
-    useEffect(() => {
-        if (!hasSelection) {
-            setAnchorEl(null);
-            return;
+    const anchorEl = useMemo(() => {
+        if (!hasSelection || typeof window === 'undefined') {
+            return null;
         }
 
         const domSelection = window.getSelection();
         if (!domSelection || domSelection.rangeCount === 0) {
-            setAnchorEl(null);
-            return;
+            return null;
         }
 
         const range = domSelection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
 
-        // Create a virtual element for positioning
-        const virtualEl = document.createElement('div');
-        virtualEl.style.position = 'fixed';
-        virtualEl.style.left = `${rect.left + rect.width / 2}px`;
-        virtualEl.style.top = `${rect.top}px`;
-        virtualEl.style.width = '1px';
-        virtualEl.style.height = '1px';
-        virtualEl.style.pointerEvents = 'none';
-        document.body.appendChild(virtualEl);
-
-        setAnchorEl(virtualEl);
-
-        return () => {
-            if (virtualEl.parentNode) {
-                virtualEl.parentNode.removeChild(virtualEl);
-            }
+        return {
+            getBoundingClientRect: () =>
+                new DOMRect(rect.left + rect.width / 2, rect.top, 1, 1),
+            contextElement: document.body,
         };
-    }, [hasSelection]);
+    }, [hasSelection, selectionSnapshot]);
 
     const handleToggleMark = useCallback(
         (mark: string) => {

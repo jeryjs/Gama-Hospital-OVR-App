@@ -39,7 +39,7 @@ import {
 import { useState } from 'react';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
-import { buildSharedAccessUrl } from '@/lib/utils';
+import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
 
 export interface SharedAccessManagerProps {
     resourceType: 'investigation' | 'corrective_action';

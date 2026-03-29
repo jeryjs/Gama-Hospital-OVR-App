@@ -787,21 +787,10 @@ export default function DepartmentsManagementPage() {
         }
     }, [session, canAccess, router]);
 
-    // Auto-select first department or maintain selection
-    useEffect(() => {
-        if (departments.length > 0 && !selectedDepartment) {
-            setSelectedDepartment(departments[0]);
-        } else if (selectedDepartment) {
-            // Update selected department if it was modified
-            const updated = departments.find(d => d.id === selectedDepartment.id);
-            if (updated) {
-                setSelectedDepartment(updated);
-            } else if (departments.length > 0) {
-                setSelectedDepartment(departments[0]);
-            } else {
-                setSelectedDepartment(null);
-            }
-        }
+    const activeDepartment = useMemo<DepartmentWithLocations | null>(() => {
+        if (departments.length === 0) return null;
+        if (!selectedDepartment) return departments[0];
+        return departments.find((d) => d.id === selectedDepartment.id) || departments[0];
     }, [departments, selectedDepartment]);
 
     // Filter departments by search (name only, code is internal)
@@ -834,8 +823,8 @@ export default function DepartmentsManagementPage() {
         await removeDepartment(id);
         mutate();
         setDeleteDepartment(null);
-        if (selectedDepartment?.id === id) {
-            setSelectedDepartment(departments.find(d => d.id !== id) || null);
+        if (activeDepartment?.id === id) {
+            setSelectedDepartment(null);
         }
     };
 
@@ -951,7 +940,7 @@ export default function DepartmentsManagementPage() {
                                     filteredDepartments.map((dept) => (
                                         <ListItem key={dept.id} disablePadding sx={{ px: 0.5 }}>
                                             <ListItemButton
-                                                selected={selectedDepartment?.id === dept.id}
+                                                selected={activeDepartment?.id === dept.id}
                                                 onClick={() => setSelectedDepartment(dept)}
                                                 sx={{
                                                     borderRadius: 1,
@@ -990,7 +979,7 @@ export default function DepartmentsManagementPage() {
 
                         {/* Right Pane - Selected Department's Locations */}
                         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            {selectedDepartment ? (
+                            {activeDepartment ? (
                                 <>
                                     {/* Department Header */}
                                     <Box
@@ -1018,9 +1007,9 @@ export default function DepartmentsManagementPage() {
                                                 <Box>
                                                     <Stack direction="row" alignItems="center" spacing={1}>
                                                         <Typography variant="h6" fontWeight={700}>
-                                                            {selectedDepartment.name}
+                                                            {activeDepartment.name}
                                                         </Typography>
-                                                        {!selectedDepartment.isActive && (
+                                                        {!activeDepartment.isActive && (
                                                             <Chip
                                                                 label="Inactive"
                                                                 size="small"
@@ -1033,9 +1022,9 @@ export default function DepartmentsManagementPage() {
                                                         )}
                                                     </Stack>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {selectedDepartment.locations?.length || 0} location{(selectedDepartment.locations?.length || 0) !== 1 ? 's' : ''}
-                                                        {selectedDepartment.head && (
-                                                            <> • Head: {selectedDepartment.head.firstName} {selectedDepartment.head.lastName}</>
+                                                        {activeDepartment.locations?.length || 0} location{(activeDepartment.locations?.length || 0) !== 1 ? 's' : ''}
+                                                        {activeDepartment.head && (
+                                                            <> • Head: {activeDepartment.head.firstName} {activeDepartment.head.lastName}</>
                                                         )}
                                                     </Typography>
                                                 </Box>
@@ -1045,7 +1034,7 @@ export default function DepartmentsManagementPage() {
                                                     <Button
                                                         size="small"
                                                         startIcon={<Edit />}
-                                                        onClick={() => setEditDepartment(selectedDepartment)}
+                                                        onClick={() => setEditDepartment(activeDepartment)}
                                                     >
                                                         Edit
                                                     </Button>
@@ -1055,8 +1044,8 @@ export default function DepartmentsManagementPage() {
                                                         size="small"
                                                         color="error"
                                                         startIcon={<Delete />}
-                                                        onClick={() => setDeleteDepartment(selectedDepartment)}
-                                                        disabled={(selectedDepartment.locations?.length || 0) > 0}
+                                                        onClick={() => setDeleteDepartment(activeDepartment)}
+                                                        disabled={(activeDepartment.locations?.length || 0) > 0}
                                                     >
                                                         Delete
                                                     </Button>
@@ -1077,7 +1066,7 @@ export default function DepartmentsManagementPage() {
 
                                     {/* Locations Grid */}
                                     <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-                                        {(selectedDepartment.locations?.length || 0) === 0 ? (
+                                        {(activeDepartment.locations?.length || 0) === 0 ? (
                                             <Box
                                                 sx={{
                                                     height: '100%',
@@ -1108,7 +1097,7 @@ export default function DepartmentsManagementPage() {
                                         ) : (
                                             <Grid container spacing={1.5}>
                                                 <AnimatePresence>
-                                                    {selectedDepartment.locations?.map((location, index) => (
+                                                    {activeDepartment.locations?.map((location, index) => (
                                                         <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={location.id}>
                                                             <motion.div
                                                                 initial={{ opacity: 0, y: 10 }}
@@ -1179,7 +1168,7 @@ export default function DepartmentsManagementPage() {
 
             <AddLocationDialog
                 open={addLocationDialogOpen}
-                department={selectedDepartment}
+                department={activeDepartment}
                 onClose={() => setAddLocationDialogOpen(false)}
                 onSave={handleCreateLocation}
             />
@@ -1187,7 +1176,7 @@ export default function DepartmentsManagementPage() {
             <EditLocationDialog
                 open={!!editLocation}
                 location={editLocation}
-                departmentId={selectedDepartment?.id ?? null}
+                departmentId={activeDepartment?.id ?? null}
                 onClose={() => setEditLocation(null)}
                 onSave={handleUpdateLocation}
             />
@@ -1195,7 +1184,7 @@ export default function DepartmentsManagementPage() {
             <DeleteLocationDialog
                 open={!!deleteLocation}
                 location={deleteLocation}
-                departmentId={selectedDepartment?.id ?? null}
+                departmentId={activeDepartment?.id ?? null}
                 onClose={() => setDeleteLocation(null)}
                 onConfirm={handleDeleteLocation}
             />

@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface DraftsSectionProps {
     userId: number;
@@ -29,17 +29,14 @@ interface DraftsSectionProps {
  */
 export function DraftsSection({ userId }: DraftsSectionProps) {
     const router = useRouter();
-    const [drafts, setDrafts] = useState<LocalDraft[]>([]);
-    const [loaded, setLoaded] = useState(false);
+    const [deletedDraftIds, setDeletedDraftIds] = useState<string[]>([]);
 
-    // Load drafts from localStorage
-    useEffect(() => {
-        if (userId) {
-            const userDrafts = getUserDrafts(userId);
-            setDrafts(userDrafts);
-            setLoaded(true);
-        }
-    }, [userId]);
+    const drafts = useMemo<LocalDraft[]>(() => {
+        if (!userId) return [];
+        const allDrafts = getUserDrafts(userId);
+        if (deletedDraftIds.length === 0) return allDrafts;
+        return allDrafts.filter((draft) => !deletedDraftIds.includes(draft.id));
+    }, [deletedDraftIds, userId]);
 
     // Handle draft deletion
     const handleDeleteDraft = useCallback(
@@ -47,14 +44,14 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
             e.stopPropagation();
             if (window.confirm('Are you sure you want to delete this draft?')) {
                 deleteDraft(draftId);
-                setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+                setDeletedDraftIds((prev) => [...prev, draftId]);
             }
         },
         []
     );
 
     // Don't render if no drafts or not loaded
-    if (!loaded || drafts.length === 0) {
+    if (drafts.length === 0) {
         return null;
     }
 
