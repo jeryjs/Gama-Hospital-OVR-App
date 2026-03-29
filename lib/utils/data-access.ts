@@ -549,6 +549,7 @@ export function canEditIncident(
         APP_ROLES.SUPER_ADMIN,
         APP_ROLES.DEVELOPER,
         APP_ROLES.QUALITY_MANAGER,
+        APP_ROLES.QUALITY_ANALYST,
     ])) {
         return true;
     }

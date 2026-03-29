@@ -510,7 +510,16 @@ export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;
 
 export const updateIncidentSchema = createIncidentSchema.partial();
 
+export const patchIncidentSchema = updateIncidentSchema.extend({
+  editComment: z.preprocess((val) => {
+    if (typeof val !== 'string') return val;
+    const trimmed = val.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, z.string().min(10, 'Edit comment must be at least 10 characters').max(5000).optional()),
+});
+
 export type UpdateIncidentInput = z.infer<typeof updateIncidentSchema>;
+export type PatchIncidentInput = z.infer<typeof patchIncidentSchema>;
 
 
 // ============================================

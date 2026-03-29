@@ -1,14 +1,15 @@
 import { db } from '@/db';
-import { ovrReports } from '@/db/schema';
+import { ovrComments, ovrReports } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
   AuthorizationError,
   handleApiError,
   requireAuth,
+  ValidationError,
   validateBody,
 } from '@/lib/api/middleware';
 import {
-  updateIncidentSchema,
+  patchIncidentSchema,
   getDetailColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
@@ -91,15 +92,31 @@ export async function PATCH(
     }
 
     // Validate request body
-    const body = await validateBody(request, updateIncidentSchema);
+    const body = await validateBody(request, patchIncidentSchema);
+    const { editComment, ...incidentUpdates } = body;
+
+    const hasUpdatePayload = Object.keys(incidentUpdates).length > 0;
+    if (!hasUpdatePayload) {
+      throw new ValidationError('At least one incident field must be updated');
+    }
+
+    const isQIEditor = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session.user.roles);
+    const requiresEditComment =
+      isQIEditor &&
+      existingIncident.status !== 'draft' &&
+      existingIncident.status !== 'closed';
+
+    if (requiresEditComment && !editComment) {
+      throw new ValidationError('Edit comment is required for QI report edits');
+    }
 
     const updateData: Record<string, any> = {
-      ...body,
+      ...incidentUpdates,
       updatedAt: new Date(),
     };
 
     // New workflow: draft -> submitted
-    const isResubmittingDraft = body.status === 'submitted' && existingIncident.status === 'draft';
+    const isResubmittingDraft = incidentUpdates.status === 'submitted' && existingIncident.status === 'draft';
 
     if (isResubmittingDraft) {
       updateData.submittedAt = new Date();
@@ -110,6 +127,17 @@ export async function PATCH(
       .set(updateData)
       .where(eq(ovrReports.id, id))
       .returning();
+
+    if (requiresEditComment && editComment) {
+      const actorLabel = session.user.name || session.user.email || `User #${session.user.id}`;
+
+      await db.insert(ovrComments).values({
+        ovrReportId: id,
+        userId: parseInt(session.user.id),
+        comment: `${actorLabel} edited report at ${new Date().toISOString()}: ${editComment}`,
+        isSystemComment: true,
+      });
+    }
 
     if (isResubmittingDraft) {
       await sendWorkflowMailSafely(request, session.user, 'incident_submitted', {

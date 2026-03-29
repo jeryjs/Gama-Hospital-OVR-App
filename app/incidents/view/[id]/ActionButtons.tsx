@@ -15,12 +15,17 @@ interface Props {
 export function ActionButtons({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
+  const roles = session?.user.roles || [];
 
   const isOwner = session?.user?.id === incident.reporterId.toString();
-  const canEdit = incident.status === 'draft' && isOwner;
+  const canEditDraft = incident.status === 'draft' && isOwner;
+  const canEditAsQI =
+    incident.status !== 'closed' &&
+    ACCESS_CONTROL.ui.incidentForm.canEditQISection(roles);
+  const canEdit = canEditDraft || canEditAsQI;
   const isDraft = incident.status === 'draft';
   const canDelete = ACCESS_CONTROL.api.incidents.canDelete(
-    session?.user.roles || [],
+    roles,
     isOwner,
     isDraft
   );
@@ -69,7 +74,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
       >
         {canEdit && (
           <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
-            Edit Draft
+            {canEditDraft && !canEditAsQI ? 'Edit Draft' : 'Edit Report'}
           </Button>
         )}
         {canDelete && (

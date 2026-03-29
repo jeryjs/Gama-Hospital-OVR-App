@@ -13,6 +13,7 @@ import {
 } from '@/components/editor';
 import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
 import { useDepartmentsWithLocations } from '@/lib/hooks';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
   INJURY_OUTCOMES,
   PERSON_INVOLVED_OPTIONS,
@@ -83,6 +84,8 @@ type FormData = Omit<CreateIncidentInput, 'description'> & {
   occurrenceTime: Dayjs | undefined;
   description: EditorValue | undefined;
 };
+
+type IncidentStatusValue = 'draft' | 'submitted' | 'qi_review' | 'investigating' | 'qi_final_actions' | 'closed';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -178,7 +181,7 @@ function preparePayload(formData: FormData) {
   return prepareIncidentPayload(formData, 'submitted');
 }
 
-function prepareIncidentPayload(formData: FormData, status: 'draft' | 'submitted') {
+function prepareIncidentPayload(formData: FormData, status: IncidentStatusValue) {
   const {
     id: _id,
     reporterId: _reporterId,
@@ -1332,10 +1335,14 @@ function FormActions({
   loading,
   onSaveDraft,
   onSubmit,
+  saveLabel = 'Save as Draft',
+  submitLabel = 'Submit Report',
 }: {
   loading: boolean;
   onSaveDraft: () => void;
   onSubmit: () => void;
+  saveLabel?: string;
+  submitLabel?: string;
 }) {
   return (
     <>
@@ -1346,7 +1353,7 @@ function FormActions({
           onClick={onSaveDraft}
           disabled={loading}
         >
-          Save as Draft
+          {saveLabel}
         </Button>
         <Button
           variant="contained"
@@ -1354,7 +1361,7 @@ function FormActions({
           onClick={onSubmit}
           disabled={loading}
         >
-          {loading ? 'Submitting...' : 'Submit Report'}
+          {loading ? 'Submitting...' : submitLabel}
         </Button>
       </Stack>
 
@@ -1379,6 +1386,9 @@ export default function NewIncidentPage() {
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
   const [formData, setFormData] = useState<FormData>(getEmptyFormData());
   const [serverDraftIncidentId, setServerDraftIncidentId] = useState<string | null>(null);
+  const [serverIncidentStatus, setServerIncidentStatus] = useState<IncidentStatusValue | null>(null);
+  const [requiresEditComment, setRequiresEditComment] = useState(false);
+  const [editComment, setEditComment] = useState('');
   const [descriptionEditorSeed, setDescriptionEditorSeed] = useState(0);
   const [isFetchingServerDraft, setIsFetchingServerDraft] = useState(false);
 
@@ -1386,6 +1396,7 @@ export default function NewIncidentPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [existingDraftCreatedAt, setExistingDraftCreatedAt] = useState<string | undefined>();
   const didLoadDraftRef = useRef(false);
+  const canEditAsQI = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user?.roles || []);
 
   // Initialize draft once session state is ready
   useEffect(() => {
@@ -1405,6 +1416,10 @@ export default function NewIncidentPage() {
         setDraftUpdatedAt(existingDraft.updatedAt);
       }
       setDraftId(draftParam);
+      setServerDraftIncidentId(null);
+      setServerIncidentStatus(null);
+      setRequiresEditComment(false);
+      setEditComment('');
       setDraftLoaded(true);
       return;
     }
@@ -1428,7 +1443,14 @@ export default function NewIncidentPage() {
           const incidentDraft = await res.json();
           if (cancelled) return;
 
-          if (incidentDraft.status !== 'draft') {
+          if (incidentDraft.status === 'closed') {
+            await showError(new Error('Closed reports cannot be edited from this page.'));
+            setIsFetchingServerDraft(false);
+            setDraftLoaded(true);
+            return;
+          }
+
+          if (incidentDraft.status !== 'draft' && !canEditAsQI) {
             await showError(new Error('Only draft reports can be edited from this page.'));
             setIsFetchingServerDraft(false);
             setDraftLoaded(true);
@@ -1437,6 +1459,9 @@ export default function NewIncidentPage() {
 
           setFormData(parseDraftFromLocalStorage(incidentDraft as unknown as LocalDraft));
           setServerDraftIncidentId(draftParam);
+          setServerIncidentStatus(incidentDraft.status as IncidentStatusValue);
+          setRequiresEditComment(incidentDraft.status !== 'draft');
+          setEditComment('');
           setHasDraftSnapshot(true);
           setDraftUpdatedAt(incidentDraft.updatedAt || new Date().toISOString());
           setIsFetchingServerDraft(false);
@@ -1469,16 +1494,22 @@ export default function NewIncidentPage() {
       }
       setDraftId(autoDraftId);
       setServerDraftIncidentId(null);
+      setServerIncidentStatus(null);
+      setRequiresEditComment(false);
+      setEditComment('');
       setDraftLoaded(true);
       return;
     }
 
     setDraftId(generateDraftId());
     setServerDraftIncidentId(null);
+    setServerIncidentStatus(null);
+    setRequiresEditComment(false);
+    setEditComment('');
     setHasDraftSnapshot(false);
     setDraftUpdatedAt(undefined);
     setDraftLoaded(true);
-  }, [draftLoaded, session?.user?.id, sessionStatus, showError]);
+  }, [canEditAsQI, draftLoaded, session?.user?.id, sessionStatus, showError]);
 
   // Auto-save to localStorage with debounce
   useEffect(() => {
@@ -1531,6 +1562,9 @@ export default function NewIncidentPage() {
     if (serverDraftIncidentId) {
       setServerDraftIncidentId(null);
     }
+    setServerIncidentStatus(null);
+    setRequiresEditComment(false);
+    setEditComment('');
 
     if (draftId) {
       deleteDraft(draftId);
@@ -1551,7 +1585,20 @@ export default function NewIncidentPage() {
     if (serverDraftIncidentId) {
       (async () => {
         try {
-          const payload = prepareIncidentPayload(formData, 'draft');
+          if (requiresEditComment && editComment.trim().length < 10) {
+            await showError(new Error('Edit comment is required (minimum 10 characters).'));
+            return;
+          }
+
+          const targetStatus: IncidentStatusValue = requiresEditComment
+            ? (serverIncidentStatus || 'submitted')
+            : 'draft';
+
+          const payload = {
+            ...prepareIncidentPayload(formData, targetStatus),
+            ...(requiresEditComment ? { editComment: editComment.trim() } : {}),
+          };
+
           const res = await fetch(`/api/incidents/${serverDraftIncidentId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -1566,7 +1613,12 @@ export default function NewIncidentPage() {
           const updated = await res.json();
           setHasDraftSnapshot(true);
           setDraftUpdatedAt(updated.updatedAt || new Date().toISOString());
-          alert('Draft updated successfully!');
+          if (requiresEditComment) {
+            setEditComment('');
+            alert('Report updated successfully!');
+          } else {
+            alert('Draft updated successfully!');
+          }
         } catch (error) {
           void showError(error);
         }
@@ -1603,13 +1655,26 @@ export default function NewIncidentPage() {
     setDraftUpdatedAt(draft.updatedAt);
     alert('Draft saved successfully!');
     router.push('/incidents/me')
-  }, [formData, draftId, session?.user, existingDraftCreatedAt, serverDraftIncidentId, router, showError]);
+  }, [editComment, existingDraftCreatedAt, formData, draftId, requiresEditComment, router, serverDraftIncidentId, serverIncidentStatus, session?.user, showError]);
 
   // Submit handler - sends to API and deletes draft on success
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const payload = preparePayload(formData);
+      if (serverDraftIncidentId && requiresEditComment && editComment.trim().length < 10) {
+        await showError(new Error('Edit comment is required (minimum 10 characters).'));
+        return;
+      }
+
+      const payload = serverDraftIncidentId
+        ? {
+          ...prepareIncidentPayload(
+            formData,
+            requiresEditComment ? (serverIncidentStatus || 'submitted') : 'submitted'
+          ),
+          ...(requiresEditComment ? { editComment: editComment.trim() } : {}),
+        }
+        : preparePayload(formData);
 
       const res = serverDraftIncidentId
         ? await fetch(`/api/incidents/${serverDraftIncidentId}`, {
@@ -1629,6 +1694,10 @@ export default function NewIncidentPage() {
       }
 
       const data = await res.json();
+
+      if (serverDraftIncidentId && requiresEditComment) {
+        setEditComment('');
+      }
 
       if (draftId && !serverDraftIncidentId) {
         deleteDraft(draftId);
@@ -1718,11 +1787,29 @@ export default function NewIncidentPage() {
                       </Box>
                     </Box>
 
-                    <FormActions
-                      loading={loading}
-                      onSaveDraft={handleSaveDraft}
-                      onSubmit={handleSubmit}
-                    />
+                    <Stack spacing={1} sx={{ width: { xs: '100%', md: 420 } }}>
+                      {requiresEditComment && (
+                        <TextField
+                          fullWidth
+                          required
+                          size="small"
+                          label="Edit Comment"
+                          placeholder="Describe what you changed (minimum 10 characters)..."
+                          value={editComment}
+                          onChange={(e) => setEditComment(e.target.value)}
+                          error={editComment.length > 0 && editComment.trim().length < 10}
+                          helperText={`${editComment.trim().length}/10 minimum characters`}
+                        />
+                      )}
+
+                      <FormActions
+                        loading={loading}
+                        onSaveDraft={handleSaveDraft}
+                        onSubmit={handleSubmit}
+                        saveLabel={requiresEditComment ? 'Save Changes' : 'Save as Draft'}
+                        submitLabel={requiresEditComment ? 'Update Report' : 'Submit Report'}
+                      />
+                    </Stack>
                   </Stack>
                 </Paper>
               )}
