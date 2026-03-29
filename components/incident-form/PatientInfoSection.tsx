@@ -22,11 +22,11 @@ const getTypeConfig = (personInvolved: string) => {
       return { title: 'Patient Information', icon: <Person />, color: 'primary' as const };
     case 'staff':
       return { title: 'Staff Involved Details', icon: <Badge />, color: 'warning' as const };
-    case 'visitor_watcher':
-      return { title: 'Visitor/Watcher Information', icon: <Group />, color: 'info' as const };
-    case 'others':
+    case 'public':
+      return { title: 'Public Information', icon: <Group />, color: 'info' as const };
+    case 'organization':
     default:
-      return { title: 'Person Involved Details', icon: <HelpOutline />, color: 'secondary' as const };
+      return { title: 'Organization Information', icon: <HelpOutline />, color: 'secondary' as const };
   }
 };
 
@@ -34,7 +34,9 @@ export function PersonInvolvedSection({ incident }: Props) {
   const { title, icon, color } = getTypeConfig(incident.personInvolved);
   const isPatient = incident.personInvolved === 'patient';
   const isStaff = incident.personInvolved === 'staff';
-  const isVisitorOrOther = incident.personInvolved === 'visitor_watcher' || incident.personInvolved === 'others';
+  const isPublic = incident.personInvolved === 'public';
+  const isOrganization = incident.personInvolved === 'organization';
+  const isPublicOrOrganization = isPublic || isOrganization;
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
@@ -58,7 +60,15 @@ export function PersonInvolvedSection({ incident }: Props) {
         {/* Name - All types */}
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow
-            label={isPatient ? 'Patient Name' : isStaff ? 'Staff Name' : 'Person Name'}
+            label={
+              isPatient
+                ? 'Patient Name'
+                : isStaff
+                  ? 'Staff Name'
+                  : isOrganization
+                    ? 'Organization Name'
+                    : 'Public Person Name'
+            }
             value={incident.involvedPersonName}
           />
         </Grid>
@@ -82,14 +92,20 @@ export function PersonInvolvedSection({ incident }: Props) {
           </>
         )}
 
-        {/* Relation & Contact - Visitor/Others */}
-        {isVisitorOrOther && (
+        {/* Relation & Contact - Public/Organization */}
+        {isPublicOrOrganization && (
           <>
             <Grid size={{ xs: 12, md: 4 }}>
-              <InfoRow label="Relation to Patient" value={incident.involvedPersonRelation} />
+              <InfoRow
+                label={isOrganization ? 'Person Who Affected Organization' : 'Relation to Patient'}
+                value={incident.involvedPersonRelation}
+              />
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
-              <InfoRow label="Contact Info" value={incident.involvedPersonContact} />
+              <InfoRow
+                label={isOrganization ? 'Relation to Organization' : 'Contact Info'}
+                value={incident.involvedPersonContact}
+              />
             </Grid>
           </>
         )}
@@ -104,8 +120,8 @@ export function PersonInvolvedSection({ incident }: Props) {
           </Grid>
         )}
 
-        {/* Age & Sex - NOT Staff */}
-        {!isStaff && (
+        {/* Age & Sex - Patient/Public only */}
+        {(isPatient || isPublic) && (
           <>
             <Grid size={{ xs: 12, md: 3 }}>
               <InfoRow label="Age" value={incident.involvedPersonAge?.toString()} />

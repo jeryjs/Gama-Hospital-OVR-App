@@ -353,7 +353,7 @@ function OccurrenceDetailsSection({
 }
 
 /**
- * Person Involved & Sentinel Event Section
+ * Entity Involved & Sentinel Event Section
  */
 function PersonInvolvedSection({
   formData,
@@ -367,7 +367,7 @@ function PersonInvolvedSection({
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
           <FormControl component="fieldset" required>
-            <FormLabel component="legend">Person Involved</FormLabel>
+            <FormLabel component="legend">Entity Involved</FormLabel>
             <RadioGroup
               value={formData.personInvolved}
               onChange={(e) => onChange('personInvolved', e.target.value)}
@@ -454,8 +454,10 @@ function PersonDetailsFields({
   const type = formData.personInvolved;
   const isPatient = type === 'patient';
   const isStaff = type === 'staff';
-  const isVisitorOrOther = type === 'visitor_watcher' || type === 'others';
-  const isNotStaff = type !== 'staff';
+  const isPublic = type === 'public';
+  const isOrganization = type === 'organization';
+  const isPublicOrOrganization = isPublic || isOrganization;
+  const showDemographics = isPatient || isPublic;
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -474,15 +476,23 @@ function PersonDetailsFields({
       >
         {isPatient && 'Patient Information'}
         {isStaff && 'Staff Involved Details'}
-        {type === 'visitor_watcher' && 'Visitor/Watcher Information'}
-        {type === 'others' && 'Person Involved Details'}
+        {isPublic && 'Public Information'}
+        {isOrganization && 'Organization Information'}
       </Typography>
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {/* Name - All types */}
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             fullWidth
-            label={`${type === 'patient' ? 'Patient' : isStaff ? 'Staff' : 'Person'} Name`}
+            label={
+              isPatient
+                ? 'Patient Name'
+                : isStaff
+                  ? 'Staff Name'
+                  : isOrganization
+                    ? 'Organization Name'
+                    : 'Public Person Name'
+            }
             value={formData.involvedPersonName}
             onChange={(e) => onChange('involvedPersonName', e.target.value)}
             required
@@ -524,32 +534,44 @@ function PersonDetailsFields({
           </>
         )}
 
-        {/* Relation & Contact - Visitor/Others only */}
-        {isVisitorOrOther && (
+        {/* Relation & Contact - Public/Organization only */}
+        {isPublicOrOrganization && (
           <>
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
-                label="Relation to Patient"
+                label={
+                  isOrganization
+                    ? 'Name of Person Who Affected the Organization'
+                    : 'Relation to Patient'
+                }
                 value={formData.involvedPersonRelation}
                 onChange={(e) => onChange('involvedPersonRelation', e.target.value)}
-                placeholder={type === 'visitor_watcher' ? 'e.g., Family member, Friend' : 'e.g., Contractor, Vendor'}
+                placeholder={
+                  isOrganization
+                    ? 'e.g., John Doe'
+                    : 'e.g., Family member, Friend'
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
-                label="Contact Information"
+                label={isOrganization ? 'Relation to Organization' : 'Contact Information'}
                 value={formData.involvedPersonContact}
                 onChange={(e) => onChange('involvedPersonContact', e.target.value)}
-                placeholder="Phone number or email"
+                placeholder={
+                  isOrganization
+                    ? 'e.g., Employee, Contractor, Customer'
+                    : 'Phone number or email'
+                }
               />
             </Grid>
           </>
         )}
 
-        {/* Age & Sex - All except Staff */}
-        {isNotStaff && (
+        {/* Age & Sex - Patient/Public only */}
+        {showDemographics && (
           <Box sx={{ display: 'flex', gap: 2, flex: '1' }}>
             <TextField
               fullWidth
@@ -669,7 +691,7 @@ function ClassificationSection({
                 helperText={
                   formData.occurrenceCategory === 'CAT019'
                     ? 'Select medication error severity level (NCC MERP Index)'
-                    : 'Select the level of harm to the patient or person involved'
+                    : 'Select the level of harm to the patient or entity involved'
                 }
               />
             )}
@@ -846,10 +868,10 @@ function ImmediateActionsSection({
                 renderValue={(selected) =>
                   selected.map((option, index) => (
                     <Chip
+                      key={`${String(option)}-${index}`}
                       label={TREATMENT_TYPES.find(t => t.value === option)?.label}
                       size="small"
                       sx={{ mr: 0.5 }}
-                      {...(typeof option === 'string' ? { key: option } : {})}
                     />
                   ))
                 }

@@ -8,8 +8,8 @@ import { boolean, date, index, integer, pgEnum, pgTable, serial, text, time, tim
 // Note: roleEnum removed - now using TEXT[] for multi-role support
 // Migration: roles column uses TEXT[] to support multiple roles per user
 
-// Person involved in the incident (one of 4 types)
-export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'visitor_watcher', 'others']);
+// Entity involved in the incident (one of 4 types)
+export const personInvolvedEnum = pgEnum('person_involved', ['patient', 'staff', 'public', 'organization']);
 
 export const injuryOutcomeEnum = pgEnum('injury_outcome', ['no_injury', 'minor', 'serious', 'death']);
 
@@ -108,15 +108,15 @@ export const ovrReports = pgTable('ovr_reports', {
   specificLocation: text('specific_location'),
 
   // ============================================
-  // PERSON INVOLVED (unified for all 4 types)
+  // ENTITY INVOLVED (unified for all 4 types)
   // ============================================
-  // Type: patient | staff | visitor_watcher | others
+  // Type: patient | staff | public | organization
   personInvolved: personInvolvedEnum('person_involved').notNull(),
 
   // Common fields (all types)
   involvedPersonName: varchar('involved_person_name', { length: 255 }),
 
-  // Demographics (patient, visitor_watcher, others - NOT staff)
+  // Demographics (patient, public - NOT staff/organization)
   involvedPersonAge: integer('involved_person_age'),
   involvedPersonSex: varchar('involved_person_sex', { length: 20 }),
 
@@ -131,7 +131,7 @@ export const ovrReports = pgTable('ovr_reports', {
   involvedPersonEmployeeId: varchar('involved_person_employee_id', { length: 50 }),
   involvedPersonPosition: varchar('involved_person_position', { length: 100 }),
 
-  // Visitor/Others-specific
+  // Public/Organization-specific
   involvedPersonRelation: varchar('involved_person_relation', { length: 100 }), // Relation to patient
   involvedPersonContact: varchar('involved_person_contact', { length: 100 }),
 

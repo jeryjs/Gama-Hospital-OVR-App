@@ -10,15 +10,15 @@ import type { ApiError } from '@/lib/types';
 // ============================================
 
 const FIELD_DISPLAY_NAMES: Record<string, string> = {
-  // Person Involved (unified)
-  involvedPersonName: 'Person Name',
+  // Entity Involved (unified)
+  involvedPersonName: 'Entity Name',
   involvedPersonAge: 'Age',
   involvedPersonSex: 'Sex',
   involvedPersonUnit: 'Unit / Department',
   involvedPersonMRN: 'Patient MRN',
   involvedPersonEmployeeId: 'Employee ID',
   involvedPersonPosition: 'Position',
-  involvedPersonRelation: 'Relation to Patient',
+  involvedPersonRelation: 'Relation / Affected Person',
   involvedPersonContact: 'Contact Information',
 
   // Occurrence
@@ -30,8 +30,8 @@ const FIELD_DISPLAY_NAMES: Record<string, string> = {
   occurrenceSubcategory: 'Subcategory',
   description: 'Description',
 
-  // Person Involved Type
-  personInvolved: 'Person Involved Type',
+  // Entity Involved Type
+  personInvolved: 'Entity Involved Type',
   isSentinelEvent: 'Sentinel Event',
   sentinelEventDetails: 'Sentinel Event Details',
 

@@ -29,6 +29,13 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
     ? `${incident.involvedPersonName}${incident.involvedPersonMRN ? ` (MRN: ${incident.involvedPersonMRN})` : ''}`
     : 'Not specified';
 
+  const involvedEntityType = {
+    patient: 'Patient',
+    staff: 'Staff',
+    public: 'Public',
+    organization: 'Organization',
+  }[incident.personInvolved || ''] || incident.personInvolved || 'Not specified';
+
   return `
 <!DOCTYPE html>
 <html>
@@ -210,11 +217,11 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
     ` : ''}
   </div>
 
-  <h2>Person Involved</h2>
+  <h2>Entity Involved</h2>
   <div class="section">
     <div class="field">
       <div class="label">Type</div>
-      <div class="value" style="text-transform: capitalize;">${incident.personInvolved || 'Not specified'}</div>
+      <div class="value">${involvedEntityType}</div>
     </div>
     <div class="field">
       <div class="label">Name / MRN</div>

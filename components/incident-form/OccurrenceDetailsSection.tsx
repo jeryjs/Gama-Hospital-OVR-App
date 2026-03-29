@@ -87,7 +87,7 @@ export function OccurrenceDetailsSection({ incident }: Props) {
 
       <Box sx={{ mt: 3 }}>
         <Typography variant="caption" color="text.secondary" fontWeight={600}>
-          Person Involved
+          Entity Involved
         </Typography>
         <Box sx={{ mt: 1 }}>
           <Chip

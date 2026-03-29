@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
         locationId: body.locationId,
         specificLocation: body.specificLocation,
 
-        // Person Involved (unified)
+        // Entity Involved (unified)
         personInvolved: body.personInvolved,
         involvedPersonName: body.involvedPersonName,
         involvedPersonAge: body.involvedPersonAge,

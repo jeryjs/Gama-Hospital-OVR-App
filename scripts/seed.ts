@@ -320,7 +320,7 @@ Patient sustained left hip fracture requiring surgical intervention. Full recove
                 occurrenceTime: '22:45:00',
                 locationId: locations[1].id,
                 specificLocation: 'Emergency Department - Waiting Room',
-                personInvolved: 'visitor_watcher',
+                personInvolved: 'public',
 
                 occurrenceCategory: 'behavioral',
                 occurrenceSubcategory: 'verbal_aggression',

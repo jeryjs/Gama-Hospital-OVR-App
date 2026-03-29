@@ -436,10 +436,10 @@ export const createIncidentSchema = ovrReportInsertSchema
     path: ['locationId'],
   })
   // ============================================
-  // PERSON INVOLVED VALIDATION
+  // ENTITY INVOLVED VALIDATION
   // ============================================
   .refine((data) => data.personInvolved !== undefined, {
-    message: 'Person involved type is required',
+    message: 'Entity involved type is required',
     path: ['personInvolved'],
   })
   .refine((data) => data.involvedPersonName && data.involvedPersonName.trim().length > 0, {

@@ -123,14 +123,14 @@ export const INJURY_OUTCOMES = [
     { value: 'death', label: 'Death' },
 ] as const satisfies ReadonlyArray<{ value: typeof INJURY_OUTCOME_VALUES[number]; label: string }>;
 /**
- * Person involved options with display labels
+ * Entity involved options with display labels
  * Values derived from database schema enum
  */
 export const PERSON_INVOLVED_OPTIONS = [
     { value: 'patient', label: 'Patient' },
     { value: 'staff', label: 'Staff' },
-    { value: 'visitor_watcher', label: 'Visitor/ Watcher' },
-    { value: 'others', label: 'Others' },
+    { value: 'public', label: 'Public' },
+    { value: 'organization', label: 'Organization' },
 ] as const satisfies ReadonlyArray<{ value: typeof PERSON_INVOLVED_VALUES[number]; label: string }>;
 
 export interface SentinelEvent {
