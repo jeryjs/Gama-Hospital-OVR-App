@@ -23,12 +23,19 @@ export interface DashboardStats {
     byDepartment: Array<{ department: string; count: number }>;
 
     recentIncidents: Array<{
-        id: number;
+        id: string;
         occurrenceCategory: string;
         status: string;
         createdAt: string;
         reporter: { firstName: string; lastName: string };
     }>;
+
+    turnaround: {
+        tracked: number;
+        overdue: number;
+        dueSoon: number;
+        onTrack: number;
+    };
 
     activeUsers: number;
     avgResolutionTime: number;

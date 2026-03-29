@@ -1,10 +1,10 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { EmptyState, QuickActionsPanel, RecentIncidentsList, StatCard, StatusChip } from '@/components/shared';
+import { EmptyState, QuickActionsPanel, RecentIncidentsList, StatCard } from '@/components/shared';
 import { DashboardStats } from '@/lib/hooks';
 import { fadeIn } from '@/lib/theme';
-import { getStatusLabel, STATUS_CONFIG } from '@/lib/utils/status';
+import { STATUS_CONFIG } from '@/lib/utils/status';
 import {
   Add,
   Assignment,
@@ -31,12 +31,13 @@ import { useRouter } from 'next/navigation';
 
 export default function QIDashboard({ stats, session }: { stats: DashboardStats; session: any }) {
   const router = useRouter();
+  const turnaround = stats.turnaround || { tracked: 0, overdue: 0, dueSoon: 0, onTrack: 0 };
 
   const primaryStats = [
     { title: 'Total Incidents', value: stats.total, icon: <Description fontSize="large" />, color: 'primary' as const, subtitle: 'All time' },
     { title: 'Needs Investigation Assignment', value: stats.byStatus.qi_review, icon: <AssignmentInd fontSize="large" />, color: 'warning' as const, subtitle: 'Awaiting action', urgent: stats.byStatus.qi_review > 0 },
     { title: 'Awaiting Final Actions', value: stats.byStatus.qi_final_actions, icon: <Feedback fontSize="large" />, color: 'secondary' as const, subtitle: 'Needs feedback', urgent: stats.byStatus.qi_final_actions > 0 },
-    { title: 'Closed This Month', value: stats.closedThisMonth || 0, icon: <CheckCircle fontSize="large" />, color: 'success' as const, subtitle: 'Successfully resolved' },
+    { title: 'Turnaround Overdue', value: turnaround.overdue, icon: <PendingActions fontSize="large" />, color: 'error' as const, subtitle: 'Requires immediate action', urgent: turnaround.overdue > 0 },
   ];
 
   const actionItems = [
@@ -250,6 +251,17 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                             {stats.total > 0 ? ((stats.byStatus.closed / stats.total) * 100).toFixed(0) : 0}%
                           </Typography>
                         </Stack>
+                      </Stack>
+                    </Box>
+                    <Divider />
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" color="text.secondary">
+                          Due Soon (≤2 working days)
+                        </Typography>
+                        <Typography variant="h6" fontWeight={700} color={turnaround.dueSoon > 0 ? 'warning.main' : 'text.primary'}>
+                          {turnaround.dueSoon}
+                        </Typography>
                       </Stack>
                     </Box>
                     <Divider />

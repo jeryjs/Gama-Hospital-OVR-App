@@ -1,12 +1,15 @@
 'use client';
 
+import { ReporterCard } from '@/components/shared';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import type { OVRReportWithRelations } from '@/lib/types';
+import { getIncidentTurnaround } from '@/lib/utils/turnaround';
 import { getStatusColor, getStatusLabel } from '@/lib/utils/status';
 import { printIncident, downloadIncident } from '@/lib/utils/incident-export';
-import { ReporterCard } from '@/components/shared';
 import { ArrowBack, Download, Print } from '@mui/icons-material';
 import { Box, Chip, IconButton, Paper, Stack, Tooltip, Typography, Grid } from '@mui/material';
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -15,9 +18,32 @@ interface Props {
 }
 
 export function IncidentHeader({ incident }: Props) {
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const source = searchParams.get('source') || 'all';
   const statusColor = getStatusColor(incident);
+  const turnaround = getIncidentTurnaround({
+    levelOfHarm: incident.levelOfHarm,
+    submittedAt: incident.submittedAt,
+    createdAt: incident.createdAt,
+  });
+
+  const canViewTurnaround = ACCESS_CONTROL.api.qiReview.canReview(session?.user?.roles || []);
+  const shouldShowTurnaround = canViewTurnaround && turnaround.tracked && !!turnaround.dueDate;
+
+  const turnaroundChipColor =
+    turnaround.status === 'overdue'
+      ? 'error'
+      : turnaround.status === 'due_soon'
+        ? 'warning'
+        : 'success';
+
+  const turnaroundLabel =
+    turnaround.status === 'overdue'
+      ? `Overdue ${Math.abs(turnaround.remainingWorkingDays || 0)} wd`
+      : turnaround.status === 'due_soon'
+        ? `Due in ${turnaround.remainingWorkingDays || 0} wd`
+        : `Due ${format(turnaround.dueDate || new Date(), 'MMM dd')}`;
 
   // Determine back link based on source
   const backHref = source === 'me' ? '/incidents/me' : '/incidents';
@@ -49,6 +75,14 @@ export function IncidentHeader({ incident }: Props) {
               : `Created on ${format(new Date(incident.createdAt), 'MMM dd, yyyy HH:mm')}`
             }
           </Typography>
+          {shouldShowTurnaround && (
+            <Typography
+              variant="caption"
+              color={turnaround.status === 'overdue' ? 'error.main' : 'text.secondary'}
+            >
+              Turnaround: {turnaround.zoneLabel} • Due {format(turnaround.dueDate || new Date(), 'MMM dd, yyyy')} ({turnaround.workingDays} working days)
+            </Typography>
+          )}
         </Box>
 
         <Chip
@@ -60,6 +94,15 @@ export function IncidentHeader({ incident }: Props) {
             px: 2,
           }}
         />
+
+        {shouldShowTurnaround && (
+          <Chip
+            label={turnaroundLabel}
+            color={turnaroundChipColor}
+            variant="outlined"
+            sx={{ fontWeight: 600 }}
+          />
+        )}
 
         <Tooltip title="Print Report">
           <IconButton size="small" onClick={handlePrint}>

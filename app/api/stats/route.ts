@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { hasAnyRole } from '@/lib/auth-helpers';
 import { APP_ROLES, AppRole } from '@/lib/constants';
+import { summarizeTurnaround } from '@/lib/utils/turnaround';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -51,6 +52,37 @@ async function getAvgResolutionTime() {
     .limit(1);
 
   return result[0]?.avgDays || 0;
+}
+
+const EMPTY_TURNAROUND_SUMMARY = {
+  tracked: 0,
+  overdue: 0,
+  dueSoon: 0,
+  onTrack: 0,
+};
+
+/**
+ * Get turnaround summary for open incidents.
+ * Uses latest levelOfHarm and submission/create timestamp.
+ */
+async function getTurnaroundSummary() {
+  const openIncidents = await db
+    .select({
+      levelOfHarm: ovrReports.levelOfHarm,
+      submittedAt: ovrReports.submittedAt,
+      createdAt: ovrReports.createdAt,
+    })
+    .from(ovrReports)
+    .where(and(
+      ne(ovrReports.status, 'draft'),
+      ne(ovrReports.status, 'closed')
+    ));
+
+  if (openIncidents.length === 0) {
+    return EMPTY_TURNAROUND_SUMMARY;
+  }
+
+  return summarizeTurnaround(openIncidents);
 }
 
 /**
@@ -194,7 +226,10 @@ async function getAdminStats() {
 
   const recentIncidents = await getRecentIncidents(5);
   const [activeUsersResult] = await db.select({ count: count() }).from(users);
-  const avgResolutionTime = await getAvgResolutionTime();
+  const [avgResolutionTime, turnaround] = await Promise.all([
+    getAvgResolutionTime(),
+    getTurnaroundSummary(),
+  ]);
 
   return {
     total: totalResult?.count || 0,
@@ -204,6 +239,7 @@ async function getAdminStats() {
     recentIncidents,
     activeUsers: activeUsersResult?.count || 0,
     avgResolutionTime,
+    turnaround,
   };
 }
 
@@ -220,8 +256,11 @@ async function getQualityManagerStats() {
     .from(ovrReports)
     .where(and(eq(ovrReports.status, 'closed'), gte(ovrReports.closedAt, getFirstDayOfMonth())));
 
-  const recentIncidents = await getRecentIncidents(10);
-  const avgResolutionTime = await getAvgResolutionTime();
+  const [recentIncidents, avgResolutionTime, turnaround] = await Promise.all([
+    getRecentIncidents(10),
+    getAvgResolutionTime(),
+    getTurnaroundSummary(),
+  ]);
 
   return {
     total: totalResult?.count || 0,
@@ -232,6 +271,7 @@ async function getQualityManagerStats() {
     activeUsers: 0,
     avgResolutionTime,
     closedThisMonth: closedThisMonthResult?.count || 0,
+    turnaround,
   };
 }
 
@@ -267,6 +307,7 @@ async function getSupervisorStats(userId: number) {
     recentIncidents: [],
     activeUsers: 0,
     avgResolutionTime: 0,
+    turnaround: EMPTY_TURNAROUND_SUMMARY,
     myReports,
     myRecentReports,
     teamReports: teamReportsResult?.count || 0,
@@ -306,6 +347,7 @@ async function getEmployeeStats(userId: number) {
     recentIncidents: [],
     activeUsers: 0,
     avgResolutionTime: 0,
+    turnaround: EMPTY_TURNAROUND_SUMMARY,
     myReports,
     myRecentReports,
   };
