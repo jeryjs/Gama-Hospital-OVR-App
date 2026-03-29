@@ -2,9 +2,8 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { ErrorLayout } from '@/components/shared';
-import type { User, UserUpdate } from '@/lib/api/schemas';
+import type { User, UserCreate, UserUpdate } from '@/lib/api/schemas';
 import { useUserManagement, useDepartments } from '@/lib/hooks';
-import { fadeIn } from '@/lib/theme';
 import { APP_ROLES, ROLE_METADATA, AppRole } from '@/lib/constants';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { hasAnyRole } from '@/lib/auth-helpers';
@@ -13,7 +12,6 @@ import {
   CheckCircle,
   Close,
   Edit,
-  FilterList,
   PersonAdd,
   Refresh,
   Search as SearchIcon,
@@ -34,6 +32,7 @@ import {
   Avatar,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -77,6 +76,13 @@ const ROLE_FILTER_OPTIONS = [
   { value: '', label: 'All Roles' },
   ...Object.entries(ROLE_METADATA).map(([value, meta]) => ({ value, label: meta.label, color: meta.color })),
 ];
+
+const ROLE_OPTIONS = Object.entries(ROLE_METADATA).map(([value, meta]) => ({
+  value: value as AppRole,
+  label: meta.label,
+  color: meta.color,
+  description: meta.description,
+}));
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -163,6 +169,241 @@ function StatCard({ icon, label, value, color = '#3B82F6' }: StatCardProps) {
 }
 
 // ============================================
+// CREATE USER DIALOG
+// ============================================
+
+interface CreateUserDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (payload: UserCreate) => Promise<void>;
+  departments: Array<{ id: number; name: string }>;
+}
+
+function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDialogProps) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState<UserCreate>({
+    email: '',
+    firstName: '',
+    lastName: '',
+    roles: [APP_ROLES.EMPLOYEE],
+    department: '',
+    position: '',
+    employeeId: '',
+    isActive: true,
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    setError('');
+    setSaving(false);
+    setFormData({
+      email: '',
+      firstName: '',
+      lastName: '',
+      roles: [APP_ROLES.EMPLOYEE],
+      department: '',
+      position: '',
+      employeeId: '',
+      isActive: true,
+    });
+  }, [open]);
+
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+  const hasRoles = Array.isArray(formData.roles) && formData.roles.length > 0;
+
+  const isFormValid =
+    formData.firstName.trim().length > 0 &&
+    formData.lastName.trim().length > 0 &&
+    isEmailValid &&
+    hasRoles;
+
+  const handleSubmit = async () => {
+    if (!isFormValid) {
+      setError('Please complete all required fields and select at least one role.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      await onCreate({
+        ...formData,
+        email: formData.email.trim().toLowerCase(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <PersonAdd color="primary" />
+          <Typography variant="h6" fontWeight={700}>Create User</Typography>
+        </Stack>
+      </DialogTitle>
+
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <Alert severity="info">
+            <Typography variant="body2">
+              Users with approved company emails can also be auto-provisioned on first sign-in. Use this form for proactive setup and role assignment.
+            </Typography>
+          </Alert>
+
+          {error && (
+            <Alert severity="error" onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+
+          <TextField
+            label="Email *"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="user@gamahospital.com"
+            error={formData.email.length > 0 && !isEmailValid}
+            helperText={formData.email.length > 0 && !isEmailValid ? 'Enter a valid email address' : 'Recommended: company email'}
+            fullWidth
+            autoFocus
+          />
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="First Name *"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Last Name *"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+
+          <FormControl fullWidth>
+            <InputLabel id="create-user-roles-label">Roles *</InputLabel>
+            <Select
+              labelId="create-user-roles-label"
+              multiple
+              label="Roles *"
+              value={(formData.roles as string[]) || []}
+              onChange={(e) => {
+                const nextRoles = Array.isArray(e.target.value) ? e.target.value : [e.target.value];
+                setFormData({ ...formData, roles: nextRoles as AppRole[] });
+              }}
+              renderValue={(selected) => (
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                  {(selected as string[]).map((roleValue) => {
+                    const role = ROLE_OPTIONS.find((r) => r.value === roleValue);
+                    return (
+                      <Chip
+                        key={roleValue}
+                        label={role?.label || roleValue}
+                        size="small"
+                        sx={{
+                          bgcolor: alpha(role?.color || '#6B7280', 0.15),
+                          color: role?.color || '#6B7280',
+                          fontWeight: 600,
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              )}
+            >
+              {ROLE_OPTIONS.map((role) => (
+                <MenuItem key={role.value} value={role.value}>
+                  <Checkbox checked={((formData.roles as string[]) || []).includes(role.value)} />
+                  <Stack spacing={0}>
+                    <Typography variant="body2" fontWeight={600}>{role.label}</Typography>
+                    <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                  </Stack>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel>Department</InputLabel>
+                <Select
+                  value={formData.department || ''}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  label="Department"
+                >
+                  <MenuItem value="">
+                    <em>No Department</em>
+                  </MenuItem>
+                  {departments.map((dept) => (
+                    <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Employee ID"
+                value={formData.employeeId || ''}
+                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+
+          <TextField
+            label="Position"
+            value={formData.position || ''}
+            onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+            fullWidth
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.isActive ?? true}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                color="success"
+              />
+            }
+            label="Account active"
+          />
+        </Stack>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <PersonAdd />}
+          disabled={saving || !isFormValid}
+        >
+          {saving ? 'Creating...' : 'Create User'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============================================
 // ENHANCED EDIT USER DIALOG
 // ============================================
 
@@ -191,6 +432,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
         employeeId: user.employeeId || '',
         department: user.department || '',
         position: user.position || '',
+        roles: user.roles || [APP_ROLES.EMPLOYEE],
         isActive: user.isActive ?? true,
       });
       setActiveTab(0);
@@ -227,31 +469,33 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
 
   // Calculate permissions based on roles
   const permissionPreview = useMemo(() => {
-    if (!user?.roles) return [];
+    const selectedRoles = ((formData.roles as AppRole[] | undefined) || user?.roles || []) as AppRole[];
+    if (!selectedRoles.length) return [];
+
     const perms: Array<{ label: string; allowed: boolean; description: string }> = [];
 
     // System Administration
-    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER])) {
+    if (hasAnyRole(selectedRoles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER])) {
       perms.push({ label: 'User Management', allowed: true, description: 'View and manage all users' });
       perms.push({ label: 'Location Management', allowed: true, description: 'Create and edit locations' });
       perms.push({ label: 'System Settings', allowed: true, description: 'Access system configuration' });
     }
 
     // Quality roles
-    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST])) {
+    if (hasAnyRole(selectedRoles, [APP_ROLES.QUALITY_MANAGER, APP_ROLES.QUALITY_ANALYST])) {
       perms.push({ label: 'QI Review', allowed: true, description: 'Review and process incidents' });
       perms.push({ label: 'Assign Investigations', allowed: true, description: 'Create and assign investigations' });
       perms.push({ label: 'Manage Corrective Actions', allowed: true, description: 'Create action items' });
     }
 
     // Supervisor roles
-    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD])) {
+    if (hasAnyRole(selectedRoles, [APP_ROLES.SUPERVISOR, APP_ROLES.TEAM_LEAD])) {
       perms.push({ label: 'Team Incidents', allowed: true, description: 'View team incident reports' });
       perms.push({ label: 'Supervisor Review', allowed: true, description: 'Review and approve team reports' });
     }
 
     // Executive access
-    if (hasAnyRole(user.roles as AppRole[], [APP_ROLES.CEO, APP_ROLES.EXECUTIVE])) {
+    if (hasAnyRole(selectedRoles, [APP_ROLES.CEO, APP_ROLES.EXECUTIVE])) {
       perms.push({ label: 'Executive Dashboard', allowed: true, description: 'Access executive reports' });
       perms.push({ label: 'All Incidents View', allowed: true, description: 'View all incident data' });
     }
@@ -261,7 +505,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
     perms.push({ label: 'My Incidents', allowed: true, description: 'View personal reports' });
 
     return perms;
-  }, [user?.roles]);
+  }, [formData.roles, user?.roles]);
 
   // Handle status change with warning
   const handleStatusChange = (newStatus: boolean) => {
@@ -284,6 +528,11 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
 
     if (!employeeIdValid && formData.employeeId !== user.employeeId) {
       setError('Please fix the Employee ID validation error');
+      return;
+    }
+
+    if (!Array.isArray(formData.roles) || formData.roles.length === 0) {
+      setError('At least one role is required');
       return;
     }
 
@@ -525,8 +774,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
           <Stack spacing={3}>
             <Alert severity="info" icon={<Info />}>
               <Typography variant="body2">
-                Roles are currently read-only in this view.
-                Contact your IT administrator to modify role assignments.
+                Manage role access here. Changes take effect on the user&apos;s next authenticated request.
               </Typography>
             </Alert>
 
@@ -534,33 +782,53 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Assigned Roles
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-                {user.roles && user.roles.length > 0 ? (
-                  user.roles.map((roleValue) => {
-                    const meta = ROLE_METADATA[roleValue as AppRole] || {
-                      label: roleValue,
-                      color: '#6B7280',
-                    };
-                    return (
-                      <Tooltip key={roleValue} title={meta.description || ''}>
-                        <Chip
-                          label={meta.label}
-                          sx={{
-                            bgcolor: alpha(meta.color, 0.15),
-                            color: meta.color,
-                            fontWeight: 600,
-                            borderRadius: 1,
-                          }}
-                        />
-                      </Tooltip>
-                    );
-                  })
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No roles assigned
-                  </Typography>
-                )}
-              </Stack>
+              <FormControl fullWidth sx={{ mt: 1 }}>
+                <InputLabel id="roles-select-label">Roles</InputLabel>
+                <Select
+                  labelId="roles-select-label"
+                  multiple
+                  label="Roles"
+                  value={(formData.roles as string[]) || []}
+                  onChange={(e) => {
+                    const nextRoles = Array.isArray(e.target.value)
+                      ? e.target.value
+                      : [e.target.value];
+                    setFormData({ ...formData, roles: nextRoles as any });
+                  }}
+                  renderValue={(selected) => (
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      {(selected as string[]).map((roleValue) => {
+                        const role = ROLE_OPTIONS.find((r) => r.value === roleValue);
+                        return (
+                          <Chip
+                            key={roleValue}
+                            label={role?.label || roleValue}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha(role?.color || '#6B7280', 0.15),
+                              color: role?.color || '#6B7280',
+                              fontWeight: 600,
+                            }}
+                          />
+                        );
+                      })}
+                    </Stack>
+                  )}
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <MenuItem key={role.value} value={role.value}>
+                      <Checkbox checked={((formData.roles as string[]) || []).includes(role.value)} />
+                      <Stack spacing={0}>
+                        <Typography variant="body2" fontWeight={600}>{role.label}</Typography>
+                        <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                      </Stack>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Tip: Keep at least one administrative role on your own account to avoid lockout.
+              </Typography>
             </Box>
 
             <Box>
@@ -716,7 +984,12 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={saving || (!employeeIdValid && formData.employeeId !== user.employeeId)}
+          disabled={
+            saving ||
+            (!employeeIdValid && formData.employeeId !== user.employeeId) ||
+            !Array.isArray(formData.roles) ||
+            formData.roles.length === 0
+          }
           startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
         >
           {saving ? 'Saving...' : 'Save Changes'}
@@ -729,6 +1002,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
 export default function UsersManagementPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { departments } = useDepartments();
 
   // Filters and pagination state
   const [page, setPage] = useState(1);
@@ -739,7 +1013,7 @@ export default function UsersManagementPage() {
   const [isActive, setIsActive] = useState<boolean | undefined>(undefined);
   const [sortBy, setSortBy] = useState<'createdAt' | 'updatedAt' | 'firstName' | 'lastName' | 'email' | 'department'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
 
   // Redirect non-admins
@@ -770,7 +1044,7 @@ export default function UsersManagementPage() {
   }, [search]);
 
   // Fetch users with current filters
-  const { users, pagination, isLoading, error, updateUser, refresh } = useUserManagement({
+  const { users, pagination, isLoading, error, updateUser, createUser, refresh } = useUserManagement({
     page,
     pageSize,
     search: debouncedSearch,
@@ -814,6 +1088,14 @@ export default function UsersManagementPage() {
     [updateUser]
   );
 
+  const handleCreateUser = useCallback(
+    async (payload: UserCreate) => {
+      await createUser(payload);
+      setCreateUserOpen(false);
+    },
+    [createUser]
+  );
+
   const getRoleInfo = (roleValue: string) => {
     const meta = ROLE_METADATA[roleValue as AppRole];
     if (meta) {
@@ -840,12 +1122,21 @@ export default function UsersManagementPage() {
         >
           <Stack spacing={3}>
             {/* Header */}
-            <Stack spacing={1}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <AdminPanelSettings fontSize="large" color="primary" />
-                <Typography variant="h4" fontWeight={700}>
-                  User Management
-                </Typography>
+            <Stack spacing={1.5}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <AdminPanelSettings fontSize="large" color="primary" />
+                  <Typography variant="h4" fontWeight={700}>
+                    User Management
+                  </Typography>
+                </Stack>
+                <Button
+                  variant="contained"
+                  startIcon={<PersonAdd />}
+                  onClick={() => setCreateUserOpen(true)}
+                >
+                  Create User
+                </Button>
               </Stack>
               <Typography variant="body1" color="text.secondary">
                 Manage user roles, permissions, and account status ({pagination.total} total
@@ -1099,6 +1390,13 @@ export default function UsersManagementPage() {
         user={editUser}
         onClose={() => setEditUser(null)}
         onSave={handleSaveUser}
+      />
+
+      <CreateUserDialog
+        open={createUserOpen}
+        onClose={() => setCreateUserOpen(false)}
+        onCreate={handleCreateUser}
+        departments={departments.map((d) => ({ id: d.id, name: d.name }))}
       />
     </AppLayout>
   );

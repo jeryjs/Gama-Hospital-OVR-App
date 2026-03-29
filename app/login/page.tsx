@@ -28,7 +28,7 @@ export default function LoginPage() {
     const errorParam = params.get('error');
 
     if (errorParam === 'AccessDenied') {
-      return 'Access denied. Your account is not approved or is inactive. Please contact an administrator.';
+      return 'Access denied. Please use your approved company Microsoft account, or contact an administrator if your account was deactivated.';
     }
 
     if (errorParam === 'Configuration') {
@@ -278,7 +278,7 @@ export default function LoginPage() {
 
               {/* Footer Note */}
               <Typography variant="caption" color="text.secondary" sx={{ pt: 2 }}>
-                Access is granted only to approved users configured by administrators
+                Company email accounts are auto-enabled as Employee on first login; admins manage elevated roles.
               </Typography>
             </Stack>
           </Paper>

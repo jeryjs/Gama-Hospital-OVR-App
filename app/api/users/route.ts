@@ -8,9 +8,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 
 const VALID_ROLES = new Set(Object.values(APP_ROLES));
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'gamahospital.com').toLowerCase();
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function isAllowedDomainEmail(email: string): boolean {
+  return email.endsWith(`@${ALLOWED_DOMAIN}`);
 }
 
 function normalizeOptionalText(value: unknown): string | null | undefined {
@@ -173,6 +178,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
+    const userIdNumber = Number(userId);
+    if (!Number.isInteger(userIdNumber) || userIdNumber <= 0) {
+      return NextResponse.json({ error: 'Invalid User ID' }, { status: 400 });
+    }
+
     const parsedUpdates = userUpdateSchema.safeParse(updates || {});
     if (!parsedUpdates.success) {
       return NextResponse.json({ error: 'Invalid update payload', details: parsedUpdates.error.issues }, { status: 400 });
@@ -201,7 +211,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Prevent admin from deactivating themselves
-    if (updates.isActive === false && userId === parseInt(session.user.id)) {
+    if (filteredUpdates.isActive === false && userIdNumber === parseInt(session.user.id)) {
       return NextResponse.json(
         { error: 'Cannot deactivate your own account' },
         { status: 400 }
@@ -209,7 +219,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Prevent admin from removing own management access
-    if (userId === parseInt(session.user.id) && filteredUpdates.roles) {
+    if (userIdNumber === parseInt(session.user.id) && filteredUpdates.roles) {
       if (!ACCESS_CONTROL.api.users.canManage(filteredUpdates.roles as any)) {
         return NextResponse.json(
           { error: 'Cannot remove your own administrative access' },
@@ -227,7 +237,7 @@ export async function PATCH(request: NextRequest) {
     const [updatedUser] = await db
       .update(users)
       .set(filteredUpdates)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, userIdNumber))
       .returning();
 
     if (!updatedUser) {
@@ -265,6 +275,14 @@ export async function POST(request: NextRequest) {
     }
 
     const email = normalizeEmail(parsed.data.email);
+
+    if (!isAllowedDomainEmail(email)) {
+      return NextResponse.json(
+        { error: `User email must be within the approved domain (@${ALLOWED_DOMAIN})` },
+        { status: 400 }
+      );
+    }
+
     const roles = validateRoles(parsed.data.roles);
 
     if (!roles) {
