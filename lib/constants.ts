@@ -103,14 +103,6 @@ export const ROLE_METADATA = Object.fromEntries(
 export const ROLE_LABELS: Record<AppRole, string> =
     Object.fromEntries(Object.entries(ROLE_METADATA).map(([key, value]) => [key, value.label])) as Record<AppRole, string>;
 
-/**
- * Azure AD Security Group to App Role mapping - inferred from APP_ROLE_DEFS
- */
-export const AD_GROUP_ROLE_MAP: Record<string, AppRole[]> =
-    Object.fromEntries(
-        Object.values(APP_ROLE_DEFS).map(r => [r.azureId, [r.key]])
-    );
-
 // ============================================
 // OVR FORM CONSTANTS (WITH UI METADATA)
 // ============================================

@@ -3,7 +3,7 @@
  * Single source of truth for all role-based access control logic
  */
 
-import { AD_GROUP_ROLE_MAP, APP_ROLES, ROLE_METADATA, ROLE_PRIORITY, type AppRole } from './constants';
+import { APP_ROLES, ROLE_METADATA, ROLE_PRIORITY, type AppRole } from './constants';
 
 // ============================================
 // ROLE CHECK FUNCTIONS
@@ -55,32 +55,6 @@ export function getPrimaryRole(roles: AppRole[]): AppRole {
     }
 
     return APP_ROLES.EMPLOYEE;
-}
-
-// ============================================
-// AZURE AD GROUP MAPPING
-// ============================================
-
-/**
- * Map Azure AD security groups to application roles
- * Centralized mapping logic - update AD_GROUP_ROLE_MAP in constants.ts
- */
-export function mapAdGroupsToRoles(adGroups: string[]): AppRole[] {
-    const roleSet = new Set<AppRole>();
-
-    for (const group of adGroups) {
-        const mappedRoles = AD_GROUP_ROLE_MAP[group] as AppRole[] | undefined;
-        if (mappedRoles) {
-            mappedRoles.forEach((role: AppRole) => roleSet.add(role));
-        }
-    }
-
-    // Always ensure at least 'employee' role
-    if (roleSet.size === 0) {
-        roleSet.add(APP_ROLES.EMPLOYEE as AppRole);
-    }
-
-    return Array.from(roleSet);
 }
 
 /**
