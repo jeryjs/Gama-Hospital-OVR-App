@@ -814,213 +814,13 @@ Training materials being developed by Pharmacy Education team.`,
         console.log(`✅ Created ${actions.length} corrective actions\n`);
 
         // ============================================
-        // SHARED ACCESS (Token-based collaboration)
+        // OPTIONAL TABLES (not populated in default seed profile)
         // ============================================
-        console.log('🔗 Creating shared access invitations...');
-
-        // Shared access skipped - table not in schema
         const sharedAccess: any[] = [];
-        /*
-        const sharedAccess = await db.insert(schema.sharedAccess).values([
-            // Investigation 1 - External consultant invited
-            {
-                resourceType: 'investigation',
-                resourceId: investigations[0].id,
-                ovrReportId: incidents[0].id,
-                email: 'consultant.fallprevention@external.com',
-                userId: null,
-                role: 'investigator',
-                status: 'accepted',
-                accessToken: 'inv-token-fall-prevention-consultant',
-                invitedAt: new Date('2025-11-20T10:00:00'),
-                lastAccessedAt: new Date('2025-11-24T15:30:00'),
-            },
-
-            // Investigation 2 - External pharmacist consultant pending
-            {
-                resourceType: 'investigation',
-                resourceId: investigations[1].id,
-                ovrReportId: incidents[1].id,
-                email: 'medication.safety@external.com',
-                userId: null,
-                role: 'investigator',
-                status: 'pending',
-                accessToken: 'inv-token-med-safety-expert',
-                invitedAt: new Date('2025-12-02T14:00:00'),
-            },
-
-            // Action 1 - Facilities manager for mat installation
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[0].id,
-                ovrReportId: incidents[0].id,
-                email: 'facilities.manager@gamahospital.com',
-                userId: null,
-                role: 'action_handler',
-                status: 'accepted',
-                accessToken: 'action-token-facilities-mats',
-                invitedAt: new Date('2025-11-26T11:00:00'),
-                lastAccessedAt: new Date('2025-11-28T16:00:00'),
-            },
-
-            // Action 2 - IT department for CPOE system
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[1].id,
-                ovrReportId: incidents[1].id,
-                email: 'it.clinical@gamahospital.com',
-                userId: null,
-                role: 'action_handler',
-                status: 'accepted',
-                accessToken: 'action-token-it-cpoe',
-                invitedAt: new Date('2025-12-07T10:00:00'),
-                lastAccessedAt: new Date('2025-12-08T09:00:00'),
-            },
-        */
-        console.log(`✅ Skipped shared access (table not defined in schema)\n`);
-
-        // ============================================
-        // COMMENTS (Internal collaboration)
-        // ============================================
-        // Comments skipped - table not in schema
         const comments: any[] = [];
-        /*
-        console.log('💬 Creating collaboration comments...');
 
-        const comments = await db.insert(schema.ovrComments).values([
-            // Comments on Incident 1 (Patient Fall)
-            {
-                resourceType: 'incident',
-                resourceId: incidents[0].id,
-                userId: sarahQI.id,
-                content: 'Starting investigation. Will review patient chart and interview nursing staff tomorrow.',
-                isInternal: true,
-                createdAt: new Date('2025-11-16T10:00:00'),
-            },
-            {
-                resourceType: 'incident',
-                resourceId: incidents[0].id,
-                userId: michaelQI.id,
-                content: 'Reviewed security footage. Patient clearly attempted bathroom transfer without assistance despite call bell being within reach.',
-                isInternal: true,
-                createdAt: new Date('2025-11-18T14:00:00'),
-            },
-            {
-                resourceType: 'incident',
-                resourceId: incidents[0].id,
-                userId: nurseThompson.id,
-                content: 'Patient education was provided on admission. Family was also present and acknowledged fall risk precautions.',
-                isInternal: true,
-                createdAt: new Date('2025-11-19T09:00:00'),
-            },
-
-            // Comments on Investigation 1
-            {
-                resourceType: 'investigation',
-                resourceId: investigations[0].id,
-                userId: sarahQI.id,
-                content: 'Investigation findings complete. Identified multiple contributing factors including wet floor, patient non-compliance, and monitoring gaps.',
-                isInternal: true,
-                createdAt: new Date('2025-11-25T15:00:00'),
-            },
-            {
-                resourceType: 'investigation',
-                resourceId: investigations[0].id,
-                userId: michaelQI.id,
-                content: '@sarah.chen Agree with findings. Recommend immediate action on bed alarm upgrade and hourly rounding system.',
-                isInternal: true,
-                createdAt: new Date('2025-11-25T15:30:00'),
-            },
-
-            // Comments on Incident 2 (Medication Error)
-            {
-                resourceType: 'incident',
-                resourceId: incidents[1].id,
-                userId: sarahQI.id,
-                content: 'This is a serious sentinel event. Initiating immediate investigation. All involved staff to be interviewed today.',
-                isInternal: true,
-                createdAt: new Date('2025-11-28T10:00:00'),
-            },
-            {
-                resourceType: 'incident',
-                resourceId: incidents[1].id,
-                userId: pharmaLee.id,
-                content: 'Pharmacy department conducting parallel review of all recent insulin orders. Will provide report by Friday.',
-                isInternal: true,
-                createdAt: new Date('2025-11-28T11:00:00'),
-            },
-            {
-                resourceType: 'incident',
-                resourceId: incidents[1].id,
-                userId: drWong.id,
-                content: 'Patient stable now. This highlights critical need for electronic prescribing enforcement. I support mandatory CPOE for all high-alert meds.',
-                isInternal: true,
-                createdAt: new Date('2025-11-28T16:00:00'),
-            },
-
-            // Comments on Investigation 2
-            {
-                resourceType: 'investigation',
-                resourceId: investigations[1].id,
-                userId: pharmaLee.id,
-                content: 'Investigation complete. Root cause clearly identified as handwritten order misinterpretation. Recommend immediate ban on handwritten high-alert medication orders.',
-                isInternal: true,
-                createdAt: new Date('2025-12-06T13:00:00'),
-            },
-
-            // Comments on Action 1 (Fall Prevention)
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[0].id,
-                userId: lisaSup.id,
-                content: 'Non-slip mats ordered and being installed. Bed alarm upgrade scheduled for next week.',
-                isInternal: true,
-                createdAt: new Date('2025-11-28T14:00:00'),
-            },
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[0].id,
-                userId: nurseThompson.id,
-                content: 'Staff training sessions going well. Nurses appreciate the new electronic rounding system - much easier than paper charts.',
-                isInternal: true,
-                createdAt: new Date('2025-12-03T16:00:00'),
-            },
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[0].id,
-                userId: lisaSup.id,
-                content: 'All action items completed! Already seeing improvement in fall prevention compliance. Closing this action.',
-                isInternal: true,
-                createdAt: new Date('2025-12-05T15:45:00'),
-            },
-
-            // Comments on Action 2 (CPOE Implementation)
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[1].id,
-                userId: pharmaLee.id,
-                content: 'CPOE system configuration complete. Dose limits and safety alerts are now active for all high-alert medications.',
-                isInternal: true,
-                createdAt: new Date('2025-12-05T16:00:00'),
-            },
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[1].id,
-                userId: drWong.id,
-                content: 'Completed training today. System is intuitive and safety alerts are helpful. Some physicians still resistant to change though.',
-                isInternal: true,
-                createdAt: new Date('2025-12-07T18:00:00'),
-            },
-            {
-                resourceType: 'corrective_action',
-                resourceId: actions[1].id,
-                userId: sarahQI.id,
-                content: 'Training progress slower than expected. Added evening sessions to accommodate physician schedules. Target: 100% completion by Dec 18.',
-                isInternal: true,
-                createdAt: new Date('2025-12-08T14:30:00'),
-            },
-        */
-        console.log(`✅ Skipped comments (table not defined in schema)\n`);
+        console.log('🔗 Shared access seeding skipped (not included in default seed profile).\n');
+        console.log('💬 Comment seeding skipped (not included in default seed profile).\n');
 
         // ============================================
         // Summary
@@ -1038,8 +838,8 @@ Training materials being developed by Pharmacy Education team.`,
         console.log(`     • 1 Draft (incomplete)`);
         console.log(`   - ${investigations.length} investigations (2 complete, 1 in progress)`);
         console.log(`   - ${actions.length} corrective actions (1 closed, 2 open)`);
-        console.log(`   - ${sharedAccess.length} external collaborations (token-based access)`);
-        console.log(`   - ${comments.length} collaboration comments`);
+        console.log(`   - ${sharedAccess.length} shared access invitations (omitted in default profile)`);
+        console.log(`   - ${comments.length} comments (omitted in default profile)`);
         console.log('\\n🔐 **Login Credentials:**');
         console.log('   All accounts: @gamahospital.com domain');
         console.log('   My account: jery99961_gmail.com#ext#@jery99961gmail.onmicrosoft.com');
@@ -1048,8 +848,7 @@ Training materials being developed by Pharmacy Education team.`,
         console.log('   ✅ QI-led investigation workflow');
         console.log('   ✅ Root cause analysis with RCA');
         console.log('   ✅ Corrective actions with checklists');
-        console.log('   ✅ Token-based shared access for external collaborators');
-        console.log('   ✅ Internal collaboration with comments');
+        console.log('   ✅ DB-managed user roles and permissions');
         console.log('   ✅ Multiple user roles and permissions');
         console.log('   ✅ Realistic hospital scenarios (falls, medication errors, violence, equipment)');
         console.log('   ✅ Sentinel event handling');
