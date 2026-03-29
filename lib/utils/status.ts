@@ -147,7 +147,8 @@ export function isActiveStatus(status: OVRStatus | string): boolean {
 }
 
 /**
- * Check if status is rejected (draft with rejection reason)
+ * Check if status should be surfaced as rejected
+ * (legacy compatibility: draft + rejection reason)
  */
 export function isRejectedStatus(incident: { status: string; qiRejectionReason?: string | null }): boolean {
     return incident.status === 'draft' && !!incident.qiRejectionReason;

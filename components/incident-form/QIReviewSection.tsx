@@ -2,7 +2,7 @@
  * @fileoverview QI Review Section - Approve or Reject Submitted Incidents
  * 
  * Shows when incident is in 'submitted' status
- * QI staff can approve (moves to investigating) or reject (back to draft)
+ * QI staff can approve or reject; both outcomes remain in QI workflow
  */
 
 'use client';
@@ -129,7 +129,7 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                                             Approve
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            Move to investigation phase
+                                            Queue for investigation setup
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -146,7 +146,7 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                                             Reject
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            Return to reporter as draft
+                                            Keep in QI review with rejection feedback
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -174,8 +174,8 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
 
                 {/* Info Alert */}
                 <Alert severity={decision === 'approve' ? 'success' : decision === 'reject' ? 'warning' : 'info'} sx={{ mb: 2 }}>
-                    {decision === 'approve' && 'Approving will move this incident to the investigation phase.'}
-                    {decision === 'reject' && 'Rejecting will return this incident to the reporter as a draft with your feedback.'}
+                    {decision === 'approve' && 'Approving will keep this incident in QI workflow and mark it ready for investigation setup.'}
+                    {decision === 'reject' && 'Rejecting will keep this incident in QI workflow with your rejection reason recorded.'}
                     {!decision && 'Select approve or reject to proceed with QI review.'}
                 </Alert>
 

@@ -166,7 +166,7 @@ export function buildIncidentVisibilityFilter(
         APP_ROLES.QUALITY_MANAGER,
         APP_ROLES.QUALITY_ANALYST,
     ])) {
-        // Show all non-draft incidents + reviewer-owned rejected drafts.
+        // Show all non-draft incidents + legacy reviewer-owned rejected drafts.
         // includeDrafts=true adds reporter's own regular drafts for specific endpoints.
         if (includeDrafts) {
             return or(
@@ -212,7 +212,7 @@ export function buildIncidentVisibilityFilter(
     if (includeDrafts) {
         return eq(ovrReports.reporterId, userId);
     }
-    // Default employee visibility: own non-draft + own rejected drafts
+    // Default employee visibility: own non-draft + legacy own rejected drafts
     return and(
         eq(ovrReports.reporterId, userId),
         or(
@@ -249,7 +249,7 @@ export async function getIncidentSecure(
         throw new NotFoundError('Incident');
     }
 
-    // Explicit fast-path for rejected drafts:
+    // Explicit fast-path for legacy rejected drafts:
     // - reporter can access own rejected draft
     // - reviewer can access drafts they rejected
     if (

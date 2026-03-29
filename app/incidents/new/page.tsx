@@ -1394,7 +1394,7 @@ export default function NewIncidentPage() {
     const params = new URLSearchParams(window.location.search);
     const draftParam = params.get('draft');
 
-    // Explicit draft request – load local draft or backend rejected draft
+    // Explicit draft request – load local draft or backend draft incident
     if (draftParam && isDraftId(draftParam)) {
       const existingDraft = getDraftById(draftParam);
       if (existingDraft) {
@@ -1429,7 +1429,7 @@ export default function NewIncidentPage() {
           if (cancelled) return;
 
           if (incidentDraft.status !== 'draft') {
-            await showError(new Error('Only draft or rejected reports can be edited from this page.'));
+            await showError(new Error('Only draft reports can be edited from this page.'));
             setIsFetchingServerDraft(false);
             setDraftLoaded(true);
             return;
