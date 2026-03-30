@@ -7,12 +7,10 @@ import useSWR from 'swr';
  */
 export interface DashboardStats {
     total: number;
-    drafts: number;
     submitted: number;
     resolved: number;
 
     byStatus: {
-        draft: number;
         submitted: number;
         qi_review: number;
         investigating: number;
@@ -44,7 +42,6 @@ export interface DashboardStats {
     // Employee-specific fields
     myReports?: {
         total: number;
-        drafts: number;
         inProgress: number;
         resolved: number;
     };

@@ -3,6 +3,7 @@
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AppRole } from '@/lib/constants';
 import { useDashboardStats } from '@/lib/hooks';
+import { getUserDrafts } from '@/lib/utils/draft-storage';
 import {
   AccountCircle,
   Add,
@@ -60,6 +61,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { stats, isLoading: isStatsLoading, error: statsError } = useDashboardStats();  // Used to populate nav badges
   const pathname = usePathname();
   const router = useRouter();
+  const disableRouteAnimation = pathname.startsWith('/incidents/view/');
+  const transitionKey = disableRouteAnimation ? '/incidents/view' : pathname;
+  const [myDraftsCount, setMyDraftsCount] = useState(0);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -67,6 +71,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     Incidents: pathname.startsWith('/incidents'),
     Administration: pathname.startsWith('/administration'),
   }));
+
+  React.useEffect(() => {
+    const rawUserId = session?.user?.id;
+    const userId = rawUserId ? Number(rawUserId) : NaN;
+
+    if (!Number.isFinite(userId)) {
+      setMyDraftsCount(0);
+      return;
+    }
+
+    const refreshDraftCount = () => {
+      setMyDraftsCount(getUserDrafts(userId).length);
+    };
+
+    refreshDraftCount();
+    window.addEventListener('focus', refreshDraftCount);
+    window.addEventListener('storage', refreshDraftCount);
+
+    return () => {
+      window.removeEventListener('focus', refreshDraftCount);
+      window.removeEventListener('storage', refreshDraftCount);
+    };
+  }, [session?.user?.id, pathname]);
 
   // Handle proper logout with Azure AD session cleanup
   const handleLogout = async () => {
@@ -78,7 +105,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = React.useMemo(() => {
     const userRoles = session?.user.roles || [];
     const qiReviewCount = stats?.byStatus?.submitted || 0;
-    const myDraftsCount = stats?.myReports?.drafts || 0;
 
     // Check if user has elevated access (can view all or team incidents)
     const canViewAllIncidents = ACCESS_CONTROL.api.incidents.canViewAll(userRoles);
@@ -161,7 +187,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
 
     return items;
-  }, [session?.user.roles, stats?.byStatus, stats?.myReports?.drafts, navItemsOpen]);
+  }, [session?.user.roles, stats?.byStatus, myDraftsCount, navItemsOpen]);
 
   const handleMenuItemClick = (item: NavItem) => {
     if (item.children) {
@@ -463,17 +489,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           mt: 8,
         }}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        {disableRouteAnimation ? (
+          <Box>{children}</Box>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={transitionKey}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </Box>
     </Box>
   );

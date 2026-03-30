@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface IncidentsSidebarProps {
@@ -29,6 +29,7 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
     const router = useRouter();
     const { data: session } = useSession();
     const [searchTerm, setSearchTerm] = useState('');
+    const [visibleLimit, setVisibleLimit] = useState(30);
 
     // Determine source from searchParam
     const source = searchParams.get('source') || 'all';
@@ -38,11 +39,15 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
     const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
 
     // Fetch incidents based on source
-    const { incidents, isLoading, error } = useIncidents(
+    const { incidents, pagination, isLoading, error } = useIncidents(
         isMyReports && userId
-            ? { reporterId: userId }
-            : {}
+            ? { reporterId: userId, page: 1, limit: visibleLimit }
+            : { page: 1, limit: visibleLimit }
     );
+
+    useEffect(() => {
+        setVisibleLimit(30);
+    }, [isMyReports, userId]);
 
     // Get user's drafts from localStorage (only for My Reports view)
     const drafts = useMemo(() => {
@@ -61,6 +66,10 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
             inc.occurrenceCategory?.toLowerCase().includes(term)
         );
     }, [incidents, searchTerm]);
+
+    const canLoadMore = Boolean(
+        pagination && incidents.length < pagination.total && !searchTerm
+    );
 
     // Collapsed view - just toggle button
     if (collapsed) {
@@ -248,6 +257,19 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                             );
                         })}
                     </List>
+                )}
+
+                {canLoadMore && (
+                    <Box sx={{ px: 1, pb: 2 }}>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => setVisibleLimit((prev) => prev + 30)}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Loading...' : 'Load more incidents'}
+                        </Button>
+                    </Box>
                 )}
             </Box>
         </Paper>
