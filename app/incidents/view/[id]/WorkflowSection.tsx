@@ -91,6 +91,34 @@ export function WorkflowSection({
     }
 
     /**
+     * STATUS: investigating
+     * Investigation is active; QI can monitor access/assignments
+     */
+    if (incident.status === 'investigating') {
+        return (
+            <Box sx={{ my: 3 }}>
+                <Divider sx={{ my: 3 }} />
+
+                {incident.investigation && (
+                    <InvestigationSummary
+                        investigation={incident.investigation}
+                        incidentId={incident.id}
+                    />
+                )}
+
+                <InvestigationManagement
+                    incidentId={incident.id}
+                    investigationId={investigationId}
+                    onInvestigationCreated={(id) => {
+                        setInvestigationId(id);
+                        onUpdate();
+                    }}
+                />
+            </Box>
+        );
+    }
+
+    /**
      * STATUS: QI_FINAL_ACTIONS
      * QI creates corrective actions and closes case when done
      */

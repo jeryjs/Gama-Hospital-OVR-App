@@ -15,6 +15,7 @@ import {
     handleApiError,
     NotFoundError,
     requireAuth,
+    requireAuthOptional,
     validateBody,
 } from '@/lib/api/middleware';
 import {
@@ -35,19 +36,24 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
         const { id } = await params;
         const investigationId = parseInt(id);
 
         // Check if user can access this investigation
         const accessToken = request.nextUrl.searchParams.get('token');
+        const session = accessToken
+            ? await requireAuthOptional(request)
+            : await requireAuth(request);
+
         const hasAccess = await canAccessInvestigation(
             investigationId,
-            {
-                userId: parseInt(session.user.id),
-                roles: session.user.roles,
-                email: session.user.email,
-            },
+            session
+                ? {
+                    userId: parseInt(session.user.id),
+                    roles: session.user.roles,
+                    email: session.user.email,
+                }
+                : undefined,
             accessToken || undefined
         );
 
@@ -68,7 +74,7 @@ export async function GET(
 
         // Also fetch shared access list if user has permission
         let sharedAccess: any[] = [];
-        if (ACCESS_CONTROL.api.investigations.canCreate(session.user.roles)) {
+        if (session && ACCESS_CONTROL.api.investigations.canCreate(session.user.roles)) {
             sharedAccess = await db
                 .select()
                 .from(ovrSharedAccess)
@@ -98,19 +104,24 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
         const { id } = await params;
         const investigationId = parseInt(id);
 
         // Check access
         const accessToken = request.nextUrl.searchParams.get('token');
+        const session = accessToken
+            ? await requireAuthOptional(request)
+            : await requireAuth(request);
+
         const hasAccess = await canAccessInvestigation(
             investigationId,
-            {
-                userId: parseInt(session.user.id),
-                roles: session.user.roles,
-                email: session.user.email,
-            },
+            session
+                ? {
+                    userId: parseInt(session.user.id),
+                    roles: session.user.roles,
+                    email: session.user.email,
+                }
+                : undefined,
             accessToken || undefined
         );
 

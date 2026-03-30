@@ -12,6 +12,7 @@ import {
     handleApiError,
     NotFoundError,
     requireAuth,
+    requireAuthOptional,
     ValidationError,
     validateBody,
 } from '@/lib/api/middleware';
@@ -29,18 +30,23 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
         const { id } = await params;
         const actionId = parseInt(id);
 
         const accessToken = request.nextUrl.searchParams.get('token');
+        const session = accessToken
+            ? await requireAuthOptional(request)
+            : await requireAuth(request);
+
         const hasAccess = await canAccessCorrectiveAction(
             actionId,
-            {
-                userId: parseInt(session.user.id),
-                roles: session.user.roles,
-                email: session.user.email,
-            },
+            session
+                ? {
+                    userId: parseInt(session.user.id),
+                    roles: session.user.roles,
+                    email: session.user.email,
+                }
+                : undefined,
             accessToken || undefined
         );
 
@@ -60,7 +66,7 @@ export async function GET(
 
         // Fetch shared access list if user has permission
         let sharedAccess: any[] = [];
-        if (ACCESS_CONTROL.api.correctiveActions.canCreate(session.user.roles)) {
+        if (session && ACCESS_CONTROL.api.correctiveActions.canCreate(session.user.roles)) {
             sharedAccess = await db
                 .select()
                 .from(ovrSharedAccess)
@@ -89,18 +95,23 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
         const { id } = await params;
         const actionId = parseInt(id);
 
         const accessToken = request.nextUrl.searchParams.get('token');
+        const session = accessToken
+            ? await requireAuthOptional(request)
+            : await requireAuth(request);
+
         const hasAccess = await canAccessCorrectiveAction(
             actionId,
-            {
-                userId: parseInt(session.user.id),
-                roles: session.user.roles,
-                email: session.user.email,
-            },
+            session
+                ? {
+                    userId: parseInt(session.user.id),
+                    roles: session.user.roles,
+                    email: session.user.email,
+                }
+                : undefined,
             accessToken || undefined
         );
 

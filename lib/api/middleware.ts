@@ -217,6 +217,10 @@ export async function requireAuth(req: NextRequest) {
   return session;
 }
 
+export async function requireAuthOptional(req: NextRequest) {
+  return getServerSession(authOptions);
+}
+
 /**
  * @deprecated Use ACCESS_CONTROL configuration instead
  * 

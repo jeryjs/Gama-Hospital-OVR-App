@@ -12,6 +12,7 @@ import {
     handleApiError,
     NotFoundError,
     requireAuth,
+    requireAuthOptional,
     validateBody,
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
@@ -25,19 +26,24 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
         const { id } = await params;
         const investigationId = parseInt(id);
 
         // Check access
         const accessToken = request.nextUrl.searchParams.get('token');
+        const session = accessToken
+            ? await requireAuthOptional(request)
+            : await requireAuth(request);
+
         const hasAccess = await canAccessInvestigation(
             investigationId,
-            {
-                userId: parseInt(session.user.id),
-                roles: session.user.roles,
-                email: session.user.email,
-            },
+            session
+                ? {
+                    userId: parseInt(session.user.id),
+                    roles: session.user.roles,
+                    email: session.user.email,
+                }
+                : undefined,
             accessToken || undefined
         );
 
@@ -71,10 +77,12 @@ export async function POST(
             })
             .where(eq(ovrReports.id, updated.ovrReportId));
 
-        await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
-            incidentId: updated.ovrReportId,
-            investigationId,
-        });
+        if (session) {
+            await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
+                incidentId: updated.ovrReportId,
+                investigationId,
+            });
+        }
 
         return NextResponse.json({
             success: true,
