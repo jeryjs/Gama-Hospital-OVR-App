@@ -65,3 +65,4 @@ App runs on `http://localhost:3005`.
 - User roles are DB-managed (`users.roles`) and validated against app role constants.
 - Authentication is delegated to Microsoft identity; authorization is enforced in-app using DB roles.
 - Workflow emails are sent via delegated Microsoft Graph with outbox/retry safeguards.
+- If delegated Graph mail returns 401/403, configure `MAIL_GRAPH_SENDER` (and keep `MAIL_GRAPH_APP_FALLBACK=true`) to use app-based Graph fallback via `/users/{sender}/sendMail`.

@@ -7,11 +7,23 @@ import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
 const GRAPH_SEND_MAIL_URL = 'https://graph.microsoft.com/v1.0/me/sendMail';
+const GRAPH_SCOPE = 'https://graph.microsoft.com/.default';
 const MAIL_SUBJECT_PREFIX = process.env.MAIL_SUBJECT_PREFIX || '[OVR]';
 const MAIL_ENABLED = process.env.MAIL_NOTIFICATIONS_ENABLED !== 'false';
 const MAIL_OUTBOX_MAX_ATTEMPTS = Number(process.env.MAIL_OUTBOX_MAX_ATTEMPTS || 5);
 const MAIL_OUTBOX_BASE_RETRY_MINUTES = Number(process.env.MAIL_OUTBOX_BASE_RETRY_MINUTES || 5);
 const MAIL_OUTBOX_DEFAULT_BATCH = Number(process.env.MAIL_OUTBOX_RETRY_BATCH || 10);
+const MAIL_GRAPH_APP_ONLY = process.env.MAIL_GRAPH_APP_ONLY === 'true';
+const MAIL_GRAPH_APP_FALLBACK = process.env.MAIL_GRAPH_APP_FALLBACK !== 'false';
+const MAIL_GRAPH_SENDER = (
+    process.env.MAIL_GRAPH_SENDER ||
+    process.env.MAIL_FROM_ADDRESS ||
+    process.env.MAIL_SENDER_ADDRESS ||
+    ''
+).trim();
+const MAIL_OUTBOX_PROCESS_INLINE = process.env.MAIL_OUTBOX_PROCESS_INLINE
+    ? process.env.MAIL_OUTBOX_PROCESS_INLINE === 'true'
+    : process.env.NODE_ENV === 'production';
 
 const QI_NOTIFICATION_ROLES: AppRole[] = [
     APP_ROLES.SUPER_ADMIN,
@@ -88,6 +100,7 @@ interface MailEnvelope {
 interface ActorTokenContext {
     accessToken: string;
     tokenError?: string;
+    mailScopeGranted?: boolean;
 }
 
 export interface MailOutboxProcessingResult {
@@ -96,6 +109,19 @@ export interface MailOutboxProcessingResult {
     failed: number;
     pending: number;
 }
+
+class GraphMailError extends Error {
+    readonly status: number;
+
+    constructor(status: number, statusText: string, raw: string) {
+        const details = raw || statusText || 'No response body';
+        super(`Microsoft Graph sendMail failed (${status} ${statusText}): ${details}`);
+        this.name = 'GraphMailError';
+        this.status = status;
+    }
+}
+
+let graphAppTokenCache: { accessToken: string; expiresAt: number } | null = null;
 
 function normalizeEmail(email: string | null | undefined): string | null {
     if (!email) return null;
@@ -142,6 +168,102 @@ function computeNextRetryAt(attempts: number): Date {
     const multiplier = Math.max(1, 2 ** Math.max(0, attempts - 1));
     const delayMinutes = Math.min(24 * 60, MAIL_OUTBOX_BASE_RETRY_MINUTES * multiplier);
     return new Date(Date.now() + delayMinutes * 60_000);
+}
+
+function isRetryableMailError(error: unknown): boolean {
+    if (error instanceof GraphMailError && [400, 401, 403, 404].includes(error.status)) {
+        return false;
+    }
+
+    if (!(error instanceof Error)) {
+        return true;
+    }
+
+    const message = error.message || '';
+
+    if (
+        message.includes('No delegated access token available for workflow mail') ||
+        message.includes('Delegated token unavailable') ||
+        message.includes('MAIL_GRAPH_SENDER is required') ||
+        message.includes('Missing Azure credentials for Graph app fallback') ||
+        message.includes('Microsoft Graph app token fetch failed') ||
+        message.includes('Microsoft Graph sendMail failed (401') ||
+        message.includes('Microsoft Graph sendMail failed (403')
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+function graphUsersSendMailUrl(sender: string): string {
+    return `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`;
+}
+
+function shouldFallbackToAppSender(error: unknown): boolean {
+    if (!MAIL_GRAPH_APP_FALLBACK || !MAIL_GRAPH_SENDER) {
+        return false;
+    }
+
+    if (!(error instanceof GraphMailError)) {
+        return false;
+    }
+
+    return error.status === 401 || error.status === 403;
+}
+
+async function getGraphAppAccessToken(): Promise<string> {
+    const now = Date.now();
+    if (graphAppTokenCache && now < graphAppTokenCache.expiresAt - 60_000) {
+        return graphAppTokenCache.accessToken;
+    }
+
+    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
+    const clientId = process.env.AZURE_AD_CLIENT_ID;
+    const clientSecret = process.env.AZURE_AD_CLIENT_SECRET;
+
+    if (!tenantId || !clientId || !clientSecret) {
+        throw new Error('Missing Azure credentials for Graph app fallback');
+    }
+
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            grant_type: 'client_credentials',
+            scope: GRAPH_SCOPE,
+        }),
+    });
+
+    const raw = await response.text();
+    if (!response.ok) {
+        throw new Error(`Microsoft Graph app token fetch failed (${response.status} ${response.statusText}): ${raw || 'No response body'}`);
+    }
+
+    let parsed: any;
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        throw new Error('Microsoft Graph app token fetch returned non-JSON payload');
+    }
+
+    const accessToken = typeof parsed?.access_token === 'string' ? parsed.access_token : null;
+    if (!accessToken) {
+        throw new Error('Microsoft Graph app token response missing access_token');
+    }
+
+    const expiresInSeconds = Number(parsed?.expires_in || 3600);
+    graphAppTokenCache = {
+        accessToken,
+        expiresAt: Date.now() + Math.max(60, expiresInSeconds) * 1000,
+    };
+
+    return accessToken;
 }
 
 function appUrl(path: string): string {
@@ -486,8 +608,12 @@ async function buildEnvelope<T extends WorkflowMailEvent>(
     }
 }
 
-async function sendMailWithGraph(accessToken: string, envelope: MailEnvelope): Promise<void> {
-    const response = await fetch(GRAPH_SEND_MAIL_URL, {
+async function sendMailWithGraphEndpoint(
+    sendUrl: string,
+    accessToken: string,
+    envelope: MailEnvelope
+): Promise<void> {
+    const response = await fetch(sendUrl, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -510,7 +636,30 @@ async function sendMailWithGraph(accessToken: string, envelope: MailEnvelope): P
 
     if (!response.ok) {
         const raw = await response.text();
-        throw new Error(`Microsoft Graph sendMail failed (${response.status}): ${raw}`);
+        throw new GraphMailError(response.status, response.statusText, raw);
+    }
+}
+
+async function sendMailWithGraph(accessToken: string, envelope: MailEnvelope): Promise<void> {
+    if (MAIL_GRAPH_APP_ONLY) {
+        if (!MAIL_GRAPH_SENDER) {
+            throw new Error('MAIL_GRAPH_SENDER is required when MAIL_GRAPH_APP_ONLY=true');
+        }
+
+        const appToken = await getGraphAppAccessToken();
+        await sendMailWithGraphEndpoint(graphUsersSendMailUrl(MAIL_GRAPH_SENDER), appToken, envelope);
+        return;
+    }
+
+    try {
+        await sendMailWithGraphEndpoint(GRAPH_SEND_MAIL_URL, accessToken, envelope);
+    } catch (error) {
+        if (!shouldFallbackToAppSender(error)) {
+            throw error;
+        }
+
+        const appToken = await getGraphAppAccessToken();
+        await sendMailWithGraphEndpoint(graphUsersSendMailUrl(MAIL_GRAPH_SENDER), appToken, envelope);
     }
 }
 
@@ -528,6 +677,7 @@ async function resolveActorToken(request: NextRequest): Promise<ActorTokenContex
     return {
         accessToken,
         tokenError: typeof token?.tokenError === 'string' ? token.tokenError : undefined,
+        mailScopeGranted: token?.mailScopeGranted === true,
     };
 }
 
@@ -634,7 +784,8 @@ async function processOutboxBatchWithToken(
 
             result.sent += 1;
         } catch (error) {
-            const reachedMaxAttempts = attempts >= MAIL_OUTBOX_MAX_ATTEMPTS;
+            const retryable = isRetryableMailError(error);
+            const reachedMaxAttempts = !retryable || attempts >= MAIL_OUTBOX_MAX_ATTEMPTS;
 
             await db
                 .update(ovrMailOutbox)
@@ -643,7 +794,7 @@ async function processOutboxBatchWithToken(
                     attempts,
                     lastAttemptAt: attemptTime,
                     lastError: error instanceof Error ? error.message : String(error),
-                    nextRetryAt: reachedMaxAttempts ? row.nextRetryAt : computeNextRetryAt(attempts),
+                    nextRetryAt: reachedMaxAttempts ? attemptTime : computeNextRetryAt(attempts),
                     updatedAt: attemptTime,
                 })
                 .where(eq(ovrMailOutbox.id, row.id));
@@ -670,13 +821,29 @@ export async function sendWorkflowMail<T extends WorkflowMailEvent>(
     }
 
     const token = await resolveActorToken(request);
+    const hasAppFallback = MAIL_GRAPH_APP_FALLBACK && Boolean(MAIL_GRAPH_SENDER);
+    const delegatedHealthy = !token.tokenError && token.mailScopeGranted !== false;
 
-    if (token.tokenError) {
+    if (!delegatedHealthy && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
+        if (token.tokenError) {
+            throw new Error(`Delegated token unavailable: ${token.tokenError}`);
+        }
+
+        throw new Error('Delegated token unavailable: Mail.Send scope not granted');
+    }
+
+    if (token.tokenError && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
         throw new Error(`Delegated token unavailable: ${token.tokenError}`);
     }
 
+    if (token.mailScopeGranted === false && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
+        throw new Error('Delegated token unavailable: Mail.Send scope not granted');
+    }
+
     // Opportunistically process pending retries for this actor before new sends
-    await processOutboxBatchWithToken(actor, token.accessToken, MAIL_OUTBOX_DEFAULT_BATCH);
+    if (MAIL_OUTBOX_PROCESS_INLINE && delegatedHealthy) {
+        await processOutboxBatchWithToken(actor, token.accessToken, MAIL_OUTBOX_DEFAULT_BATCH);
+    }
 
     const envelope = await buildEnvelope(event, payload, actor);
     if (!envelope || !envelope.to.length) {
@@ -695,15 +862,19 @@ export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
     try {
         await sendWorkflowMail(request, actor, event, payload);
     } catch (error) {
-        try {
-            await enqueueMailOutbox(actor, event, payload, error);
-        } catch (queueError) {
-            console.error('Workflow mail enqueue failed:', {
-                event,
-                actorEmail: actor.email,
-                payload,
-                queueError,
-            });
+        const retryable = isRetryableMailError(error);
+
+        if (retryable) {
+            try {
+                await enqueueMailOutbox(actor, event, payload, error);
+            } catch (queueError) {
+                console.error('Workflow mail enqueue failed:', {
+                    event,
+                    actorEmail: actor.email,
+                    payload,
+                    queueError,
+                });
+            }
         }
 
         console.error('Workflow mail dispatch failed:', {
@@ -711,6 +882,7 @@ export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
             actorEmail: actor.email,
             payload,
             error,
+            retryable,
         });
     }
 }
