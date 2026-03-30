@@ -25,7 +25,6 @@ export interface SharedAccessInvitation {
     tokenExpiresAt: Date | null;
     invitedBy: number;
     invitedAt: Date;
-    acceptedAt: Date | null;
     revokedBy: number | null;
     revokedAt: Date | null;
     lastAccessedAt: Date | null;

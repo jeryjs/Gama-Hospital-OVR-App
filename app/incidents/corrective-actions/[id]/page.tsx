@@ -15,6 +15,7 @@ import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
+import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
 import { ArrowBack, CheckCircle, DeleteOutline, Edit, Save, UploadFile } from '@mui/icons-material';
 import {
     Alert,
@@ -50,6 +51,29 @@ interface EvidenceFileMeta {
     size: number;
     type: string;
     uploadedAt: string;
+}
+
+function parseRichTextValue(value: unknown): EditorValue | undefined {
+    if (!value) return undefined;
+
+    if (Array.isArray(value)) {
+        return value as EditorValue;
+    }
+
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                return parsed as EditorValue;
+            }
+        } catch {
+            return deserializeFromMarkdown(value);
+        }
+
+        return deserializeFromMarkdown(value);
+    }
+
+    return undefined;
 }
 
 /**
@@ -318,9 +342,10 @@ export default function CorrectiveActionDetailPage() {
                                     sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}
                                 />
                                 <CardContent>
-                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                                        {action.description}
-                                    </Typography>
+                                    <RichTextPreview
+                                        value={parseRichTextValue(action.description)}
+                                        emptyText="No description provided"
+                                    />
                                     <Divider sx={{ my: 2 }} />
                                     <Typography variant="body2" color="text.secondary">
                                         <strong>Due Date:</strong> {format(new Date(action.dueDate), 'PPP')}

@@ -19,13 +19,11 @@ export interface CorrectiveAction {
     description: string;
     dueDate: Date;
     status: 'open' | 'closed';
-    assignedTo: string | null; // CSV format
-    accessToken: string | null;
-    tokenExpiresAt: Date | null;
+    assignedTo: number[];
     checklist: string | null; // JSON string
     actionTaken: string | null;
     evidenceFiles: string | null; // JSON string
-    createdBy: number | null;
+    createdBy: number;
     createdAt: Date;
     updatedAt: Date;
     completedAt: Date | null;

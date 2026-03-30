@@ -13,9 +13,7 @@ import type { SharedAccessInvitation } from './useSharedAccess';
 export interface Investigation {
     id: number;
     ovrReportId: string;
-    investigators: string | null; // CSV format
-    accessToken: string | null;
-    tokenExpiresAt: Date | null;
+    investigators: number[];
     findings: string | null;
     problemsIdentified: string | null;
     causeClassification: string | null;
@@ -23,7 +21,7 @@ export interface Investigation {
     correctiveActionPlan: string | null;
     rcaAnalysis: string | null;
     fishboneAnalysis: string | null;
-    createdBy: number | null;
+    createdBy: number;
     createdAt: Date;
     updatedAt: Date;
     submittedAt: Date | null;

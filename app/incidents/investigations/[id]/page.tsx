@@ -33,12 +33,35 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { RichTextEditor, type EditorValue, getCharacterCount } from '@/components/editor';
+import { RichTextEditor, type EditorValue, getCharacterCount, deserializeFromMarkdown } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+function parseEditorValue(value: unknown): EditorValue | undefined {
+    if (!value) return undefined;
+
+    if (Array.isArray(value)) {
+        return value as EditorValue;
+    }
+
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                return parsed as EditorValue;
+            }
+        } catch {
+            return deserializeFromMarkdown(value);
+        }
+
+        return deserializeFromMarkdown(value);
+    }
+
+    return undefined;
+}
 
 /**
  * Investigation Detail Page
@@ -80,11 +103,11 @@ export default function InvestigationDetailPage() {
     // Initialize form when data loads
     useEffect(() => {
         if (investigation) {
-            // Rich text fields store JSON, parse if string
-            setFindings(investigation.findings ? (typeof investigation.findings === 'string' ? JSON.parse(investigation.findings) : investigation.findings) : undefined);
-            setProblemsIdentified(investigation.problemsIdentified ? (typeof investigation.problemsIdentified === 'string' ? JSON.parse(investigation.problemsIdentified) : investigation.problemsIdentified) : undefined);
+            // Rich text fields may be JSON or Markdown; parse safely
+            setFindings(parseEditorValue(investigation.findings));
+            setProblemsIdentified(parseEditorValue(investigation.problemsIdentified));
             setCauseClassification(investigation.causeClassification || '');
-            setCauseDetails(investigation.causeDetails ? (typeof investigation.causeDetails === 'string' ? JSON.parse(investigation.causeDetails) : investigation.causeDetails) : undefined);
+            setCauseDetails(parseEditorValue(investigation.causeDetails));
         }
     }, [investigation]);
 
