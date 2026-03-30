@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * @deprecated Supervisor role support is intentionally frozen.
+ * This dashboard is retained for historical/reference purposes only.
+ * No further Supervisor workflow/features are planned.
+ */
+
 import { AppLayout } from '@/components/AppLayout';
 import { EmptyState, QuickActionsPanel, RecentIncidentsList, StatCard, StatusChip } from '@/components/shared';
 import type { DashboardStats } from '@/lib/hooks';
