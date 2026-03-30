@@ -77,7 +77,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // Build nav items with real stats data
   const navItems = React.useMemo(() => {
     const userRoles = session?.user.roles || [];
-    const qiReviewCount = stats?.byStatus?.qi_review || 0;
+    const qiReviewCount = stats?.byStatus?.submitted || 0;
     const myDraftsCount = stats?.myReports?.drafts || 0;
 
     // Check if user has elevated access (can view all or team incidents)

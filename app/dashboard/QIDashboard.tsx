@@ -41,7 +41,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
   ];
 
   const actionItems = [
-    { title: 'Assign Investigation', count: stats.byStatus.qi_review, description: 'Incidents need investigation assignment', color: '#10B981', action: () => router.push('/incidents/qi/review') },
+    { title: 'Review Submissions', count: stats.byStatus.submitted, description: 'Submitted incidents awaiting QI review', color: '#10B981', action: () => router.push('/incidents/qi/review') },
     { title: 'Review Actions', count: stats.byStatus.qi_final_actions, description: 'Corrective actions need review', color: '#EC4899', action: () => router.push('/incidents/corrective-actions') },
     { title: 'Under Investigation', count: stats.byStatus.investigating, description: 'Active investigations in progress', color: '#3B82F6', action: () => router.push('/incidents/investigations') },
   ];
@@ -56,12 +56,12 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
 
   const quickActions = [
     { label: 'Create New Report', icon: <Add />, href: '/incidents/new' },
-    { label: `Assign HODs (${stats.byStatus.qi_review})`, icon: <AssignmentInd />, href: '/incidents?status=qi_review', count: stats.byStatus.qi_review },
+    { label: `QI Review Queue (${stats.byStatus.submitted})`, icon: <AssignmentInd />, href: '/incidents/qi/review', count: stats.byStatus.submitted },
     { label: `Review & Close (${stats.byStatus.qi_final_actions})`, icon: <Feedback />, href: '/incidents?status=qi_final_actions', count: stats.byStatus.qi_final_actions },
   ];
 
   const qiIncidents = stats.recentIncidents
-    .filter((inc) => ['qi_review', 'qi_final_actions'].includes(inc.status))
+    .filter((inc) => ['submitted', 'qi_review', 'qi_final_actions'].includes(inc.status))
     .slice(0, 6)
     .map((inc) => ({
       id: String(inc.id),
@@ -271,7 +271,7 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                           Pending Items
                         </Typography>
                         <Typography variant="h6" fontWeight={700} color="warning.main">
-                          {stats.byStatus.qi_review + stats.byStatus.qi_final_actions}
+                          {stats.byStatus.submitted + stats.byStatus.qi_review + stats.byStatus.qi_final_actions}
                         </Typography>
                       </Stack>
                     </Box>

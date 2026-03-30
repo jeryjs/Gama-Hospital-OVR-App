@@ -287,7 +287,7 @@ export default function QIReviewPage() {
                   onClick={() => setReviewDecision('reject')}
                   startIcon={<Close />}
                 >
-                  Reject - Return to Reporter
+                  Reject - Keep in QI Queue
                 </Button>
               </Stack>
 

@@ -18,7 +18,7 @@ import {
 import { closeIncidentSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -50,7 +50,13 @@ export async function POST(
                 )
             );
 
-        const allActionsClosed = openActions.length === 0;
+        const [{ totalActions }] = await db
+            .select({ totalActions: sql<number>`COUNT(*)::int` })
+            .from(ovrCorrectiveActions)
+            .where(eq(ovrCorrectiveActions.ovrReportId, id));
+
+        const hasActions = totalActions > 0;
+        const allActionsClosed = hasActions && openActions.length === 0;
 
         // Check permissions - can close if all actions are done
         if (
@@ -59,6 +65,11 @@ export async function POST(
                 allActionsClosed
             )
         ) {
+            if (!hasActions) {
+                throw new AuthorizationError(
+                    'Cannot close incident: at least one corrective action is required'
+                );
+            }
             if (!allActionsClosed) {
                 throw new AuthorizationError(
                     `Cannot close incident: ${openActions.length} corrective action(s) still open`

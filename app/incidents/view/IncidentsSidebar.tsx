@@ -202,7 +202,7 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                 ) : (
                     <List dense>
                         {filteredIncidents.map((incident) => {
-                            const statusColor = getStatusColor(incident.status);
+                            const statusColor = getStatusColor(incident);
                             return (
                                 <ListItemButton
                                     key={incident.id}
@@ -229,7 +229,7 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                                                 {incident.id}
                                             </Typography>
                                             <Chip
-                                                label={getStatusLabel(incident.status)}
+                                                label={getStatusLabel(incident)}
                                                 size="small"
                                                 sx={{
                                                     bgcolor: alpha(statusColor === 'default' ? '#9E9E9E' : statusColor === 'info' ? '#2196F3' : statusColor === 'warning' ? '#FF9800' : statusColor === 'primary' ? '#6366F1' : statusColor === 'secondary' ? '#9C27B0' : statusColor === 'success' ? '#4CAF50' : '#9E9E9E', 0.15),

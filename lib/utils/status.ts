@@ -38,7 +38,7 @@ type StatusInput = OVRStatus | string | { status: string; qiRejectionReason?: st
 
 const REJECTED_STATUS_CONFIG: StatusConfig = {
     label: 'Rejected',
-    description: 'Returned by QI for reporter follow-up',
+    description: 'Rejected by QI and retained in QI workflow',
     color: 'error',
     bgColor: 'error.lighter',
     icon: '⛔',
@@ -148,10 +148,13 @@ export function isActiveStatus(status: OVRStatus | string): boolean {
 
 /**
  * Check if status should be surfaced as rejected
- * (legacy compatibility: draft + rejection reason)
+ * (supports current flow: qi_review + rejection reason; legacy draft compatibility)
  */
 export function isRejectedStatus(incident: { status: string; qiRejectionReason?: string | null }): boolean {
-    return incident.status === 'draft' && !!incident.qiRejectionReason;
+    return (
+        (incident.status === 'qi_review' || incident.status === 'draft') &&
+        !!incident.qiRejectionReason
+    );
 }
 
 /**
