@@ -144,12 +144,18 @@ export async function POST(request: NextRequest) {
         // Validate body
         const body = await validateBody(request, createCorrectiveActionSchema);
 
-        // Verify incident exists
-        await getIncidentSecure(body.ovrReportId, {
+        // Verify incident exists and is in corrective action phase
+        const incident = await getIncidentSecure(body.ovrReportId, {
             userId: parseInt(session.user.id),
             roles: session.user.roles,
             email: session.user.email,
         });
+
+        if (incident.status !== 'qi_final_actions') {
+            throw new AuthorizationError(
+                `Cannot create corrective action for incident in status: ${incident.status}`
+            );
+        }
 
         // Create action
         const [action] = await db

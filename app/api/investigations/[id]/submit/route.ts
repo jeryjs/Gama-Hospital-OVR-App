@@ -9,10 +9,12 @@
 import { db } from '@/db';
 import { ovrInvestigations, ovrReports } from '@/db/schema';
 import {
+    AuthorizationError,
     handleApiError,
     NotFoundError,
     requireAuth,
     requireAuthOptional,
+    ValidationError,
     validateBody,
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
@@ -51,6 +53,36 @@ export async function POST(
             throw new NotFoundError('Investigation');
         }
 
+        const [existingInvestigation] = await db
+            .select()
+            .from(ovrInvestigations)
+            .where(eq(ovrInvestigations.id, investigationId))
+            .limit(1);
+
+        if (!existingInvestigation) {
+            throw new NotFoundError('Investigation');
+        }
+
+        if (existingInvestigation.submittedAt) {
+            throw new ValidationError('Investigation is already submitted');
+        }
+
+        const [incident] = await db
+            .select({ status: ovrReports.status })
+            .from(ovrReports)
+            .where(eq(ovrReports.id, existingInvestigation.ovrReportId))
+            .limit(1);
+
+        if (!incident) {
+            throw new NotFoundError('Incident');
+        }
+
+        if (incident.status !== 'investigating' && incident.status !== 'qi_review') {
+            throw new AuthorizationError(
+                `Cannot submit investigation while incident is in status: ${incident.status}`
+            );
+        }
+
         // Validate submission data
         const body = await validateBody(request, submitInvestigationSchema);
 
@@ -75,11 +107,11 @@ export async function POST(
                 status: 'qi_final_actions',
                 updatedAt: new Date(),
             })
-            .where(eq(ovrReports.id, updated.ovrReportId));
+            .where(eq(ovrReports.id, existingInvestigation.ovrReportId));
 
         if (session) {
             await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
-                incidentId: updated.ovrReportId,
+                incidentId: existingInvestigation.ovrReportId,
                 investigationId,
             });
         }

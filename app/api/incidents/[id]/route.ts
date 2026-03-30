@@ -95,6 +95,14 @@ export async function PATCH(
     const body = await validateBody(request, patchIncidentSchema);
     const { editComment, ...incidentUpdates } = body;
 
+    const requestedStatus = incidentUpdates.status;
+    if (
+      requestedStatus !== undefined &&
+      !(requestedStatus === 'submitted' && existingIncident.status === 'draft')
+    ) {
+      throw new ValidationError('Status can only transition from draft to submitted via this endpoint');
+    }
+
     const hasUpdatePayload = Object.keys(incidentUpdates).length > 0;
     if (!hasUpdatePayload) {
       throw new ValidationError('At least one incident field must be updated');
@@ -116,7 +124,7 @@ export async function PATCH(
     };
 
     // New workflow: draft -> submitted
-    const isResubmittingDraft = incidentUpdates.status === 'submitted' && existingIncident.status === 'draft';
+    const isResubmittingDraft = requestedStatus === 'submitted' && existingIncident.status === 'draft';
 
     if (isResubmittingDraft) {
       updateData.submittedAt = new Date();

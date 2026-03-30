@@ -8,7 +8,7 @@
  */
 
 import { db } from '@/db';
-import { ovrInvestigations, ovrSharedAccess } from '@/db/schema';
+import { ovrInvestigations, ovrReports, ovrSharedAccess } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
     AuthorizationError,
@@ -16,14 +16,13 @@ import {
     NotFoundError,
     requireAuth,
     requireAuthOptional,
+    ValidationError,
     validateBody,
 } from '@/lib/api/middleware';
 import {
-    createInvestigationSchema,
     updateInvestigationSchema,
-    submitInvestigationSchema,
 } from '@/lib/api/schemas';
-import { getIncidentSecure, canAccessInvestigation } from '@/lib/utils';
+import { canAccessInvestigation } from '@/lib/utils';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -131,6 +130,36 @@ export async function PATCH(
 
         // Validate body
         const body = await validateBody(request, updateInvestigationSchema);
+
+        const [existingInvestigation] = await db
+            .select()
+            .from(ovrInvestigations)
+            .where(eq(ovrInvestigations.id, investigationId))
+            .limit(1);
+
+        if (!existingInvestigation) {
+            throw new NotFoundError('Investigation');
+        }
+
+        if (existingInvestigation.submittedAt) {
+            throw new ValidationError('Submitted investigations are read-only');
+        }
+
+        const [incident] = await db
+            .select({ status: ovrReports.status })
+            .from(ovrReports)
+            .where(eq(ovrReports.id, existingInvestigation.ovrReportId))
+            .limit(1);
+
+        if (!incident) {
+            throw new NotFoundError('Incident');
+        }
+
+        if (incident.status !== 'qi_review' && incident.status !== 'investigating') {
+            throw new AuthorizationError(
+                `Cannot update investigation while incident is in status: ${incident.status}`
+            );
+        }
 
         // Update investigation
         const [updated] = await db
