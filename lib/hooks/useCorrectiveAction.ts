@@ -67,6 +67,17 @@ export function useCorrectiveAction(
 
     // Fetcher function
     const fetcher = async (url: string) => {
+        if (token) {
+            const { error: acceptError } = await apiCall('/api/shared-access', {
+                method: 'PATCH',
+                body: JSON.stringify({ token }),
+            });
+
+            if (acceptError) {
+                throw acceptError;
+            }
+        }
+
         const { data, error } = await apiCall<{
             action: CorrectiveAction;
             sharedAccess: SharedAccessInfo[];

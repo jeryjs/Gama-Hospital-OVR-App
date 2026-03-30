@@ -650,9 +650,14 @@ export const revokeSharedAccessSchema = z.object({
   accessId: z.number().int().positive(),
 });
 
+export const acceptSharedAccessSchema = z.object({
+  token: z.string().min(10, 'Access token is required'),
+});
+
 export type CreateSharedAccessInput = z.infer<typeof createSharedAccessSchema>;
 export type BulkCreateSharedAccessInput = z.infer<typeof bulkCreateSharedAccessSchema>;
 export type RevokeSharedAccessInput = z.infer<typeof revokeSharedAccessSchema>;
+export type AcceptSharedAccessInput = z.infer<typeof acceptSharedAccessSchema>;
 
 /**
  * Close Incident - Final case closure

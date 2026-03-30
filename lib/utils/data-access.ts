@@ -317,7 +317,7 @@ export async function canAccessInvestigation(
                     eq(ovrSharedAccess.resourceType, 'investigation'),
                     eq(ovrSharedAccess.resourceId, investigationId),
                     eq(ovrSharedAccess.accessToken, accessToken),
-                    inArray(ovrSharedAccess.status, ['pending', 'accepted']),
+                    eq(ovrSharedAccess.status, 'accepted'),
                     or(
                         sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
                         sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
@@ -327,11 +327,10 @@ export async function canAccessInvestigation(
             .limit(1);
 
         if (access) {
-            // Mark invitation accepted on first valid token use and update access timestamp
+            // Update access timestamp
             await db
                 .update(ovrSharedAccess)
                 .set({
-                    status: access.status === 'pending' ? 'accepted' : access.status,
                     lastAccessedAt: new Date(),
                 })
                 .where(eq(ovrSharedAccess.id, access.id));
@@ -397,7 +396,7 @@ export async function canAccessCorrectiveAction(
                     eq(ovrSharedAccess.resourceType, 'corrective_action'),
                     eq(ovrSharedAccess.resourceId, actionId),
                     eq(ovrSharedAccess.accessToken, accessToken),
-                    inArray(ovrSharedAccess.status, ['pending', 'accepted']),
+                    eq(ovrSharedAccess.status, 'accepted'),
                     or(
                         sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
                         sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
@@ -407,11 +406,10 @@ export async function canAccessCorrectiveAction(
             .limit(1);
 
         if (access) {
-            // Mark invitation accepted on first valid token use and update access timestamp
+            // Update access timestamp
             await db
                 .update(ovrSharedAccess)
                 .set({
-                    status: access.status === 'pending' ? 'accepted' : access.status,
                     lastAccessedAt: new Date(),
                 })
                 .where(eq(ovrSharedAccess.id, access.id));

@@ -14,9 +14,11 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
+    requireAuthOptional,
     validateBody,
 } from '@/lib/api/middleware';
 import {
+    acceptSharedAccessSchema,
     createSharedAccessSchema,
     bulkCreateSharedAccessSchema,
 } from '@/lib/api/schemas';
@@ -172,6 +174,58 @@ export async function PUT(request: NextRequest) {
             },
             { status: 201 }
         );
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+/**
+ * PATCH /api/shared-access - Accept invitation by token
+ * Public endpoint (no mandatory session); links user when authenticated email matches invite
+ */
+export async function PATCH(request: NextRequest) {
+    try {
+        const body = await validateBody(request, acceptSharedAccessSchema);
+        const session = await requireAuthOptional(request);
+
+        const [invitation] = await db
+            .select()
+            .from(ovrSharedAccess)
+            .where(eq(ovrSharedAccess.accessToken, body.token))
+            .limit(1);
+
+        if (!invitation || invitation.status === 'revoked') {
+            throw new AuthorizationError('Invalid or revoked shared access token');
+        }
+
+        const now = new Date();
+        if (invitation.tokenExpiresAt && new Date(invitation.tokenExpiresAt) <= now) {
+            throw new AuthorizationError('Shared access token has expired');
+        }
+
+        const sessionEmail = session?.user?.email?.toLowerCase();
+        const inviteEmail = invitation.email.toLowerCase();
+        const canLinkUser = Boolean(
+            session &&
+            sessionEmail &&
+            sessionEmail === inviteEmail
+        );
+
+        const [accepted] = await db
+            .update(ovrSharedAccess)
+            .set({
+                status: invitation.status === 'pending' ? 'accepted' : invitation.status,
+                userId: canLinkUser ? parseInt(session!.user.id) : invitation.userId,
+                lastAccessedAt: now,
+            })
+            .where(eq(ovrSharedAccess.id, invitation.id))
+            .returning();
+
+        return NextResponse.json({
+            success: true,
+            message: invitation.status === 'pending' ? 'Invitation accepted' : 'Invitation already active',
+            access: accepted,
+        });
     } catch (error) {
         return handleApiError(error);
     }
