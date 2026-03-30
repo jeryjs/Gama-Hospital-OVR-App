@@ -145,6 +145,16 @@ interface UserAdminAuditEntry {
   };
 }
 
+interface UserActivitySummary {
+  totalIncidentsReported: number;
+  incidentsInProgress: number;
+}
+
+const EMPTY_USER_ACTIVITY_SUMMARY: UserActivitySummary = {
+  totalIncidentsReported: 0,
+  incidentsInProgress: 0,
+};
+
 function StatCard({ icon, label, value, color = '#3B82F6' }: StatCardProps) {
   return (
     <Paper
@@ -485,6 +495,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
   const [confirmHighRiskOpen, setConfirmHighRiskOpen] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<UserAdminAuditEntry[]>([]);
+  const [activitySummary, setActivitySummary] = useState<UserActivitySummary>(EMPTY_USER_ACTIVITY_SUMMARY);
   const [employeeIdValid, setEmployeeIdValid] = useState(true);
   const [employeeIdChecking, setEmployeeIdChecking] = useState(false);
   const [showDeactivateWarning, setShowDeactivateWarning] = useState(false);
@@ -509,6 +520,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
       setShowDeactivateWarning(false);
       setAuditLogs([]);
       setAuditLoading(false);
+      setActivitySummary(EMPTY_USER_ACTIVITY_SUMMARY);
     }
   }, [user]);
 
@@ -531,10 +543,12 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
         const payload = await res.json();
         if (!cancelled) {
           setAuditLogs(payload.data || []);
+          setActivitySummary(payload.summary || EMPTY_USER_ACTIVITY_SUMMARY);
         }
       } catch {
         if (!cancelled) {
           setAuditLogs([]);
+          setActivitySummary(EMPTY_USER_ACTIVITY_SUMMARY);
         }
       } finally {
         if (!cancelled) {
@@ -552,7 +566,10 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
 
   // Debounced employee ID validation
   useEffect(() => {
-    if (!formData.employeeId || formData.employeeId === user?.employeeId) {
+    const candidateEmployeeId = formData.employeeId?.trim() || '';
+    const currentEmployeeId = user?.employeeId?.trim() || '';
+
+    if (!candidateEmployeeId || candidateEmployeeId === currentEmployeeId) {
       setEmployeeIdValid(true);
       setEmployeeIdChecking(false);
       return;
@@ -561,10 +578,18 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
     const timer = setTimeout(async () => {
       setEmployeeIdChecking(true);
       try {
-        // Simulated uniqueness check - in production, call an API endpoint
-        // For now, assume valid if not empty
-        const isValid = Boolean(formData.employeeId && formData.employeeId.trim().length > 0);
-        setEmployeeIdValid(isValid);
+        const query = new URLSearchParams({ employeeId: candidateEmployeeId });
+        if (user?.id) {
+          query.set('excludeUserId', String(user.id));
+        }
+
+        const res = await fetch(`/api/users/employee-id?${query.toString()}`);
+        if (!res.ok) {
+          throw new Error('Failed to validate employee ID');
+        }
+
+        const payload = await res.json();
+        setEmployeeIdValid(Boolean(payload.available));
       } catch {
         setEmployeeIdValid(false);
       } finally {
@@ -1059,17 +1084,12 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
           {/* Activity Tab */}
           <TabPanel value={activeTab} index={2}>
             <Stack spacing={3}>
-              <Alert severity="info" icon={<Info />} sx={{ mb: 1 }}>
-                Detailed activity statistics will be available in a future update.
-                Currently showing account information only.
-              </Alert>
-
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <StatCard
                     icon={<Assignment />}
                     label="Total Incidents Reported"
-                    value="—"
+                    value={activitySummary.totalIncidentsReported}
                     color="#3B82F6"
                   />
                 </Grid>
@@ -1077,7 +1097,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                   <StatCard
                     icon={<TrendingUp />}
                     label="Incidents in Progress"
-                    value="—"
+                    value={activitySummary.incidentsInProgress}
                     color="#F59E0B"
                   />
                 </Grid>

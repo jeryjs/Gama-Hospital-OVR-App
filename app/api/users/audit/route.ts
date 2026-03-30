@@ -1,8 +1,8 @@
 import { db } from '@/db';
-import { userAdminAuditLogs, users } from '@/db/schema';
+import { ovrReports, userAdminAuditLogs, users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -73,7 +73,21 @@ export async function GET(request: NextRequest) {
             },
         }));
 
-        return NextResponse.json({ data });
+        const [summary] = await db
+            .select({
+                totalIncidentsReported: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} != 'draft')::int`,
+                incidentsInProgress: sql<number>`COUNT(*) FILTER (WHERE ${ovrReports.status} IN ('submitted', 'qi_review', 'investigating', 'qi_final_actions'))::int`,
+            })
+            .from(ovrReports)
+            .where(eq(ovrReports.reporterId, userId));
+
+        return NextResponse.json({
+            data,
+            summary: {
+                totalIncidentsReported: summary?.totalIncidentsReported || 0,
+                incidentsInProgress: summary?.incidentsInProgress || 0,
+            },
+        });
     } catch (error) {
         return handleApiError(error);
     }
