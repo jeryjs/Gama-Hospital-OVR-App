@@ -18,7 +18,7 @@ import {
     validateBody,
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
-import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib/utils';
+import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib/utils/data-access';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';

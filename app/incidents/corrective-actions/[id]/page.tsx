@@ -159,6 +159,7 @@ export default function CorrectiveActionDetailPage() {
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isClosed = action?.status === 'closed';
     const canEdit = !isClosed && (isQIUser || accessToken);
+    const canOpenIncident = Boolean(session?.user);
     const isOverdue = action && action.status === 'open' && isPast(new Date(action.dueDate));
     const checklistComplete = checklist.length > 0 && checklist.every((item) => item.completed);
     const hasCompletionInput = Boolean(actionTaken.trim() || evidenceFiles.length > 0);
@@ -312,14 +313,20 @@ export default function CorrectiveActionDetailPage() {
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Incident:{' '}
-                                    <Button
-                                        component={Link}
-                                        href={`/incidents/view/${action.ovrReportId}`}
-                                        size="small"
-                                        sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
-                                    >
-                                        {action.ovrReportId}
-                                    </Button>
+                                    {canOpenIncident ? (
+                                        <Button
+                                            component={Link}
+                                            href={`/incidents/view/${action.ovrReportId}`}
+                                            size="small"
+                                            sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                                        >
+                                            {action.ovrReportId}
+                                        </Button>
+                                    ) : (
+                                        <Typography component="span" variant="body2" fontWeight={600}>
+                                            {action.ovrReportId}
+                                        </Typography>
+                                    )}
                                 </Typography>
                                 <Chip
                                     label={isClosed ? 'Closed' : 'Open'}
@@ -545,14 +552,20 @@ export default function CorrectiveActionDetailPage() {
                                                 Incident Reference
                                             </Typography>
                                             <Typography variant="body2">
-                                                <Button
-                                                    component={Link}
-                                                    href={`/incidents/view/${action.ovrReportId}`}
-                                                    size="small"
-                                                    sx={{ p: 0, textTransform: 'none' }}
-                                                >
-                                                    {action.ovrReportId}
-                                                </Button>
+                                                {canOpenIncident ? (
+                                                    <Button
+                                                        component={Link}
+                                                        href={`/incidents/view/${action.ovrReportId}`}
+                                                        size="small"
+                                                        sx={{ p: 0, textTransform: 'none' }}
+                                                    >
+                                                        {action.ovrReportId}
+                                                    </Button>
+                                                ) : (
+                                                    <Typography component="span" variant="body2" fontWeight={600}>
+                                                        {action.ovrReportId}
+                                                    </Typography>
+                                                )}
                                             </Typography>
                                         </Box>
                                         <Box>

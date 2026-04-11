@@ -17,12 +17,10 @@ import {
     validateBody,
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
-import { canAccessCorrectiveAction, getCorrectiveActionSharedAccessGrant } from '@/lib/utils';
+import { canAccessCorrectiveAction, getCorrectiveActionSharedAccessGrant } from '@/lib/utils/data-access';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { APP_ROLES } from '@/lib/constants';
-import { hasAnyRole } from '@/lib/auth-helpers';
 
 /**
  * GET /api/corrective-actions/[id] - Get action details
@@ -107,15 +105,17 @@ export async function PATCH(
             ? await requireAuthOptional(request)
             : await requireAuth(request);
 
+        const userContext = session
+            ? {
+                userId: parseInt(session.user.id),
+                roles: session.user.roles,
+                email: session.user.email,
+            }
+            : undefined;
+
         const hasAccess = await canAccessCorrectiveAction(
             actionId,
-            session
-                ? {
-                    userId: parseInt(session.user.id),
-                    roles: session.user.roles,
-                    email: session.user.email,
-                }
-                : undefined,
+            userContext,
             accessToken || undefined
         );
 
@@ -125,12 +125,7 @@ export async function PATCH(
 
         const isPrivileged = Boolean(
             userContext &&
-            hasAnyRole(userContext.roles, [
-                APP_ROLES.SUPER_ADMIN,
-                APP_ROLES.DEVELOPER,
-                APP_ROLES.QUALITY_MANAGER,
-                APP_ROLES.QUALITY_ANALYST,
-            ])
+            ACCESS_CONTROL.api.correctiveActions.canCreate(userContext.roles)
         );
 
         if (!isPrivileged) {

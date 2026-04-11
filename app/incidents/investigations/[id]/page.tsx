@@ -117,6 +117,7 @@ export default function InvestigationDetailPage() {
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isSubmitted = Boolean(investigation?.submittedAt);
     const canEdit = !isSubmitted && (isQIUser || accessToken);
+    const canOpenIncident = Boolean(session?.user);
     const linkedCorrectiveActions = linkedIncident?.correctiveActions || [];
     const findingsCount = findings ? getCharacterCount(findings) : 0;
     const problemsCount = problemsIdentified ? getCharacterCount(problemsIdentified) : 0;
@@ -222,13 +223,19 @@ export default function InvestigationDetailPage() {
                 {/* Header */}
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                        <IconButton
-                            component={Link}
-                            href={investigation ? `/incidents/view/${investigation.ovrReportId}` : '/incidents'}
-                            size="small"
-                        >
-                            <ArrowBack />
-                        </IconButton>
+                        {canOpenIncident ? (
+                            <IconButton
+                                component={Link}
+                                href={investigation ? `/incidents/view/${investigation.ovrReportId}` : '/incidents'}
+                                size="small"
+                            >
+                                <ArrowBack />
+                            </IconButton>
+                        ) : (
+                            <IconButton onClick={() => router.back()} size="small">
+                                <ArrowBack />
+                            </IconButton>
+                        )}
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h5" fontWeight={700}>
                                 Investigation INV-{investigation.id}
@@ -236,14 +243,20 @@ export default function InvestigationDetailPage() {
                             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     Incident:{' '}
-                                    <Button
-                                        component={Link}
-                                        href={`/incidents/view/${investigation.ovrReportId}`}
-                                        size="small"
-                                        sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
-                                    >
-                                        {investigation.ovrReportId}
-                                    </Button>
+                                    {canOpenIncident ? (
+                                        <Button
+                                            component={Link}
+                                            href={`/incidents/view/${investigation.ovrReportId}`}
+                                            size="small"
+                                            sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                                        >
+                                            {investigation.ovrReportId}
+                                        </Button>
+                                    ) : (
+                                        <Typography component="span" variant="body2" fontWeight={600}>
+                                            {investigation.ovrReportId}
+                                        </Typography>
+                                    )}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Created: {format(new Date(investigation.createdAt), 'MMM dd, yyyy')}
@@ -420,14 +433,20 @@ export default function InvestigationDetailPage() {
                                                 Incident Reference
                                             </Typography>
                                             <Typography variant="body2">
-                                                <Button
-                                                    component={Link}
-                                                    href={`/incidents/view/${investigation.ovrReportId}`}
-                                                    size="small"
-                                                    sx={{ p: 0, textTransform: 'none' }}
-                                                >
-                                                    {investigation.ovrReportId}
-                                                </Button>
+                                                {canOpenIncident ? (
+                                                    <Button
+                                                        component={Link}
+                                                        href={`/incidents/view/${investigation.ovrReportId}`}
+                                                        size="small"
+                                                        sx={{ p: 0, textTransform: 'none' }}
+                                                    >
+                                                        {investigation.ovrReportId}
+                                                    </Button>
+                                                ) : (
+                                                    <Typography component="span" variant="body2" fontWeight={600}>
+                                                        {investigation.ovrReportId}
+                                                    </Typography>
+                                                )}
                                             </Typography>
                                         </Box>
                                         <Box>
