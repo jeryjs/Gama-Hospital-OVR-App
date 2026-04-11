@@ -12,6 +12,7 @@ function SidebarWrapper({
     collapsed: boolean;
     onToggle: () => void;
 }) {
+    return // TODO: Disabling the sidebar for now until I optimize it further.
     return (
         <Suspense fallback={
             <Box sx={{
