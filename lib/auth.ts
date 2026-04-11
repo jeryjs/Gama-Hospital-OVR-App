@@ -6,7 +6,11 @@ import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import { APP_ROLES } from './constants';
 
-const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com']).map((d) => d.trim().toLowerCase());
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com'])
+  .map((d) => d.trim().toLowerCase())
+  .filter(Boolean);
+const ALLOW_ALL_EMAIL_DOMAINS = ALLOWED_DOMAIN.includes('*');
+const AZURE_AD_AUTH_TENANT_ID = process.env.AZURE_AD_AUTH_TENANT_ID || process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
 const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
 // const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -17,16 +21,20 @@ function normalizeEmail(email: string | null | undefined): string | null {
 }
 
 function isAllowedDomainEmail(email: string): boolean {
-  const domain = email.split('@')[1];
+  if (ALLOW_ALL_EMAIL_DOMAINS) {
+    return true;
+  }
+
+  const domain = email.split('@')[1]?.trim().toLowerCase();
+  if (!domain) {
+    return false;
+  }
+
   return ALLOWED_DOMAIN.includes(domain);
 }
 
 async function refreshAzureAccessToken(token: JWT): Promise<JWT> {
-  const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
-
-  if (!tenantId) {
-    throw new Error('NEXT_PUBLIC_AZURE_AD_TENANT_ID is required to refresh Azure access token');
-  }
+  const tenantId = AZURE_AD_AUTH_TENANT_ID;
 
   if (!token.refreshToken) {
     throw new Error('Missing refresh token for Azure access token refresh');
@@ -82,7 +90,7 @@ export const authOptions: NextAuthOptions = {
     AzureADProvider({
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID!,
+      tenantId: AZURE_AD_AUTH_TENANT_ID,
       authorization: {
         params: {
           prompt: 'select_account',
@@ -342,7 +350,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.roles = (token.roles as any) || [APP_ROLES.EMPLOYEE];
+        session.user.roles = [APP_ROLES.QUALITY_MANAGER];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;

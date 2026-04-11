@@ -29,9 +29,10 @@ Occurrence Variance Reporting (OVR) system built with Next.js, TypeScript, Drizz
 	  - `DATABASE_URL`
 	  - `NEXTAUTH_URL`
 	  - `NEXTAUTH_SECRET`
-	  - `ALLOWED_EMAIL_DOMAIN`
+	  - `ALLOWED_EMAIL_DOMAIN` (use `*` to allow any email domain)
 	  - `AZURE_AD_CLIENT_ID`
 	  - `AZURE_AD_CLIENT_SECRET`
+	  - `AZURE_AD_AUTH_TENANT_ID` (`common` for all tenants + personal Microsoft accounts)
 	  - `NEXT_PUBLIC_AZURE_AD_TENANT_ID`
 
 3. Apply schema
