@@ -12,12 +12,15 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
+import { RCAFishboneSection } from '@/components/incident-form/rca-fishbone';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { getRiskLevel } from '@/lib/constants';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncident, useInvestigation } from '@/lib/hooks';
 import { ArrowBack, Save, Visibility } from '@mui/icons-material';
 import {
     Alert,
+    alpha,
     Box,
     Button,
     Card,
@@ -352,27 +355,34 @@ export default function InvestigationDetailPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* RCA & Fishbone Placeholder */}
-                            <Card>
-                                <CardHeader
-                                    title="Advanced Analysis"
-                                    subheader="Root Cause Analysis and Fishbone Diagram tools coming soon"
-                                    sx={{ bgcolor: 'secondary.main', color: 'secondary.contrastText' }}
-                                />
-                                <CardContent>
-                                    <Alert severity="info">
-                                        Future versions will include interactive tools for Root Cause Analysis (RCA) and
-                                        Fishbone (Ishikawa) diagrams.
-                                    </Alert>
-                                </CardContent>
-                            </Card>
+                            {/* RCA & Fishbone Analysis - Only for High/Extreme Risk */}
+                            {linkedIncident?.riskScore &&
+                                getRiskLevel(linkedIncident.riskScore).level !== 'green' && (
+                                    <RCAFishboneSection
+                                        investigationId={investigation.id}
+                                        initialRCA={investigation.rcaAnalysis}
+                                        initialFishbone={investigation.fishboneAnalysis}
+                                        onSave={async (rca, fishbone) => {
+                                            await update({
+                                                rcaAnalysis: rca || undefined,
+                                                fishboneAnalysis: fishbone || undefined,
+                                            });
+                                        }}
+                                        disabled={!canEdit}
+                                    />
+                                )}
 
                             {/* Linked Corrective Actions */}
                             <Card>
                                 <CardHeader
                                     title="Linked Corrective Actions"
                                     subheader="Actions created for this incident"
-                                    sx={{ bgcolor: 'warning.main', color: 'warning.contrastText' }}
+                                    sx={{
+                                        bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
+                                        color: 'warning.main',
+                                        borderBottom: 1,
+                                        borderColor: 'warning.main'
+                                    }}
                                 />
                                 <CardContent>
                                     {!session?.user && accessToken ? (
