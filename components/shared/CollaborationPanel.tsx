@@ -16,6 +16,7 @@ import {
     Send,
 } from '@mui/icons-material';
 import {
+    Alert,
     alpha,
     Avatar,
     Box,
@@ -84,7 +85,10 @@ export function CollaborationPanel({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
 
-    const { comments, addComment, updateComment, deleteComment } = useComments(ovrReportId);
+    const canUseCommentsApi = Boolean(session?.user) && canComment;
+    const { comments, addComment, updateComment, deleteComment } = useComments(
+        canUseCommentsApi ? ovrReportId : null
+    );
     const isLoading = false; // Placeholder
 
     const handleAddComment = async () => {
@@ -265,37 +269,45 @@ export function CollaborationPanel({
                 {/* Comment Input */}
                 {canComment && (
                     <Box sx={{ mt: 3 }}>
-                        <TextField
-                            multiline
-                            rows={isCompact ? 2 : 3}
-                            fullWidth
-                            placeholder="Add a comment... (Use @ to mention team members)"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            sx={{ mb: 1 }}
-                        />
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            {canAttach && (
-                                <Button
-                                    size="small"
-                                    startIcon={<AttachFile />}
-                                    disabled
-                                >
-                                    Attach File (Coming Soon)
-                                </Button>
-                            )}
-                            {newComment.trim() && (
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    onClick={handleAddComment}
-                                    disabled={!newComment.trim()}
-                                    startIcon={<Send />}
-                                >
-                                    Comment
-                                </Button>
-                            )}
-                        </Stack>
+                        {!canUseCommentsApi ? (
+                            <Alert severity="info">
+                                Sign in with a full account to view and post discussion comments.
+                            </Alert>
+                        ) : (
+                            <>
+                                <TextField
+                                    multiline
+                                    rows={isCompact ? 2 : 3}
+                                    fullWidth
+                                    placeholder="Add a comment... (Use @ to mention team members)"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    sx={{ mb: 1 }}
+                                />
+                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                    {canAttach && (
+                                        <Button
+                                            size="small"
+                                            startIcon={<AttachFile />}
+                                            disabled
+                                        >
+                                            Attach File (Coming Soon)
+                                        </Button>
+                                    )}
+                                    {newComment.trim() && (
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={handleAddComment}
+                                            disabled={!newComment.trim()}
+                                            startIcon={<Send />}
+                                        >
+                                            Comment
+                                        </Button>
+                                    )}
+                                </Stack>
+                            </>
+                        )}
                     </Box>
                 )}
 

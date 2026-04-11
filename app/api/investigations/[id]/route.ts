@@ -22,7 +22,9 @@ import {
 import {
     updateInvestigationSchema,
 } from '@/lib/api/schemas';
-import { canAccessInvestigation } from '@/lib/utils';
+import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib/utils';
+import { APP_ROLES } from '@/lib/constants';
+import { hasAnyRole } from '@/lib/auth-helpers';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -44,20 +46,44 @@ export async function GET(
             ? await requireAuthOptional(request)
             : await requireAuth(request);
 
+        const userContext = session
+            ? {
+                userId: parseInt(session.user.id),
+                roles: session.user.roles,
+                email: session.user.email,
+            }
+            : undefined;
+
         const hasAccess = await canAccessInvestigation(
             investigationId,
-            session
-                ? {
-                    userId: parseInt(session.user.id),
-                    roles: session.user.roles,
-                    email: session.user.email,
-                }
-                : undefined,
+            userContext,
             accessToken || undefined
         );
 
         if (!hasAccess) {
             throw new NotFoundError('Investigation');
+        }
+
+        const isPrivileged = Boolean(
+            userContext &&
+            hasAnyRole(userContext.roles, [
+                APP_ROLES.SUPER_ADMIN,
+                APP_ROLES.DEVELOPER,
+                APP_ROLES.QUALITY_MANAGER,
+                APP_ROLES.QUALITY_ANALYST,
+            ])
+        );
+
+        if (!isPrivileged) {
+            const grant = await getInvestigationSharedAccessGrant(
+                investigationId,
+                userContext,
+                accessToken || undefined
+            );
+
+            if (!grant || grant.role !== 'investigator') {
+                throw new AuthorizationError('Only investigator shared access can update this investigation');
+            }
         }
 
         // Fetch investigation

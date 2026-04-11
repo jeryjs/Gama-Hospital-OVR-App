@@ -17,10 +17,12 @@ import {
     validateBody,
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
-import { canAccessCorrectiveAction } from '@/lib/utils';
+import { canAccessCorrectiveAction, getCorrectiveActionSharedAccessGrant } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { APP_ROLES } from '@/lib/constants';
+import { hasAnyRole } from '@/lib/auth-helpers';
 
 /**
  * GET /api/corrective-actions/[id] - Get action details
@@ -38,15 +40,17 @@ export async function GET(
             ? await requireAuthOptional(request)
             : await requireAuth(request);
 
+        const userContext = session
+            ? {
+                userId: parseInt(session.user.id),
+                roles: session.user.roles,
+                email: session.user.email,
+            }
+            : undefined;
+
         const hasAccess = await canAccessCorrectiveAction(
             actionId,
-            session
-                ? {
-                    userId: parseInt(session.user.id),
-                    roles: session.user.roles,
-                    email: session.user.email,
-                }
-                : undefined,
+            userContext,
             accessToken || undefined
         );
 
@@ -117,6 +121,28 @@ export async function PATCH(
 
         if (!hasAccess) {
             throw new NotFoundError('Corrective Action');
+        }
+
+        const isPrivileged = Boolean(
+            userContext &&
+            hasAnyRole(userContext.roles, [
+                APP_ROLES.SUPER_ADMIN,
+                APP_ROLES.DEVELOPER,
+                APP_ROLES.QUALITY_MANAGER,
+                APP_ROLES.QUALITY_ANALYST,
+            ])
+        );
+
+        if (!isPrivileged) {
+            const grant = await getCorrectiveActionSharedAccessGrant(
+                actionId,
+                userContext,
+                accessToken || undefined
+            );
+
+            if (!grant || grant.role !== 'action_handler') {
+                throw new AuthorizationError('Only action-handler shared access can update this corrective action');
+            }
         }
 
         const body = await validateBody(request, updateCorrectiveActionSchema);

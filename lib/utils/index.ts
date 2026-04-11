@@ -62,6 +62,8 @@ export {
     getIncidentSecure,
     canAccessInvestigation,
     canAccessCorrectiveAction,
+    getInvestigationSharedAccessGrant,
+    getCorrectiveActionSharedAccessGrant,
     getInvestigationSecure,
     getCorrectiveActionSecure,
     getInvestigationsForIncident,
@@ -71,7 +73,7 @@ export {
     populateInvestigationUsers,
     populateActionUsers,
 } from './data-access';
-export type { UserContext } from './data-access';
+export type { UserContext, SharedAccessGrant } from './data-access';
 
 // Mail notifications
 export {

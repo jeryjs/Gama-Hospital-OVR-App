@@ -35,6 +35,96 @@ export interface UserContext {
     email: string;
 }
 
+type SharedResourceType = 'investigation' | 'corrective_action';
+
+export interface SharedAccessGrant {
+    id: number;
+    role: 'investigator' | 'action_handler' | 'viewer';
+}
+
+async function getSharedAccessGrant(
+    resourceType: SharedResourceType,
+    resourceId: number,
+    userContext?: UserContext,
+    accessToken?: string
+): Promise<SharedAccessGrant | null> {
+    const activeAccessFilter = and(
+        eq(ovrSharedAccess.resourceType, resourceType),
+        eq(ovrSharedAccess.resourceId, resourceId),
+        eq(ovrSharedAccess.status, 'accepted'),
+        or(
+            sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
+            sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
+        )
+    );
+
+    let access: SharedAccessGrant | undefined;
+
+    if (accessToken) {
+        [access] = await db
+            .select({
+                id: ovrSharedAccess.id,
+                role: ovrSharedAccess.role,
+            })
+            .from(ovrSharedAccess)
+            .where(
+                and(
+                    activeAccessFilter,
+                    eq(ovrSharedAccess.accessToken, accessToken)
+                )
+            )
+            .limit(1) as SharedAccessGrant[];
+    }
+
+    if (!access && userContext) {
+        [access] = await db
+            .select({
+                id: ovrSharedAccess.id,
+                role: ovrSharedAccess.role,
+            })
+            .from(ovrSharedAccess)
+            .where(
+                and(
+                    activeAccessFilter,
+                    or(
+                        eq(ovrSharedAccess.userId, userContext.userId),
+                        eq(ovrSharedAccess.email, userContext.email)
+                    )
+                )
+            )
+            .limit(1) as SharedAccessGrant[];
+    }
+
+    if (!access) {
+        return null;
+    }
+
+    await db
+        .update(ovrSharedAccess)
+        .set({
+            lastAccessedAt: new Date(),
+        })
+        .where(eq(ovrSharedAccess.id, access.id));
+
+    return access;
+}
+
+export async function getInvestigationSharedAccessGrant(
+    investigationId: number,
+    userContext?: UserContext,
+    accessToken?: string
+): Promise<SharedAccessGrant | null> {
+    return getSharedAccessGrant('investigation', investigationId, userContext, accessToken);
+}
+
+export async function getCorrectiveActionSharedAccessGrant(
+    actionId: number,
+    userContext?: UserContext,
+    accessToken?: string
+): Promise<SharedAccessGrant | null> {
+    return getSharedAccessGrant('corrective_action', actionId, userContext, accessToken);
+}
+
 /**
  * Fetch users by IDs for populating investigators/assignees
  * Returns a map for efficient lookup

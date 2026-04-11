@@ -118,6 +118,16 @@ export default function InvestigationDetailPage() {
     const isSubmitted = Boolean(investigation?.submittedAt);
     const canEdit = !isSubmitted && (isQIUser || accessToken);
     const linkedCorrectiveActions = linkedIncident?.correctiveActions || [];
+    const findingsCount = findings ? getCharacterCount(findings) : 0;
+    const problemsCount = problemsIdentified ? getCharacterCount(problemsIdentified) : 0;
+    const causeDetailsCount = causeDetails ? getCharacterCount(causeDetails) : 0;
+    const canSubmitInvestigation =
+        canEdit &&
+        findingsCount >= 100 &&
+        problemsCount >= 50 &&
+        causeDetailsCount >= 50 &&
+        causeClassification.trim().length > 0 &&
+        !submitting;
 
     const getChecklistProgress = (checklistRaw: string | null | undefined): number => {
         if (!checklistRaw) return 0;
@@ -150,11 +160,8 @@ export default function InvestigationDetailPage() {
     const handleSubmit = async () => {
         if (!canEdit) return;
 
-        const findingsCount = findings ? getCharacterCount(findings) : 0;
-        const problemsCount = problemsIdentified ? getCharacterCount(problemsIdentified) : 0;
-
-        if (findingsCount < 10 || problemsCount < 10) {
-            alert('Findings and Problems Identified are required');
+        if (!canSubmitInvestigation) {
+            alert('To submit: findings must be at least 100 characters, problems at least 50, cause details at least 50, and cause classification is required.');
             return;
         }
 
@@ -264,7 +271,7 @@ export default function InvestigationDetailPage() {
 
                             {!isQIUser && accessToken && !isSubmitted && (
                                 <Alert severity="info">
-                                    You are viewing this investigation via a shared access link. Changes are auto-saved.
+                                    You are viewing this investigation via a shared access link. Use <strong>Save Changes</strong> to save edits and <strong>Submit Investigation</strong> when complete.
                                 </Alert>
                             )}
 
@@ -293,7 +300,7 @@ export default function InvestigationDetailPage() {
                                                 disabled={!canEdit}
                                             />
                                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                                {findings ? getCharacterCount(findings) : 0} characters
+                                                {findingsCount} / 100 characters minimum to submit
                                             </Typography>
                                         </Box>
 
@@ -309,7 +316,7 @@ export default function InvestigationDetailPage() {
                                                 disabled={!canEdit}
                                             />
                                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
-                                                {problemsIdentified ? getCharacterCount(problemsIdentified) : 0} characters
+                                                {problemsCount} / 50 characters minimum to submit
                                             </Typography>
                                         </Box>
 
@@ -325,7 +332,7 @@ export default function InvestigationDetailPage() {
                                                 disabled={!canEdit}
                                             />
                                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
-                                                {causeDetails ? getCharacterCount(causeDetails) : 0} characters
+                                                {causeDetailsCount} / 50 characters minimum to submit
                                             </Typography>
                                         </Box>
 
@@ -347,15 +354,13 @@ export default function InvestigationDetailPage() {
                                                 >
                                                     Save Changes
                                                 </Button>
-                                                {isQIUser && (
-                                                    <Button
-                                                        variant="contained"
-                                                        onClick={handleSubmit}
-                                                        disabled={!(findings && getCharacterCount(findings) >= 10) || !(problemsIdentified && getCharacterCount(problemsIdentified) >= 10) || submitting}
-                                                    >
-                                                        {submitting ? 'Finishing...' : 'Finish Investigation'}
-                                                    </Button>
-                                                )}
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={handleSubmit}
+                                                    disabled={!canSubmitInvestigation}
+                                                >
+                                                    {submitting ? 'Submitting...' : 'Submit Investigation'}
+                                                </Button>
                                             </Stack>
                                         )}
                                     </Stack>
@@ -536,7 +541,7 @@ export default function InvestigationDetailPage() {
                                 resourceType="investigation"
                                 resourceId={investigation.id}
                                 ovrReportId={investigation.ovrReportId}
-                                canComment={true}
+                                canComment={Boolean(session?.user)}
                                 canAttach={false}
                             />
                         </Stack>

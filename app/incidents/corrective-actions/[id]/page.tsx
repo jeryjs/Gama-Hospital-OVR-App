@@ -107,6 +107,8 @@ export default function CorrectiveActionDetailPage() {
     const [evidenceFiles, setEvidenceFiles] = useState<EvidenceFileMeta[]>([]);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [savingChecklist, setSavingChecklist] = useState(false);
+    const [checklistDirty, setChecklistDirty] = useState(false);
 
     // Initialize form when data loads
     useEffect(() => {
@@ -117,6 +119,7 @@ export default function CorrectiveActionDetailPage() {
             } catch {
                 setChecklist([]);
             }
+            setChecklistDirty(false);
 
             try {
                 const parsed = action.evidenceFiles ? JSON.parse(action.evidenceFiles) : [];
@@ -167,6 +170,23 @@ export default function CorrectiveActionDetailPage() {
             item.id === itemId ? { ...item, completed: !item.completed } : item
         );
         setChecklist(updated);
+        setChecklistDirty(true);
+    };
+
+    const handleSaveChecklist = async () => {
+        if (!canEdit || !checklistDirty) return;
+
+        setSavingChecklist(true);
+        try {
+            await update({
+                checklist: JSON.stringify(checklist),
+            });
+            setChecklistDirty(false);
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Failed to update checklist');
+        } finally {
+            setSavingChecklist(false);
+        }
     };
 
     const handleSave = async () => {
@@ -178,6 +198,7 @@ export default function CorrectiveActionDetailPage() {
                 checklist: JSON.stringify(checklist),
                 evidenceFiles: evidenceFiles.length > 0 ? JSON.stringify(evidenceFiles) : undefined,
             });
+            setChecklistDirty(false);
             setIsEditDialogOpen(false);
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
@@ -332,7 +353,7 @@ export default function CorrectiveActionDetailPage() {
 
                             {!isQIUser && accessToken && !isClosed && (
                                 <Alert severity="info">
-                                    You are viewing this action via a shared access link. Changes are auto-saved.
+                                    You are viewing this action via a shared access link. Use <strong>Update Checklist</strong> and <strong>Update</strong> to save changes.
                                 </Alert>
                             )}
 
@@ -401,6 +422,19 @@ export default function CorrectiveActionDetailPage() {
                                                     }}
                                                 />
                                             ))}
+
+                                            {canEdit && (
+                                                <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        startIcon={<Save />}
+                                                        onClick={handleSaveChecklist}
+                                                        disabled={!checklistDirty || savingChecklist}
+                                                    >
+                                                        {savingChecklist ? 'Saving...' : 'Update Checklist'}
+                                                    </Button>
+                                                </Stack>
+                                            )}
                                         </Stack>
                                     )}
                                 </CardContent>
@@ -471,7 +505,7 @@ export default function CorrectiveActionDetailPage() {
                                 resourceType="corrective_action"
                                 resourceId={action.id}
                                 ovrReportId={action.ovrReportId}
-                                canComment={true}
+                                canComment={Boolean(session?.user)}
                                 canAttach={false}
                             />
                         </Stack>
