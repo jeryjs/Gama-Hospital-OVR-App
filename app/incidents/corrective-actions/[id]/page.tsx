@@ -19,6 +19,7 @@ import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/co
 import { ArrowBack, CheckCircle, DeleteOutline, Edit, Save, UploadFile } from '@mui/icons-material';
 import {
     Alert,
+    alpha,
     Box,
     Button,
     Card,
@@ -339,7 +340,12 @@ export default function CorrectiveActionDetailPage() {
                             <Card>
                                 <CardHeader
                                     title="Action Description"
-                                    sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}
+                                    sx={{
+                                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                        color: 'primary.main',
+                                        borderBottom: 1,
+                                        borderColor: 'primary.main'
+                                    }}
                                 />
                                 <CardContent>
                                     <RichTextPreview
@@ -357,7 +363,12 @@ export default function CorrectiveActionDetailPage() {
                             <Card>
                                 <CardHeader
                                     title={`Checklist (${progress}% complete)`}
-                                    sx={{ bgcolor: 'secondary.main', color: 'secondary.contrastText' }}
+                                    sx={{
+                                        bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.08),
+                                        color: 'secondary.main',
+                                        borderBottom: 1,
+                                        borderColor: 'secondary.main'
+                                    }}
                                 />
                                 <CardContent>
                                     {checklist.length === 0 ? (
@@ -399,7 +410,12 @@ export default function CorrectiveActionDetailPage() {
                             <Card>
                                 <CardHeader
                                     title="Action Taken"
-                                    sx={{ bgcolor: 'success.main', color: 'success.contrastText' }}
+                                    sx={{
+                                        bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
+                                        color: 'success.main',
+                                        borderBottom: 1,
+                                        borderColor: 'success.main'
+                                    }}
                                 />
                                 <CardContent>
                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

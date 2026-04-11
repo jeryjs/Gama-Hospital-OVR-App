@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { RCASummaryTab } from './RCASummaryTab';
+import { FishboneDiagram } from './FishboneDiagram';
 import type { RCAAnalysis, FishboneAnalysis } from './types';
 import {
     parseRCAAnalysis,
@@ -26,6 +27,7 @@ import {
     createEmptyRCA,
     createEmptyFishbone,
     validateRCA,
+    validateFishbone,
 } from './utils';
 
 interface RCAFishboneSectionProps {
@@ -67,11 +69,19 @@ export function RCAFishboneSection({
     const handleSave = async () => {
         if (!onSave) return;
 
-        // Validate RCA
-        const validation = validateRCA(rca);
-        if (!validation.valid) {
-            setSaveError(validation.errors.join(', '));
-            return;
+        // Validate based on active tab
+        if (activeTab === 0) {
+            const validation = validateRCA(rca);
+            if (!validation.valid) {
+                setSaveError(validation.errors.join(', '));
+                return;
+            }
+        } else if (activeTab === 1) {
+            const validation = validateFishbone(fishbone);
+            if (!validation.valid) {
+                setSaveError(validation.errors.join(', '));
+                return;
+            }
         }
 
         setSaving(true);
@@ -126,7 +136,7 @@ export function RCAFishboneSection({
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
                             <Tab label="📋 RCA Summary" />
-                            <Tab label="🦴 Fishbone Diagram" disabled />
+                            <Tab label="🦴 Fishbone Diagram" />
                         </Tabs>
                     </Box>
 
@@ -140,9 +150,11 @@ export function RCAFishboneSection({
                     )}
 
                     {activeTab === 1 && (
-                        <Alert severity="info">
-                            Fishbone diagram coming in next phase
-                        </Alert>
+                        <FishboneDiagram
+                            fishbone={fishbone}
+                            onChange={setFishbone}
+                            disabled={disabled}
+                        />
                     )}
                 </Stack>
             </CardContent>

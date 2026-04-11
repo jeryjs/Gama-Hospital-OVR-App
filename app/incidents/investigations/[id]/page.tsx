@@ -272,7 +272,12 @@ export default function InvestigationDetailPage() {
                             <Card>
                                 <CardHeader
                                     title="Investigation Findings"
-                                    sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}
+                                    sx={{ 
+                                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                        color: 'primary.main',
+                                        borderBottom: 1,
+                                        borderColor: 'primary.main'
+                                    }}
                                 />
                                 <CardContent>
                                     <Stack spacing={3}>
