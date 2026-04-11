@@ -134,11 +134,11 @@ export function RichTextEditor({
                 borderColor: isFocused
                     ? 'primary.main'
                     : disabled
-                        ? 'divider'
+                        ? 'ActiveBorder'
                         : 'divider',
                 borderRadius: 2,
                 backgroundColor: (theme) => disabled
-                    ? alpha(theme.palette.action.disabledBackground, 0.6)
+                    ? alpha(theme.palette.action.disabledBackground, 0.02)
                     : theme.palette.background.paper,
                 transition: 'all 0.2s ease',
                 overflow: 'hidden',

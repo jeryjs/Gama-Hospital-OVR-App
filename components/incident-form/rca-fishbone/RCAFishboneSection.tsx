@@ -135,8 +135,8 @@ export function RCAFishboneSection({
                     {/* Tab Navigation */}
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-                            <Tab label="📋 RCA Summary" />
-                            <Tab label="🦴 Fishbone Diagram" />
+                            <Tab label="• RCA Summary" />
+                            <Tab label="• Fishbone Diagram" />
                         </Tabs>
                     </Box>
 

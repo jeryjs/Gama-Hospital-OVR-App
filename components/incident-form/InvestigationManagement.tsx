@@ -80,9 +80,7 @@ export function InvestigationManagement({
                 body: JSON.stringify({ ovrReportId: incidentId }),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to create investigation');
-            }
+            if (!response.ok) throw response;
 
             const data = await response.json();
             onInvestigationCreated?.(data.investigation.id);
@@ -156,21 +154,34 @@ export function InvestigationManagement({
         }
     };
 
-    if (!canManage) {
+    // if (!canManage) {
+    //     return (
+    //         <Alert severity="info" sx={{ mt: 1 }}>
+    //             <Typography variant="subtitle2" fontWeight={600}>
+    //                 Investigation In Progress
+    //             </Typography>
+    //             <Typography variant="body2">
+    //                 Investigation management is restricted to authorized QI roles.
+    //             </Typography>
+    //         </Alert>
+    //     );
+    // }
+
+    if (!investigationId && canManage) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" fontWeight={600}>
-                    Investigation In Progress
+                    Awaiting Investigation
                 </Typography>
                 <Typography variant="body2">
-                    Investigation management is restricted to authorized QI roles.
+                    An investigation has not been created for this incident yet. The QI team will create an investigation once the incident is reviewed.
                 </Typography>
             </Alert>
         );
     }
 
     // If no investigation yet, show create button
-    if (!investigationId) {
+    if (!investigationId && !canManage) {
         return (
             <Card elevation={2}>
                 <CardHeader

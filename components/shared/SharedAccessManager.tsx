@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import {
     Alert,
+    alpha,
     Box,
     Button,
     Card,
@@ -174,22 +175,20 @@ export function SharedAccessManager({
                     title={`${roleLabel} Access`}
                     subheader={`Manage ${roleLabel.toLowerCase()} invitations`}
                     action={
-                        <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => setInviteDialogOpen(true)}
-                            startIcon={<PersonAdd />}
-                        >
-                            Invite {roleLabel}
-                        </Button>
+                        <Tooltip title={`Invite ${roleLabel}`} arrow={true}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => setInviteDialogOpen(true)}
+                                startIcon={<PersonAdd />}
+                            >
+                                Invite
+                            </Button>
+                        </Tooltip>
                     }
                     sx={{
-                        bgcolor: 'secondary.main',
-                        color: 'secondary.contrastText',
-                        '& .MuiCardHeader-subheader': {
-                            color: 'secondary.contrastText',
-                            opacity: 0.9,
-                        },
+                        bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.08),
+                        color: 'secondary.main',
                     }}
                 />
 

@@ -272,7 +272,7 @@ export default function InvestigationDetailPage() {
                             <Card>
                                 <CardHeader
                                     title="Investigation Findings"
-                                    sx={{ 
+                                    sx={{
                                         bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                                         color: 'primary.main',
                                         borderBottom: 1,
@@ -308,19 +308,10 @@ export default function InvestigationDetailPage() {
                                                 minHeight={150}
                                                 disabled={!canEdit}
                                             />
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
                                                 {problemsIdentified ? getCharacterCount(problemsIdentified) : 0} characters
                                             </Typography>
                                         </Box>
-
-                                        <TextField
-                                            label="Cause Classification"
-                                            fullWidth
-                                            value={causeClassification}
-                                            onChange={(e) => setCauseClassification(e.target.value)}
-                                            placeholder="e.g., Human Error, System Failure, Process Gap..."
-                                            disabled={!canEdit}
-                                        />
 
                                         <Box>
                                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -333,10 +324,19 @@ export default function InvestigationDetailPage() {
                                                 minHeight={120}
                                                 disabled={!canEdit}
                                             />
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
                                                 {causeDetails ? getCharacterCount(causeDetails) : 0} characters
                                             </Typography>
                                         </Box>
+
+                                        <TextField
+                                            label="Cause Classification"
+                                            fullWidth
+                                            value={causeClassification}
+                                            onChange={(e) => setCauseClassification(e.target.value)}
+                                            placeholder="e.g., Human Error, System Failure, Process Gap..."
+                                            disabled={!canEdit}
+                                        />
 
                                         {canEdit && (
                                             <Stack direction="row" spacing={2} justifyContent="flex-end">

@@ -77,8 +77,8 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
 
     // SVG dimensions
-    const svgWidth = 1000;
-    const svgHeight = 600;
+    const svgWidth = 720;
+    const svgHeight = 360;
     const centerY = svgHeight / 2;
     const spineStartX = 100;
     const spineEndX = svgWidth - 150;

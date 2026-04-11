@@ -16,6 +16,7 @@ import {
     Send,
 } from '@mui/icons-material';
 import {
+    alpha,
     Avatar,
     Box,
     Button,
@@ -155,54 +156,11 @@ export function CollaborationPanel({
                 }
                 subheader="Internal collaboration and activity"
                 sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '& .MuiCardHeader-subheader': {
-                        color: 'primary.contrastText',
-                        opacity: 0.9,
-                    },
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                 }}
             />
 
             <CardContent>
-                {/* Comment Input */}
-                {canComment && (
-                    <Box sx={{ mb: 3 }}>
-                        <TextField
-                            multiline
-                            rows={isCompact ? 2 : 3}
-                            fullWidth
-                            placeholder="Add a comment... (Use @ to mention team members)"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            sx={{ mb: 1 }}
-                        />
-                        <Stack direction="row" spacing={1} justifyContent="space-between">
-                            <Box>
-                                {canAttach && (
-                                    <Button
-                                        size="small"
-                                        startIcon={<AttachFile />}
-                                        disabled
-                                    >
-                                        Attach File (Coming Soon)
-                                    </Button>
-                                )}
-                            </Box>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                onClick={handleAddComment}
-                                disabled={!newComment.trim()}
-                                startIcon={<Send />}
-                            >
-                                Comment
-                            </Button>
-                        </Stack>
-                    </Box>
-                )}
-
-                <Divider sx={{ my: 2 }} />
 
                 {/* Comments List */}
                 {isLoading ? (
@@ -300,6 +258,45 @@ export function CollaborationPanel({
                             );
                         })}
                     </List>
+                )}
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Comment Input */}
+                {canComment && (
+                    <Box sx={{ mt: 3 }}>
+                        <TextField
+                            multiline
+                            rows={isCompact ? 2 : 3}
+                            fullWidth
+                            placeholder="Add a comment... (Use @ to mention team members)"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            sx={{ mb: 1 }}
+                        />
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            {canAttach && (
+                                <Button
+                                    size="small"
+                                    startIcon={<AttachFile />}
+                                    disabled
+                                >
+                                    Attach File (Coming Soon)
+                                </Button>
+                            )}
+                            {newComment.trim() && (
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={handleAddComment}
+                                    disabled={!newComment.trim()}
+                                    startIcon={<Send />}
+                                >
+                                    Comment
+                                </Button>
+                            )}
+                        </Stack>
+                    </Box>
                 )}
 
                 {/* Comment Actions Menu */}
