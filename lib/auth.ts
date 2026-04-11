@@ -258,12 +258,24 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Harden identity binding: once bound, Azure object ID must match
+        // BUT allow migration if the email matches (seamless migration)
         if (existingUser.azureId && existingUser.azureId !== account.providerAccountId) {
-          console.log('❌ Sign in rejected: Azure identity mismatch for', normalizedEmail, {
+          console.log('⚠️ Azure identity mismatch detected for', normalizedEmail, {
             expected: existingUser.azureId,
             received: account.providerAccountId,
           });
-          return false;
+
+          // Migrate to new Azure ID seamlessly
+          console.log('🔄 Migrating Azure ID for user:', normalizedEmail);
+          await db
+            .update(users)
+            .set({
+              azureId: account.providerAccountId,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, existingUser.id));
+
+          console.log('✅ Azure ID migrated successfully for:', normalizedEmail);
         }
 
         // Bind Azure object ID on first approved sign-in and keep profile picture fresh

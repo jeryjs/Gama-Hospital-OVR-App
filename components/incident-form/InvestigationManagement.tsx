@@ -9,6 +9,7 @@
 
 import {
     Alert,
+    alpha,
     Avatar,
     Box,
     Button,
@@ -167,7 +168,7 @@ export function InvestigationManagement({
     //     );
     // }
 
-    if (!investigationId && canManage) {
+    if (!investigationId && !canManage) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" fontWeight={600}>
@@ -181,19 +182,14 @@ export function InvestigationManagement({
     }
 
     // If no investigation yet, show create button
-    if (!investigationId && !canManage) {
+    if (!investigationId && canManage) {
         return (
             <Card elevation={2}>
                 <CardHeader
                     title="Investigation"
                     subheader="Create investigation to begin assigning investigators"
                     sx={{
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        '& .MuiCardHeader-subheader': {
-                            color: 'primary.contrastText',
-                            opacity: 0.9,
-                        },
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                     }}
                 />
                 <CardContent>
@@ -231,18 +227,13 @@ export function InvestigationManagement({
                     </Button>
                 }
                 sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '& .MuiCardHeader-subheader': {
-                        color: 'primary.contrastText',
-                        opacity: 0.9,
-                    },
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                 }}
             />
 
             <CardContent>
                 {/* Investigation Info & Link */}
-                <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                <Box sx={{ mb: 2, p: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), borderRadius: 1 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="body2" color="text.secondary">
                             Investigation ID: <strong>INV-{investigationId}</strong>

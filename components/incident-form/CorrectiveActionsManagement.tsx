@@ -9,6 +9,7 @@
 
 import {
     Alert,
+    alpha,
     Autocomplete,
     Avatar,
     Box,
@@ -37,6 +38,7 @@ import {
     Email as EmailIcon,
     Link as LinkIcon,
     PersonAdd as PersonAddIcon,
+    RemoveRedEye,
     Schedule as ScheduleIcon,
     Warning as WarningIcon,
 } from '@mui/icons-material';
@@ -48,6 +50,8 @@ import { format, isPast, isToday } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface CorrectiveActionsManagementProps {
     incidentId: string;
@@ -63,6 +67,7 @@ export function CorrectiveActionsManagement({
     actionIds = [],
     onActionCreated,
 }: CorrectiveActionsManagementProps) {
+    const router = useRouter();
     const { data: session } = useSession();
     const canManage = ACCESS_CONTROL.ui.incidentForm.canManageCorrectiveActions(session?.user?.roles || []);
 
@@ -206,12 +211,8 @@ export function CorrectiveActionsManagement({
                     </Button>
                 }
                 sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '& .MuiCardHeader-subheader': {
-                        color: 'primary.contrastText',
-                        opacity: 0.9,
-                    },
+                    bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1),
+                    color: 'secondary.main',
                 }}
             />
 
@@ -497,11 +498,14 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                     <Button size="small" onClick={onInvite} startIcon={<PersonAddIcon />}>
                         Invite
                     </Button>
-                    {action.status !== 'closed' && (
+                    {/* {action.status !== 'closed' && (
                         <Button size="small" color="success" onClick={handleClose} startIcon={<CloseIcon />}>
                             Close
                         </Button>
-                    )}
+                    )} */}
+                    <Button component={Link} href={`/incidents/corrective-actions/${actionId}`} size="small" startIcon={<RemoveRedEye />}>
+                        View
+                    </Button>
                 </Stack>
             </Stack>
         </Box>

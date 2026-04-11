@@ -36,7 +36,7 @@ export function RiskClassificationSection({ incident }: Props) {
                     borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
                 }}
             >
-                <Assessment /> Part 5: Risk Classification & Rating
+                <Assessment /> Risk Classification & Rating
             </Typography>
 
             {/* Risk Assessment Result */}

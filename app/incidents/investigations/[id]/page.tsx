@@ -345,15 +345,17 @@ export default function InvestigationDetailPage() {
                                                     onClick={handleSave}
                                                     startIcon={<Save />}
                                                 >
-                                                    Save Draft
+                                                    Save Changes
                                                 </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    onClick={handleSubmit}
-                                                    disabled={!(findings && getCharacterCount(findings) >= 10) || !(problemsIdentified && getCharacterCount(problemsIdentified) >= 10) || submitting}
-                                                >
-                                                    {submitting ? 'Submitting...' : 'Submit Investigation'}
-                                                </Button>
+                                                {isQIUser && (
+                                                    <Button
+                                                        variant="contained"
+                                                        onClick={handleSubmit}
+                                                        disabled={!(findings && getCharacterCount(findings) >= 10) || !(problemsIdentified && getCharacterCount(problemsIdentified) >= 10) || submitting}
+                                                    >
+                                                        {submitting ? 'Finishing...' : 'Finish Investigation'}
+                                                    </Button>
+                                                )}
                                             </Stack>
                                         )}
                                     </Stack>
@@ -376,6 +378,83 @@ export default function InvestigationDetailPage() {
                                         disabled={!canEdit}
                                     />
                                 )}
+                        </Stack>
+                    </Grid>
+
+                    {/* Right Column - Access Management */}
+                    <Grid size={{ xs: 12, lg: 4 }}>
+                        <Stack spacing={3}>
+                            {/* Only QI users can manage access */}
+                            {isQIUser && (
+                                <SharedAccessManager
+                                    resourceType="investigation"
+                                    resourceId={investigation.id}
+                                    ovrReportId={investigation.ovrReportId}
+                                    invitations={sharedAccess || []}
+                                />
+                            )}
+
+                            {/* Investigation Metadata */}
+                            <Card>
+                                <CardHeader
+                                    title="Investigation Info"
+                                    sx={{ bgcolor: 'background.default' }}
+                                />
+                                <CardContent>
+                                    <Stack spacing={2} divider={<Divider />}>
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Investigation ID
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight={600}>
+                                                INV-{investigation.id}
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Incident Reference
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                <Button
+                                                    component={Link}
+                                                    href={`/incidents/view/${investigation.ovrReportId}`}
+                                                    size="small"
+                                                    sx={{ p: 0, textTransform: 'none' }}
+                                                >
+                                                    {investigation.ovrReportId}
+                                                </Button>
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Created
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {format(new Date(investigation.createdAt), 'PPP')}
+                                            </Typography>
+                                        </Box>
+                                        {investigation.submittedAt && (
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Submitted
+                                                </Typography>
+                                                <Typography variant="body2" color="success.main">
+                                                    {format(new Date(investigation.submittedAt), 'PPP')}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Last Updated
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {format(new Date(investigation.updatedAt), 'PPP')}
+                                            </Typography>
+                                        </Box>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+
 
                             {/* Linked Corrective Actions */}
                             <Card>
@@ -460,82 +539,6 @@ export default function InvestigationDetailPage() {
                                 canComment={true}
                                 canAttach={false}
                             />
-                        </Stack>
-                    </Grid>
-
-                    {/* Right Column - Access Management */}
-                    <Grid size={{ xs: 12, lg: 4 }}>
-                        <Stack spacing={3}>
-                            {/* Only QI users can manage access */}
-                            {isQIUser && (
-                                <SharedAccessManager
-                                    resourceType="investigation"
-                                    resourceId={investigation.id}
-                                    ovrReportId={investigation.ovrReportId}
-                                    invitations={sharedAccess || []}
-                                />
-                            )}
-
-                            {/* Investigation Metadata */}
-                            <Card>
-                                <CardHeader
-                                    title="Investigation Info"
-                                    sx={{ bgcolor: 'background.default' }}
-                                />
-                                <CardContent>
-                                    <Stack spacing={2} divider={<Divider />}>
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Investigation ID
-                                            </Typography>
-                                            <Typography variant="body2" fontWeight={600}>
-                                                INV-{investigation.id}
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Incident Reference
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                <Button
-                                                    component={Link}
-                                                    href={`/incidents/view/${investigation.ovrReportId}`}
-                                                    size="small"
-                                                    sx={{ p: 0, textTransform: 'none' }}
-                                                >
-                                                    {investigation.ovrReportId}
-                                                </Button>
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Created
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {format(new Date(investigation.createdAt), 'PPP')}
-                                            </Typography>
-                                        </Box>
-                                        {investigation.submittedAt && (
-                                            <Box>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Submitted
-                                                </Typography>
-                                                <Typography variant="body2" color="success.main">
-                                                    {format(new Date(investigation.submittedAt), 'PPP')}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Last Updated
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {format(new Date(investigation.updatedAt), 'PPP')}
-                                            </Typography>
-                                        </Box>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
                         </Stack>
                     </Grid>
                 </Grid>

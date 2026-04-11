@@ -9,6 +9,7 @@
 
 import {
     Alert,
+    alpha,
     Box,
     Button,
     Card,
@@ -95,12 +96,8 @@ export function CaseReviewSection({
                 title="Case Review & Closure"
                 subheader="Final case review and incident closure"
                 sx={{
-                    bgcolor: allActionsClosed ? 'success.main' : 'warning.main',
-                    color: allActionsClosed ? 'success.contrastText' : 'warning.contrastText',
-                    '& .MuiCardHeader-subheader': {
-                        color: allActionsClosed ? 'success.contrastText' : 'warning.contrastText',
-                        opacity: 0.9,
-                    },
+                    bgcolor: (theme) => allActionsClosed ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.warning.main, 0.1),
+                    color: allActionsClosed ? 'success.main' : 'warning.main',
                 }}
             />
 

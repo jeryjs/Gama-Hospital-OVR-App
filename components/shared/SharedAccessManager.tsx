@@ -266,7 +266,7 @@ export function SharedAccessManager({
                                             <Box component="span" sx={{ fontSize: '0.75rem' }}>
                                                 Invited: {new Date(invitation.invitedAt).toLocaleString()}
                                                 {invitation.lastAccessedAt && (
-                                                    <> • Last accessed: {new Date(invitation.lastAccessedAt).toLocaleString()}</>
+                                                    <><br />Last accessed: {new Date(invitation.lastAccessedAt).toLocaleString()}</>
                                                 )}
                                             </Box>
                                         }
