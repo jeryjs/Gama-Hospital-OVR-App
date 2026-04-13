@@ -96,7 +96,7 @@ export default function CorrectiveActionDetailPage() {
     }, []);
 
     // Fetch action (with token support)
-    const { action, sharedAccess, isLoading, error, update, close } = useCorrectiveAction(
+    const { action, sharedAccess, isLoading, error, mutate, update, close } = useCorrectiveAction(
         actionId,
         accessToken
     );
@@ -571,6 +571,9 @@ export default function CorrectiveActionDetailPage() {
                                     resourceId={action.id}
                                     ovrReportId={action.ovrReportId}
                                     invitations={sharedAccess || []}
+                                    onUpdate={async () => {
+                                        await mutate();
+                                    }}
                                 />
                             )}
 

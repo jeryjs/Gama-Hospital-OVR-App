@@ -85,7 +85,7 @@ export function InvestigationManagement({
 
             const data = await response.json();
             onInvestigationCreated?.(data.investigation.id);
-            mutate();
+            await mutate();
         } catch (error) {
             showError(error);
         }
@@ -111,7 +111,7 @@ export function InvestigationManagement({
             // Reset form
             setInviteEmail('');
             setInviteDialogOpen(false);
-            mutate();
+            await mutate();
 
             // Show success
             setTimeout(() => setCopiedUrl(null), 3000);
@@ -124,7 +124,7 @@ export function InvestigationManagement({
     const handleRevoke = async (accessId: number) => {
         try {
             await revokeAccess(accessId);
-            mutate();
+            await mutate();
         } catch (error) {
             showError(error);
         }

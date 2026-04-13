@@ -36,7 +36,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { RichTextEditor, type EditorValue, getCharacterCount, deserializeFromMarkdown } from '@/components/editor';
+import { RichTextEditor, type EditorValue, getCharacterCount, deserializeFromMarkdown, serializeToMarkdown } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -85,7 +85,7 @@ export default function InvestigationDetailPage() {
     }, []);
 
     // Fetch investigation (with token support)
-    const { investigation, sharedAccess, isLoading, error, update, submit } = useInvestigation(
+    const { investigation, sharedAccess, isLoading, error, mutate, update, submit } = useInvestigation(
         investigationId,
         accessToken
     );
@@ -148,10 +148,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await update({
-                findings: findings ? JSON.stringify(findings) : undefined,
-                problemsIdentified: problemsIdentified ? JSON.stringify(problemsIdentified) : undefined,
+                findings: findings ? serializeToMarkdown(findings) : undefined,
+                problemsIdentified: problemsIdentified ? serializeToMarkdown(problemsIdentified) : undefined,
                 causeClassification: causeClassification.trim() || undefined,
-                causeDetails: causeDetails ? JSON.stringify(causeDetails) : undefined,
+                causeDetails: causeDetails ? serializeToMarkdown(causeDetails) : undefined,
             });
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
@@ -172,10 +172,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await submit({
-                findings: findings ? JSON.stringify(findings) : '',
-                problemsIdentified: problemsIdentified ? JSON.stringify(problemsIdentified) : '',
+                findings: findings ? serializeToMarkdown(findings) : '',
+                problemsIdentified: problemsIdentified ? serializeToMarkdown(problemsIdentified) : '',
                 causeClassification: causeClassification.trim(),
-                causeDetails: causeDetails ? JSON.stringify(causeDetails) : '',
+                causeDetails: causeDetails ? serializeToMarkdown(causeDetails) : '',
             });
 
             alert('Investigation submitted successfully!');
@@ -446,6 +446,9 @@ export default function InvestigationDetailPage() {
                                     resourceId={investigation.id}
                                     ovrReportId={investigation.ovrReportId}
                                     invitations={sharedAccess || []}
+                                    onUpdate={async () => {
+                                        await mutate();
+                                    }}
                                 />
                             )}
 

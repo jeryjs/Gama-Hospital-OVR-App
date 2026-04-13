@@ -48,7 +48,7 @@ export interface SharedAccessManagerProps {
     ovrReportId: string;
     variant?: 'full' | 'compact';
     invitations: SharedAccessInvitation[];
-    onUpdate?: () => void;
+    onUpdate?: () => void | Promise<void>;
 }
 
 /**
@@ -112,7 +112,9 @@ export function SharedAccessManager({
             // Reset form
             setInviteEmail('');
             setInviteDialogOpen(false);
-            onUpdate?.();
+            if (onUpdate) {
+                await onUpdate();
+            }
 
             // Clear success message
             setTimeout(() => setCopiedUrl(null), 3000);
@@ -129,7 +131,9 @@ export function SharedAccessManager({
 
         try {
             await revokeAccess(accessId);
-            onUpdate?.();
+            if (onUpdate) {
+                await onUpdate();
+            }
         } catch (error) {
             console.error('Failed to revoke access:', error);
             alert('Failed to revoke access');
