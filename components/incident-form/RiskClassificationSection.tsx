@@ -1,50 +1,153 @@
+'use client';
+
 import {
     RISK_IMPACT_LEVELS,
     RISK_LIKELIHOOD_LEVELS,
     RISK_MATRIX,
-    getRiskLevel
+    calculateRiskScore,
+    getRiskLevel,
 } from '@/lib/constants';
-import { Assessment } from '@mui/icons-material';
-import { alpha, Box, Paper, Stack, Typography } from '@mui/material';
+import { Assessment, Edit, Save } from '@mui/icons-material';
+import { alpha, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { theme } from '@/lib/theme';
 
 interface Props {
     incident: OVRReport;
+    onUpdate?: () => void;
 }
 
-export function RiskClassificationSection({ incident }: Props) {
-    const impact = incident.riskImpact;
-    const likelihood = incident.riskLikelihood;
-    const score = incident.riskScore;
-    const riskLevel = score ? getRiskLevel(score) : null;
+export function RiskClassificationSection({ incident, onUpdate }: Props) {
+    const canEditSection = incident.status !== 'closed' && Boolean(onUpdate);
 
-    const impactLabel = RISK_IMPACT_LEVELS.find(l => l.value === impact)?.label;
-    const likelihoodLabel = RISK_LIKELIHOOD_LEVELS.find(l => l.value === likelihood)?.label;
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [riskImpact, setRiskImpact] = useState<number>(incident.riskImpact || 0);
+    const [riskLikelihood, setRiskLikelihood] = useState<number>(incident.riskLikelihood || 0);
+
+    useEffect(() => {
+        setRiskImpact(incident.riskImpact || 0);
+        setRiskLikelihood(incident.riskLikelihood || 0);
+        setIsEditing(false);
+        setIsSaving(false);
+    }, [incident]);
+
+    const score = riskImpact > 0 && riskLikelihood > 0 ? calculateRiskScore(riskImpact, riskLikelihood) : 0;
+    const riskLevel = score ? getRiskLevel(score) : null;
+    const impactLabel = RISK_IMPACT_LEVELS.find((l) => l.value === riskImpact)?.label;
+    const likelihoodLabel = RISK_LIKELIHOOD_LEVELS.find((l) => l.value === riskLikelihood)?.label;
+
+    const handleSave = async () => {
+        if (!riskImpact || !riskLikelihood) {
+            alert('Please select both impact and likelihood before saving.');
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const response = await fetch(`/api/incidents/${incident.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    riskImpact,
+                    riskLikelihood,
+                    riskScore: score,
+                    editComment: 'Edited risk classification section from incident view.',
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => null);
+                throw new Error(errorBody?.error || 'Failed to save risk classification section');
+            }
+
+            setIsEditing(false);
+            onUpdate?.();
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Failed to save risk classification section');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography
-                variant="h6"
-                gutterBottom
+            <Box
                 sx={{
-                    fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1,
+                    justifyContent: 'space-between',
+                    gap: 2,
                     pb: 2,
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`
-                }}>
-                <Assessment /> Risk Classification & Rating
-            </Typography>
-            {/* Risk Assessment Result */}
+                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    sx={{
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                    }}
+                >
+                    <Assessment /> Risk Classification & Rating
+                </Typography>
+
+                {canEditSection && (
+                    <Button
+                        variant="outlined"
+                        startIcon={isEditing ? <Save /> : <Edit />}
+                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                        disabled={isSaving}
+                    >
+                        {isEditing ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
+                    </Button>
+                )}
+            </Box>
+
+            {isEditing && (
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                    <TextField
+                        fullWidth
+                        select
+                        label="Impact"
+                        value={riskImpact || ''}
+                        onChange={(e) => setRiskImpact(Number(e.target.value) || 0)}
+                        slotProps={{ select: { native: true } }}
+                    >
+                        <option value=""></option>
+                        {RISK_IMPACT_LEVELS.map((level) => (
+                            <option key={level.value} value={level.value}>
+                                {level.value}. {level.label}
+                            </option>
+                        ))}
+                    </TextField>
+
+                    <TextField
+                        fullWidth
+                        select
+                        label="Likelihood"
+                        value={riskLikelihood || ''}
+                        onChange={(e) => setRiskLikelihood(Number(e.target.value) || 0)}
+                        slotProps={{ select: { native: true } }}
+                    >
+                        <option value=""></option>
+                        {RISK_LIKELIHOOD_LEVELS.map((level) => (
+                            <option key={level.value} value={level.value}>
+                                {level.value}. {level.label}
+                            </option>
+                        ))}
+                    </TextField>
+                </Stack>
+            )}
+
             {score && riskLevel ? (
                 <>
-                    {/* Risk Matrix */}
                     <Box sx={{ mt: 3 }}>
-                        <Typography variant="body2" gutterBottom sx={{
-                            fontWeight: 600
-                        }}>
+                        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
                             Risk Assessment Matrix
                         </Typography>
                         <Box sx={{ overflowX: 'auto', mt: 2 }}>
@@ -65,7 +168,7 @@ export function RiskClassificationSection({ incident }: Props) {
                                         >
                                             Impact / Likelihood
                                         </Box>
-                                        {RISK_LIKELIHOOD_LEVELS.map(level => (
+                                        {RISK_LIKELIHOOD_LEVELS.map((level) => (
                                             <Box
                                                 key={level.value}
                                                 component="th"
@@ -79,7 +182,9 @@ export function RiskClassificationSection({ incident }: Props) {
                                                         : alpha(theme.palette.grey[100], 0.9),
                                                 })}
                                             >
-                                                {level.value}<br /><small>{level.label}</small>
+                                                {level.value}
+                                                <br />
+                                                <small>{level.label}</small>
                                             </Box>
                                         ))}
                                     </Box>
@@ -87,7 +192,8 @@ export function RiskClassificationSection({ incident }: Props) {
                                 <Box component="tbody">
                                     {RISK_MATRIX.map((row, impactIdx) => {
                                         const impactValue = 5 - impactIdx;
-                                        const impactLabelRow = RISK_IMPACT_LEVELS.find(l => l.value === impactValue)?.label;
+                                        const impactLabelRow = RISK_IMPACT_LEVELS.find((l) => l.value === impactValue)?.label;
+
                                         return (
                                             <Box component="tr" key={impactIdx}>
                                                 <Box
@@ -106,7 +212,8 @@ export function RiskClassificationSection({ incident }: Props) {
                                                 </Box>
                                                 {row.map((cellScore, likelihoodIdx) => {
                                                     const cellLevel = getRiskLevel(cellScore);
-                                                    const isSelected = impact === (5 - impactIdx) && likelihood === (likelihoodIdx + 1);
+                                                    const isSelected = riskImpact === 5 - impactIdx && riskLikelihood === likelihoodIdx + 1;
+
                                                     return (
                                                         <Box
                                                             component="td"
@@ -132,52 +239,36 @@ export function RiskClassificationSection({ incident }: Props) {
                         </Box>
                     </Box>
 
-                    <Paper sx={{ p: 3, mt: 3, bgcolor: alpha(riskLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.08), border: `2px solid ${riskLevel.color}` }}>
-                        <Stack
-                            direction="row"
-                            spacing={3}
-                            sx={{
-                                alignItems: "center",
-                                flexWrap: "wrap"
-                            }}>
+                    <Paper
+                        sx={{
+                            p: 3,
+                            mt: 3,
+                            bgcolor: alpha(riskLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.08),
+                            border: `2px solid ${riskLevel.color}`,
+                        }}
+                    >
+                        <Stack direction="row" spacing={3} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                             <Box>
-                                <Typography variant="caption" sx={{
-                                    color: "text.secondary"
-                                }}>
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                                     Risk Score
                                 </Typography>
-                                <Typography variant="h2" color={riskLevel.color} sx={{
-                                    fontWeight: 700
-                                }}>
+                                <Typography variant="h2" color={riskLevel.color} sx={{ fontWeight: 700 }}>
                                     {score}
                                 </Typography>
                             </Box>
                             <Box sx={{ flex: 1 }}>
-                                <Typography variant="h5" color={riskLevel.color} sx={{
-                                    fontWeight: 600
-                                }}>
+                                <Typography variant="h5" color={riskLevel.color} sx={{ fontWeight: 600 }}>
                                     {riskLevel.label}
                                 </Typography>
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: "text.secondary",
-                                        mt: 0.5
-                                    }}>
-                                    Impact: {impactLabel} ({impact}) × Likelihood: {likelihoodLabel} ({likelihood})
+                                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                                    Impact: {impactLabel} ({riskImpact}) × Likelihood: {likelihoodLabel} ({riskLikelihood})
                                 </Typography>
                             </Box>
                         </Stack>
                     </Paper>
                 </>
             ) : (
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: "text.secondary",
-                        mt: 2,
-                        fontStyle: 'italic'
-                    }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2, fontStyle: 'italic' }}>
                     No risk assessment recorded
                 </Typography>
             )}

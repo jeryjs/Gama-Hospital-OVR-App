@@ -10,9 +10,10 @@ import type { OVRReport } from '../../_shared/types';
 interface Props {
   incident: OVRReport;
   onUpdate: () => void;
+  hidden?: boolean;
 }
 
-export function ActionButtons({ incident, onUpdate }: Props) {
+export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
   const roles = session?.user.roles || [];
@@ -55,7 +56,7 @@ export function ActionButtons({ incident, onUpdate }: Props) {
     }
   };
 
-  if (!canEdit && !canDelete) {
+  if (hidden || (!canEdit && !canDelete)) {
     return null;
   }
 

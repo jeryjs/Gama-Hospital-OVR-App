@@ -13,8 +13,10 @@ import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection'
 import { QIReviewSection } from '@/components/incident-form/QIReviewSection';
 import { RiskClassificationSection } from '@/components/incident-form/RiskClassificationSection';
 import { SupervisorSection } from '@/components/incident-form/SupervisorSection';
+import { ACCESS_CONTROL } from '@/lib/access-control';
 import { useIncident } from '@/lib/hooks';
 import { Box } from '@mui/material';
+import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { StatusTimeline } from '../../_shared/StatusTimeline';
@@ -26,7 +28,9 @@ import { WorkflowSection } from './WorkflowSection';
 // Inner component that fetches data
 function IncidentDetails() {
   const params = useParams();
+  const { data: session } = useSession();
   const [showCompletion, setShowCompletion] = useState(false);
+  const canEditNonBasicSections = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user?.roles || []);
 
   // This will suspend while loading
   const { incident, error, isLoading, mutate } = useIncident(params.id as string);
@@ -58,16 +62,14 @@ function IncidentDetails() {
         <PatientInfoSection incident={incident} />
         <OccurrenceDetailsSection incident={incident} />
 
-        {/* Medical Assessment - Conditional on physician involvement */}
-        {incident.physicianSawPatient && <MedicalAssessmentSection incident={incident} />}
+        {/* Medical Assessment */}
+        <MedicalAssessmentSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
-        {/* Supervisor Section - Read-only display */}
-        {(incident.supervisorNotified || incident.supervisorId || incident.supervisorAction) && (
-          <SupervisorSection incident={incident} onUpdate={mutate} />
-        )}
+        {/* Supervisor Section */}
+        <SupervisorSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
-        {/* Risk Classification - If available */}
-        {incident.riskScore && <RiskClassificationSection incident={incident} />}
+        {/* Risk Classification */}
+        <RiskClassificationSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
         {/* ========== WORKFLOW SECTIONS ========== */}
         {/* Status-driven workflow components */}
@@ -82,7 +84,7 @@ function IncidentDetails() {
         {incident.status !== 'draft' && <CommentsSection incidentId={incident.id} />}
 
         {/* Action Buttons - Context-aware actions */}
-        <ActionButtons incident={incident} onUpdate={mutate} />
+        <ActionButtons incident={incident} onUpdate={mutate} hidden={true} />
       </Box>
 
       {/* Completion Animation */}
