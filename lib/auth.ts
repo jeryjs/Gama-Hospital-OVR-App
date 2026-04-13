@@ -12,6 +12,7 @@ const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamaho
 const ALLOW_ALL_EMAIL_DOMAINS = ALLOWED_DOMAIN.includes('*');
 const AZURE_AD_AUTH_TENANT_ID = process.env.AZURE_AD_AUTH_TENANT_ID || process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
 const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
+const AVATAR_ROUTE = '/api/me/avatar';
 // const IS_DEV = process.env.NODE_ENV === 'development';
 
 function normalizeEmail(email: string | null | undefined): string | null {
@@ -154,17 +155,6 @@ export const authOptions: NextAuthOptions = {
           businessPhones: graphData.businessPhones,
           employeeId: graphData.employeeId,
           userPrincipalName: profile.preferred_username || graphData.userPrincipalName,
-
-          // Optional Entra claim snapshots (diagnostics only; DB roles are authoritative)
-          groups: profile.groups || [], // Raw group object IDs from token
-          roles: profile.roles || [], // Raw app-role claims from token
-
-          // Additional metadata
-          accountEnabled: graphData.accountEnabled,
-          companyName: graphData.companyName,
-          city: graphData.city,
-          country: graphData.country,
-          usageLocation: graphData.usageLocation,
         } as any;
       },
     }),
@@ -243,7 +233,7 @@ export const authOptions: NextAuthOptions = {
             department: (user as any).department,
             position: (user as any).jobTitle,
             employeeId: (user as any).employeeId,
-            profilePicture: user.image?.startsWith('data:') ? undefined : user.image,
+            profilePicture: user.image || undefined,
             isActive: true,
           });
 
@@ -283,7 +273,7 @@ export const authOptions: NextAuthOptions = {
           .update(users)
           .set({
             azureId: existingUser.azureId || account.providerAccountId,
-            profilePicture: (user.image?.startsWith('data:') ? undefined : user.image) || existingUser.profilePicture,
+            profilePicture: existingUser.profilePicture || user.image || undefined,
             updatedAt: new Date(),
           })
           .where(eq(users.id, existingUser.id));
@@ -299,6 +289,9 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (account && user) {
+        token.image = AVATAR_ROUTE;
+        (token as any).picture = AVATAR_ROUTE;
+
         const normalizedEmail = normalizeEmail(user.email);
 
         let dbUser = account.providerAccountId
@@ -330,7 +323,8 @@ export const authOptions: NextAuthOptions = {
         token.employeeId = dbUser.employeeId;
         token.department = dbUser.department;
         token.position = dbUser.position;
-        token.image = dbUser.profilePicture;
+        token.image = AVATAR_ROUTE;
+        (token as any).picture = AVATAR_ROUTE;
         token.tokenError = undefined;
 
         return token;
@@ -349,12 +343,21 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      // Always return a token with the avatar route to prevent UI breakage, even if refresh fails
+      if (token.id) {
+        token.image = AVATAR_ROUTE;
+        (token as any).picture = AVATAR_ROUTE;
+      }
+
       try {
+
         return await refreshAzureAccessToken(token);
       } catch (error) {
         console.error('Failed to refresh Azure access token:', error);
         return {
           ...token,
+          image: AVATAR_ROUTE,
+          picture: AVATAR_ROUTE,
           tokenError: 'RefreshAccessTokenError',
         };
       }
