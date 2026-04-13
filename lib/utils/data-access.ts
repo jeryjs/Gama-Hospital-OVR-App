@@ -42,12 +42,20 @@ export interface SharedAccessGrant {
     role: 'investigator' | 'action_handler' | 'viewer';
 }
 
+function normalizeAccessEmail(email: string | null | undefined): string | null {
+    if (!email) return null;
+    const normalized = email.trim().toLowerCase();
+    return normalized.length ? normalized : null;
+}
+
 async function getSharedAccessGrant(
     resourceType: SharedResourceType,
     resourceId: number,
     userContext?: UserContext,
     accessToken?: string
 ): Promise<SharedAccessGrant | null> {
+    const normalizedEmail = normalizeAccessEmail(userContext?.email);
+
     const activeAccessFilter = and(
         eq(ovrSharedAccess.resourceType, resourceType),
         eq(ovrSharedAccess.resourceId, resourceId),
@@ -58,13 +66,20 @@ async function getSharedAccessGrant(
         )
     );
 
-    let access: SharedAccessGrant | undefined;
+    type SharedAccessGrantRow = SharedAccessGrant & {
+        email: string;
+        userId: number | null;
+    };
+
+    let access: SharedAccessGrantRow | undefined;
 
     if (accessToken) {
-        [access] = await db
+        const [tokenAccess] = await db
             .select({
                 id: ovrSharedAccess.id,
                 role: ovrSharedAccess.role,
+                email: ovrSharedAccess.email,
+                userId: ovrSharedAccess.userId,
             })
             .from(ovrSharedAccess)
             .where(
@@ -73,14 +88,29 @@ async function getSharedAccessGrant(
                     eq(ovrSharedAccess.accessToken, accessToken)
                 )
             )
-            .limit(1) as SharedAccessGrant[];
+            .limit(1) as SharedAccessGrantRow[];
+
+        if (tokenAccess && userContext) {
+            const emailMatches = normalizeAccessEmail(tokenAccess.email) === normalizedEmail;
+            const userMatches = tokenAccess.userId !== null && tokenAccess.userId === userContext.userId;
+
+            if (emailMatches || userMatches) {
+                access = tokenAccess;
+            }
+        }
     }
 
     if (!access && userContext) {
+        const emailMatchCondition = normalizedEmail
+            ? sql`LOWER(${ovrSharedAccess.email}) = ${normalizedEmail}`
+            : sql`FALSE`;
+
         [access] = await db
             .select({
                 id: ovrSharedAccess.id,
                 role: ovrSharedAccess.role,
+                email: ovrSharedAccess.email,
+                userId: ovrSharedAccess.userId,
             })
             .from(ovrSharedAccess)
             .where(
@@ -88,11 +118,11 @@ async function getSharedAccessGrant(
                     activeAccessFilter,
                     or(
                         eq(ovrSharedAccess.userId, userContext.userId),
-                        eq(ovrSharedAccess.email, userContext.email)
+                        emailMatchCondition
                     )
                 )
             )
-            .limit(1) as SharedAccessGrant[];
+            .limit(1) as SharedAccessGrantRow[];
     }
 
     if (!access) {
@@ -106,7 +136,10 @@ async function getSharedAccessGrant(
         })
         .where(eq(ovrSharedAccess.id, access.id));
 
-    return access;
+    return {
+        id: access.id,
+        role: access.role,
+    };
 }
 
 export async function getInvestigationSharedAccessGrant(
@@ -209,6 +242,50 @@ export async function populateActionUsers<T extends { assignedTo: number[] | nul
             .filter((u): u is NonNullable<typeof u> => u !== undefined)
             .map(({ department, ...rest }) => rest), // Exclude department for assignees
     };
+}
+
+async function hasAcceptedIncidentSharedAccess(
+    incidentId: string,
+    userContext: UserContext
+): Promise<boolean> {
+    const normalizedEmail = normalizeAccessEmail(userContext.email);
+    const emailMatchCondition = normalizedEmail
+        ? sql`LOWER(${ovrSharedAccess.email}) = ${normalizedEmail}`
+        : sql`FALSE`;
+
+    const [access] = await db
+        .select({
+            id: ovrSharedAccess.id,
+        })
+        .from(ovrSharedAccess)
+        .where(
+            and(
+                eq(ovrSharedAccess.ovrReportId, incidentId),
+                eq(ovrSharedAccess.status, 'accepted'),
+                or(
+                    sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
+                    sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
+                ),
+                or(
+                    eq(ovrSharedAccess.userId, userContext.userId),
+                    emailMatchCondition
+                )
+            )
+        )
+        .limit(1);
+
+    if (!access) {
+        return false;
+    }
+
+    await db
+        .update(ovrSharedAccess)
+        .set({
+            lastAccessedAt: new Date(),
+        })
+        .where(eq(ovrSharedAccess.id, access.id));
+
+    return true;
 }
 
 /**
@@ -365,12 +442,18 @@ export async function getIncidentSecure(
         .where(whereConditions)
         .limit(1);
 
-    // Incident exists but user doesn't have permission → 403
-    if (!accessibleIncident) {
-        throw new AuthorizationError('You do not have permission to view this incident');
+    if (accessibleIncident) {
+        return accessibleIncident;
     }
 
-    return accessibleIncident;
+    const hasSharedAccess = await hasAcceptedIncidentSharedAccess(incidentId, userContext);
+
+    if (hasSharedAccess) {
+        return existingIncident;
+    }
+
+    // Incident exists but user doesn't have permission → 403
+    throw new AuthorizationError('You do not have permission to view this incident');
 }
 
 /**
@@ -397,64 +480,13 @@ export async function canAccessInvestigation(
         return true;
     }
 
-    // Check token-based access
-    if (accessToken) {
-        const [access] = await db
-            .select()
-            .from(ovrSharedAccess)
-            .where(
-                and(
-                    eq(ovrSharedAccess.resourceType, 'investigation'),
-                    eq(ovrSharedAccess.resourceId, investigationId),
-                    eq(ovrSharedAccess.accessToken, accessToken),
-                    eq(ovrSharedAccess.status, 'accepted'),
-                    or(
-                        sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
-                        sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
-                    )
-                )
-            )
-            .limit(1);
+    const grant = await getInvestigationSharedAccessGrant(
+        investigationId,
+        userContext,
+        accessToken
+    );
 
-        if (access) {
-            // Update access timestamp
-            await db
-                .update(ovrSharedAccess)
-                .set({
-                    lastAccessedAt: new Date(),
-                })
-                .where(eq(ovrSharedAccess.id, access.id));
-
-            return true;
-        }
-    }
-
-    // Check if user has shared access via email/userId
-    if (userContext) {
-        const [access] = await db
-            .select()
-            .from(ovrSharedAccess)
-            .where(
-                and(
-                    eq(ovrSharedAccess.resourceType, 'investigation'),
-                    eq(ovrSharedAccess.resourceId, investigationId),
-                    or(
-                        eq(ovrSharedAccess.userId, userContext.userId),
-                        eq(ovrSharedAccess.email, userContext.email)
-                    ),
-                    eq(ovrSharedAccess.status, 'accepted'),
-                    or(
-                        sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
-                        sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
-                    )
-                )
-            )
-            .limit(1);
-
-        return !!access;
-    }
-
-    return false;
+    return Boolean(grant);
 }
 
 /**
@@ -476,64 +508,13 @@ export async function canAccessCorrectiveAction(
         return true;
     }
 
-    // Check token-based access
-    if (accessToken) {
-        const [access] = await db
-            .select()
-            .from(ovrSharedAccess)
-            .where(
-                and(
-                    eq(ovrSharedAccess.resourceType, 'corrective_action'),
-                    eq(ovrSharedAccess.resourceId, actionId),
-                    eq(ovrSharedAccess.accessToken, accessToken),
-                    eq(ovrSharedAccess.status, 'accepted'),
-                    or(
-                        sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
-                        sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
-                    )
-                )
-            )
-            .limit(1);
+    const grant = await getCorrectiveActionSharedAccessGrant(
+        actionId,
+        userContext,
+        accessToken
+    );
 
-        if (access) {
-            // Update access timestamp
-            await db
-                .update(ovrSharedAccess)
-                .set({
-                    lastAccessedAt: new Date(),
-                })
-                .where(eq(ovrSharedAccess.id, access.id));
-
-            return true;
-        }
-    }
-
-    // Check if user has shared access via email/userId
-    if (userContext) {
-        const [access] = await db
-            .select()
-            .from(ovrSharedAccess)
-            .where(
-                and(
-                    eq(ovrSharedAccess.resourceType, 'corrective_action'),
-                    eq(ovrSharedAccess.resourceId, actionId),
-                    or(
-                        eq(ovrSharedAccess.userId, userContext.userId),
-                        eq(ovrSharedAccess.email, userContext.email)
-                    ),
-                    eq(ovrSharedAccess.status, 'accepted'),
-                    or(
-                        sql`${ovrSharedAccess.tokenExpiresAt} IS NULL`,
-                        sql`${ovrSharedAccess.tokenExpiresAt} > NOW()`
-                    )
-                )
-            )
-            .limit(1);
-
-        return !!access;
-    }
-
-    return false;
+    return Boolean(grant);
 }
 
 /**

@@ -14,7 +14,6 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
-    requireAuthOptional,
     validateBody,
 } from '@/lib/api/middleware';
 import {
@@ -39,6 +38,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await validateBody(request, createSharedAccessSchema);
+        const normalizedEmail = body.email.trim().toLowerCase();
 
         // Generate secure token
         const { token, expiresAt } = generateSharedAccessToken(30); // 30 days
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         const [existingUser] = await db
             .select()
             .from(users)
-            .where(eq(users.email, body.email))
+            .where(eq(users.email, normalizedEmail))
             .limit(1);
 
         const [invitation] = await db
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
                 resourceType: body.resourceType,
                 resourceId: body.resourceId,
                 ovrReportId: body.ovrReportId,
-                email: body.email,
+                email: normalizedEmail,
                 userId: existingUser?.id || null,
                 role: body.role,
                 accessToken: token,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             incidentId: body.ovrReportId,
             resourceType: body.resourceType,
             resourceId: body.resourceId,
-            inviteeEmail: body.email,
+            inviteeEmail: normalizedEmail,
             role: body.role,
             accessUrl,
         });
@@ -117,12 +117,13 @@ export async function PUT(request: NextRequest) {
 
         for (const invite of body.invitations) {
             const { token, expiresAt } = generateSharedAccessToken(30);
+            const normalizedEmail = invite.email.trim().toLowerCase();
 
             // Check if user exists
             const [existingUser] = await db
                 .select()
                 .from(users)
-                .where(eq(users.email, invite.email))
+                .where(eq(users.email, normalizedEmail))
                 .limit(1);
 
             const [invitation] = await db
@@ -131,7 +132,7 @@ export async function PUT(request: NextRequest) {
                     resourceType: body.resourceType,
                     resourceId: body.resourceId,
                     ovrReportId: body.ovrReportId,
-                    email: invite.email,
+                    email: normalizedEmail,
                     userId: existingUser?.id || null,
                     role: invite.role,
                     accessToken: token,
@@ -155,7 +156,7 @@ export async function PUT(request: NextRequest) {
                 incidentId: body.ovrReportId,
                 resourceType: body.resourceType,
                 resourceId: body.resourceId,
-                inviteeEmail: invite.email,
+                inviteeEmail: normalizedEmail,
                 role: invite.role,
                 accessUrl,
             });
@@ -181,12 +182,18 @@ export async function PUT(request: NextRequest) {
 
 /**
  * PATCH /api/shared-access - Accept invitation by token
- * Public endpoint (no mandatory session); links user when authenticated email matches invite
+ * Requires authenticated session and strict account/email match with invitation
  */
 export async function PATCH(request: NextRequest) {
     try {
         const body = await validateBody(request, acceptSharedAccessSchema);
-        const session = await requireAuthOptional(request);
+        const session = await requireAuth(request);
+        const sessionUserId = parseInt(session.user.id);
+        const sessionEmail = session.user.email?.trim().toLowerCase();
+
+        if (!sessionEmail) {
+            throw new AuthorizationError('Authenticated account must have an email address');
+        }
 
         const [invitation] = await db
             .select()
@@ -203,19 +210,22 @@ export async function PATCH(request: NextRequest) {
             throw new AuthorizationError('Shared access token has expired');
         }
 
-        const sessionEmail = session?.user?.email?.toLowerCase();
-        const inviteEmail = invitation.email.toLowerCase();
-        const canLinkUser = Boolean(
-            session &&
-            sessionEmail &&
-            sessionEmail === inviteEmail
-        );
+        const inviteEmail = invitation.email.trim().toLowerCase();
+        const userMatches = invitation.userId ? invitation.userId === sessionUserId : true;
+        const emailMatches = inviteEmail === sessionEmail;
+
+        if (!userMatches || !emailMatches) {
+            throw new AuthorizationError('This invitation was issued for a different account');
+        }
+
+        const shouldAccept = invitation.status === 'pending';
 
         const [accepted] = await db
             .update(ovrSharedAccess)
             .set({
-                status: invitation.status === 'pending' ? 'accepted' : invitation.status,
-                userId: canLinkUser ? parseInt(session!.user.id) : invitation.userId,
+                status: shouldAccept ? 'accepted' : invitation.status,
+                email: inviteEmail,
+                userId: sessionUserId,
                 lastAccessedAt: now,
             })
             .where(eq(ovrSharedAccess.id, invitation.id))
@@ -223,7 +233,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: invitation.status === 'pending' ? 'Invitation accepted' : 'Invitation already active',
+            message: shouldAccept ? 'Invitation accepted' : 'Invitation already active',
             access: accepted,
         });
     } catch (error) {
