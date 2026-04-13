@@ -116,10 +116,12 @@ export default function InvestigationsPage() {
                                     size="small"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    InputProps={{
-                                        startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-                                    }}
                                     sx={{ flex: 1 }}
+                                    slotProps={{
+                                        input: {
+                                            startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                                        }
+                                    }}
                                 />
                                 <Select
                                     value={statusFilter}
@@ -152,7 +154,9 @@ export default function InvestigationsPage() {
                                         {!investigations || investigations.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                                                    <Typography variant="body1" color="text.secondary">
+                                                    <Typography variant="body1" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         No investigations found
                                                     </Typography>
                                                 </TableCell>
@@ -161,7 +165,9 @@ export default function InvestigationsPage() {
                                             investigations.map((investigation: InvestigationListItem) => (
                                                 <TableRow key={investigation.id} hover>
                                                     <TableCell>
-                                                        <Typography variant="body2" fontWeight={600}>
+                                                        <Typography variant="body2" sx={{
+                                                            fontWeight: 600
+                                                        }}>
                                                             INV-{investigation.id}
                                                         </Typography>
                                                     </TableCell>

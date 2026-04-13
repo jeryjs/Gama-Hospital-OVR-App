@@ -70,7 +70,9 @@ const MatrixCell = ({
         <Tooltip
             title={
                 <Box>
-                    <Typography variant="body2" fontWeight="bold">
+                    <Typography variant="body2" sx={{
+                        fontWeight: "bold"
+                    }}>
                         {riskLevel} Risk
                     </Typography>
                     <Typography variant="caption">
@@ -113,12 +115,11 @@ const MatrixCell = ({
                 {hasIncidents && (
                     <Typography
                         variant="body2"
-                        fontWeight="bold"
                         sx={{
+                            fontWeight: "bold",
                             color: likelihood + impact >= 6 ? 'white' : 'rgba(0,0,0,0.8)',
-                            textShadow: likelihood + impact >= 6 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-                        }}
-                    >
+                            textShadow: likelihood + impact >= 6 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'
+                        }}>
                         {count}
                     </Typography>
                 )}
@@ -162,14 +163,17 @@ export default function RiskMatrixScatter({
             }}
         >
             <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography variant="h6" sx={{
+                    fontWeight: "bold"
+                }}>
                     Risk Assessment Matrix
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     {totalIncidents} incidents mapped by likelihood and impact
                 </Typography>
             </Box>
-
             <Box sx={{ display: 'flex' }}>
                 {/* Y-axis label */}
                 <Box
@@ -183,13 +187,12 @@ export default function RiskMatrixScatter({
                 >
                     <Typography
                         variant="caption"
-                        fontWeight="bold"
-                        color="text.secondary"
                         sx={{
+                            fontWeight: "bold",
+                            color: "text.secondary",
                             writingMode: 'vertical-rl',
-                            transform: 'rotate(180deg)',
-                        }}
-                    >
+                            transform: 'rotate(180deg)'
+                        }}>
                         LIKELIHOOD →
                     </Typography>
                 </Box>
@@ -210,7 +213,9 @@ export default function RiskMatrixScatter({
                                         pr: 1,
                                     }}
                                 >
-                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                    <Typography variant="caption" noWrap sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {label}
                                     </Typography>
                                 </Box>
@@ -254,7 +259,9 @@ export default function RiskMatrixScatter({
                                     textAlign: 'center',
                                 }}
                             >
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {label}
                                 </Typography>
                             </Box>
@@ -264,15 +271,18 @@ export default function RiskMatrixScatter({
                     {/* X-axis title */}
                     <Typography
                         variant="caption"
-                        fontWeight="bold"
-                        color="text.secondary"
-                        sx={{ display: 'block', textAlign: 'center', mt: 1, ml: '88px' }}
-                    >
+                        sx={{
+                            fontWeight: "bold",
+                            color: "text.secondary",
+                            display: 'block',
+                            textAlign: 'center',
+                            mt: 1,
+                            ml: '88px'
+                        }}>
                         IMPACT →
                     </Typography>
                 </Box>
             </Box>
-
             {/* Legend */}
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3, flexWrap: 'wrap' }}>
                 {[
@@ -283,7 +293,9 @@ export default function RiskMatrixScatter({
                 ].map((item) => (
                     <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{ width: 12, height: 12, bgcolor: item.color, borderRadius: 0.5 }} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             {item.label}
                         </Typography>
                     </Box>

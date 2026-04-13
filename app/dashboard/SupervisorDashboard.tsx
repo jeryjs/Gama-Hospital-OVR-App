@@ -52,10 +52,14 @@ export default function SupervisorDashboard({ stats, session }: { stats: Dashboa
           <Stack spacing={3}>
             {/* Welcome Header */}
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" gutterBottom sx={{
+                fontWeight: 700
+              }}>
                 Supervisor Dashboard
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{
+                color: "text.secondary"
+              }}>
                 Welcome back, {session?.user?.name} • Review & Approve Incident Reports
               </Typography>
             </Box>

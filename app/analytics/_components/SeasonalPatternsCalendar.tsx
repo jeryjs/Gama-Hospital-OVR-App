@@ -81,9 +81,13 @@ export function SeasonalPatternsCalendar({ dateRange, loading = false }: Seasona
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <CalendarMonth color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Seasonal Patterns Calendar
                     </Typography>
                 </Stack>
@@ -91,19 +95,26 @@ export function SeasonalPatternsCalendar({ dateRange, loading = false }: Seasona
                 <Stack direction="row" spacing={4} sx={{ overflowX: 'auto', pb: 1 }}>
                     {monthsData.map(({ month, days }) => (
                         <Box key={month.toISOString()}>
-                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                            <Typography variant="subtitle2" gutterBottom sx={{
+                                fontWeight: 600
+                            }}>
                                 {format(month, 'MMMM yyyy')}
                             </Typography>
 
                             {/* Week day headers */}
-                            <Stack direction="row" spacing={0.5} mb={0.5}>
+                            <Stack direction="row" spacing={0.5} sx={{
+                                mb: 0.5
+                            }}>
                                 {weekDays.map((day) => (
                                     <Typography
                                         key={day}
                                         variant="caption"
-                                        color="text.secondary"
-                                        sx={{ width: 24, textAlign: 'center', fontSize: '0.65rem' }}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            width: 24,
+                                            textAlign: 'center',
+                                            fontSize: '0.65rem'
+                                        }}>
                                         {day[0]}
                                     </Typography>
                                 ))}
@@ -162,8 +173,16 @@ export function SeasonalPatternsCalendar({ dateRange, loading = false }: Seasona
                 </Stack>
 
                 {/* Legend */}
-                <Stack direction="row" alignItems="center" spacing={2} justifyContent="center">
-                    <Typography variant="caption" color="text.secondary">Less</Typography>
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>Less</Typography>
                     {[0, 0.25, 0.5, 0.75, 1].map((intensity) => (
                         <Box
                             key={intensity}
@@ -177,7 +196,9 @@ export function SeasonalPatternsCalendar({ dateRange, loading = false }: Seasona
                             }}
                         />
                     ))}
-                    <Typography variant="caption" color="text.secondary">More</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>More</Typography>
                 </Stack>
             </Stack>
         </Paper>

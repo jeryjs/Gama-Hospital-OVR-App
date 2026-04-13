@@ -121,10 +121,17 @@ const KPIBox = ({ kpi, loading }: { kpi: KPIData; loading?: boolean }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, color: 'primary.main' }}>
                 {kpi.icon}
             </Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" gutterBottom sx={{
+                color: "text.secondary"
+            }}>
                 {kpi.label}
             </Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
+            <Typography
+                variant="h4"
+                sx={{
+                    fontWeight: "bold",
+                    mb: 1
+                }}>
                 {kpi.format === 'percentage' ? `${kpi.value}%` : kpi.value}
             </Typography>
             {kpi.change !== undefined && (
@@ -133,7 +140,9 @@ const KPIBox = ({ kpi, loading }: { kpi: KPIData; loading?: boolean }) => {
                     <Typography variant="body2" sx={{ color: changeColor, fontWeight: 500 }}>
                         {kpi.change > 0 ? '+' : ''}{kpi.change.toFixed(1)}%
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         vs previous
                     </Typography>
                 </Box>
@@ -159,7 +168,9 @@ export default function ExecutiveSummaryCard({
             }}
         >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography variant="h6" sx={{
+                    fontWeight: "bold"
+                }}>
                     Executive Summary
                 </Typography>
                 {dateRange && (

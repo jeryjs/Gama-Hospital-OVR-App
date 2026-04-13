@@ -221,7 +221,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
           OVR System
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Gama Hospital
         </Typography>
       </Box>
@@ -251,7 +253,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ListItemText primary={item.title} />
                 {hasChildren && (item.open ? <ExpandLess /> : <ExpandMore />)}
               </ListItemButton>
-
               {hasChildren && (
                 <Collapse in={item.open} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
@@ -322,7 +323,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             borderTop: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} sx={{
+            alignItems: "center"
+          }}>
             <Avatar
               src={session.user.image || ''}
               sx={{
@@ -334,10 +337,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {session.user.name?.charAt(0)}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" noWrap fontWeight={600}>
+              <Typography variant="body2" noWrap sx={{
+                fontWeight: 600
+              }}>
                 {session.user.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap>
+              <Typography variant="caption" noWrap sx={{
+                color: "text.secondary"
+              }}>
                 {session.user.email}
               </Typography>
             </Box>
@@ -400,7 +407,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               },
             }}
           >
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2, px: 1 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                alignItems: "center",
+                mb: 2,
+                px: 1
+              }}>
               <Avatar
                 src={session?.user?.image || ''}
                 sx={{
@@ -414,10 +428,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 {session?.user?.name?.charAt(0)}
               </Avatar>
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle1" fontWeight={700} noWrap>
+                <Typography variant="subtitle1" noWrap sx={{
+                  fontWeight: 700
+                }}>
                   {session?.user?.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" noWrap>
+                <Typography variant="body2" noWrap sx={{
+                  color: "text.secondary"
+                }}>
                   {session?.user?.email}
                 </Typography>
               </Box>
@@ -440,7 +458,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Menu>
         </Toolbar>
       </AppBar>
-
       {/* Drawer */}
       <Box
         component="nav"
@@ -478,7 +495,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {drawerContent}
         </Drawer>
       </Box>
-
       {/* Main content */}
       <Box
         component="main"

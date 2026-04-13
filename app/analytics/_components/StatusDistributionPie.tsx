@@ -110,10 +110,14 @@ const DonutChart = ({
                     textAlign: 'center',
                 }}
             >
-                <Typography variant="h4" fontWeight="bold">
+                <Typography variant="h4" sx={{
+                    fontWeight: "bold"
+                }}>
                     {total}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Total
                 </Typography>
             </Box>
@@ -156,8 +160,10 @@ const Legend = ({
                     />
                     <ListItemText
                         primary={item.status}
-                        primaryTypographyProps={{ variant: 'body2' }}
                         sx={{ flex: 1 }}
+                        slotProps={{
+                            primary: { variant: 'body2' }
+                        }}
                     />
                     <Chip
                         label={`${item.percentage.toFixed(1)}%`}
@@ -171,9 +177,12 @@ const Legend = ({
                     />
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{ ml: 1, minWidth: 30, textAlign: 'right' }}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            ml: 1,
+                            minWidth: 30,
+                            textAlign: 'right'
+                        }}>
                         {item.count}
                     </Typography>
                 </ListItem>
@@ -220,17 +229,22 @@ export default function StatusDistributionPie({
                 borderColor: 'divider',
             }}
         >
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{
+                fontWeight: "bold"
+            }}>
                 Status Distribution
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mb: 3
+                }}>
                 Current incident status breakdown
             </Typography>
-
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <DonutChart data={data} onSegmentClick={onSegmentClick} />
             </Box>
-
             <Legend data={data} onItemClick={onSegmentClick} />
         </Paper>
     );

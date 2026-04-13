@@ -54,7 +54,9 @@ export default function DashboardPage() {
     return (
       <AppLayout>
         <Box sx={{ maxWidth: 1400, mx: 'auto', py: 4 }}>
-          <Box color="error.main">
+          <Box sx={{
+            color: "error.main"
+          }}>
             Failed to load dashboard stats. {formatErrorForAlert(error)}
           </Box>
         </Box>

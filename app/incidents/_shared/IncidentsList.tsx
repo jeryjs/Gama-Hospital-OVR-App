@@ -177,11 +177,15 @@ export function IncidentsList({
                         {incidents.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={colSpan} align="center" sx={{ py: 8 }}>
-                                    <Stack alignItems="center" spacing={2}>
+                                    <Stack spacing={2} sx={{
+                                        alignItems: "center"
+                                    }}>
                                         <Description
                                             sx={{ fontSize: 48, color: 'text.secondary' }}
                                         />
-                                        <Typography variant="body1" color="text.secondary">
+                                        <Typography variant="body1" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             {hasActiveFilters
                                                 ? 'No incidents match your filters.'
                                                 : emptyMessage}
@@ -223,7 +227,9 @@ export function IncidentsList({
                                     onClick={() => handleRowClick(incident.id)}
                                 >
                                     <TableCell>
-                                        <Typography variant="body2" fontWeight={600}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {incident.id}
                                         </Typography>
                                     </TableCell>

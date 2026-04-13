@@ -80,7 +80,9 @@ export function CaseReviewSection({
     if (!canCloseCase) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" sx={{
+                    fontWeight: 600
+                }}>
                     Awaiting Final QI Review
                 </Typography>
                 <Typography variant="body2">
@@ -100,12 +102,13 @@ export function CaseReviewSection({
                     color: allActionsClosed ? 'success.main' : 'warning.main',
                 }}
             />
-
             <CardContent>
                 {/* Warning if actions not closed */}
                 {!allActionsClosed && (
                     <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
-                        <Typography variant="body2" fontWeight={500} gutterBottom>
+                        <Typography variant="body2" gutterBottom sx={{
+                            fontWeight: 500
+                        }}>
                             Cannot close incident yet
                         </Typography>
                         <Typography variant="body2">
@@ -117,7 +120,9 @@ export function CaseReviewSection({
                 {/* Success indicator */}
                 {allActionsClosed && (
                     <Alert severity="success" icon={<CompleteIcon />} sx={{ mb: 3 }}>
-                        <Typography variant="body2" fontWeight={500} gutterBottom>
+                        <Typography variant="body2" gutterBottom sx={{
+                            fontWeight: 500
+                        }}>
                             Ready to close
                         </Typography>
                         <Typography variant="body2">
@@ -182,11 +187,17 @@ export function CaseReviewSection({
                 </Button>
 
                 {/* Help text */}
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        mt: 1,
+                        textAlign: 'center'
+                    }}>
                     Once closed, this incident will be marked as resolved and archived.
                 </Typography>
             </CardContent>
-
             {ErrorDialogComponent}
         </Card>
     );

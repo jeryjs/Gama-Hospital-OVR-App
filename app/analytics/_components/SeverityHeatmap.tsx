@@ -69,13 +69,19 @@ export default function SeverityHeatmap({
 
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{
+                fontWeight: 600
+            }}>
                 Incident Frequency Heatmap
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mb: 2
+                }}>
                 When incidents occur most frequently (Day × Hour)
             </Typography>
-
             <Box sx={{ overflowX: 'auto' }}>
                 {/* Hour labels */}
                 <Box sx={{ display: 'flex', ml: 5, mb: 0.5 }}>
@@ -130,10 +136,11 @@ export default function SeverityHeatmap({
                     </Box>
                 ))}
             </Box>
-
             {/* Legend */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Less
                 </Typography>
                 {[0, 0.25, 0.5, 0.75, 1].map((intensity, i) => (
@@ -147,7 +154,9 @@ export default function SeverityHeatmap({
                         }}
                     />
                 ))}
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     More
                 </Typography>
             </Box>

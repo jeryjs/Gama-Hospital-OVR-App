@@ -110,10 +110,15 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     disabled={disabled}
                 />
             </Box>
-
             {/* 5 Whys Chain */}
             <Box>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 1
+                    }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                         The 5 Whys Analysis *
                     </Typography>
@@ -173,7 +178,9 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                             </Stack>
                             {index < rca.fiveWhys.length - 1 && (
                                 <Box sx={{ textAlign: 'center', mt: 1 }}>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         ↓
                                     </Typography>
                                 </Box>
@@ -182,7 +189,6 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     ))}
                 </Stack>
             </Box>
-
             {/* Root Cause */}
             <Box>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -197,22 +203,40 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     placeholder="Based on the analysis above, what is the fundamental root cause?"
                     disabled={disabled}
                 />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.5,
+                        display: 'block'
+                    }}>
                     This should be the deepest underlying cause identified through the 5 Whys process
                 </Typography>
             </Box>
-
             {/* Contributing Factors */}
             <Box>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
                     Contributing Factors
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        mb: 1.5,
+                        display: 'block'
+                    }}>
                     Tag additional factors that contributed to this incident
                 </Typography>
 
                 {/* Quick select common factors */}
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{
+                        flexWrap: "wrap",
+                        mb: 2
+                    }}>
                     {COMMON_FACTORS.map((factor) => (
                         <Chip
                             key={factor}
@@ -227,7 +251,14 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
 
                 {/* Selected factors */}
                 {rca.contributingFactors.length > 0 && (
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        sx={{
+                            flexWrap: "wrap",
+                            mb: 2
+                        }}>
                         {rca.contributingFactors.map((factor) => (
                             <Chip
                                 key={factor.id}
@@ -265,7 +296,6 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     </Button>
                 </Stack>
             </Box>
-
             {/* Validation hints */}
             {!rca.problemStatement.trim() && (
                 <Alert severity="info" sx={{ mt: 2 }}>

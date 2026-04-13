@@ -85,10 +85,14 @@ export default function LocationComparisonBar({
         <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Incidents by Location
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Comparative view across all facilities
                     </Typography>
                 </Box>
@@ -113,7 +117,6 @@ export default function LocationComparisonBar({
                     </Tooltip>
                 </Box>
             </Box>
-
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {sortedData.map((location, index) => {
                     const percentage = (location.count / maxCount) * 100;
@@ -135,7 +138,13 @@ export default function LocationComparisonBar({
                             }}
                         >
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: '60%' }}>
+                                <Typography
+                                    variant="body2"
+                                    noWrap
+                                    sx={{
+                                        fontWeight: 500,
+                                        maxWidth: '60%'
+                                    }}>
                                     {location.name}
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -168,9 +177,10 @@ export default function LocationComparisonBar({
                     );
                 })}
             </Box>
-
             <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Total incidents: {placeholderData.reduce((sum, d) => sum + d.count, 0)}
                 </Typography>
             </Box>

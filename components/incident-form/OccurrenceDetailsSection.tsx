@@ -15,7 +15,12 @@ interface Props {
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <Box>
-    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+    <Typography
+      variant="caption"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 600
+      }}>
       {label}
     </Typography>
     <Typography variant="body2">{value || 'N/A'}</Typography>
@@ -46,19 +51,17 @@ export function OccurrenceDetailsSection({ incident }: Props) {
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
         variant="h6"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-        }}
-      >
+          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
+        }}>
         <Place /> Occurrence Details
       </Typography>
-
       <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow
@@ -84,9 +87,13 @@ export function OccurrenceDetailsSection({ incident }: Props) {
           </Grid>
         )}
       </Grid>
-
       <Box sx={{ mt: 3 }}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 600
+          }}>
           Entity Involved
         </Typography>
         <Box sx={{ mt: 1 }}>
@@ -114,7 +121,12 @@ export function OccurrenceDetailsSection({ incident }: Props) {
               borderLeft: (theme) => `4px solid ${theme.palette.error.main}`,
             }}
           >
-            <Typography variant="caption" fontWeight={600} color="error.main">
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                color: "error.main"
+              }}>
               Sentinel Event Details:
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -123,12 +135,12 @@ export function OccurrenceDetailsSection({ incident }: Props) {
           </Box>
         )}
       </Box>
-
       {/* Staff Involved - Removed, now handled by PersonInvolvedSection */}
-
       {/* Classification */}
       <Box sx={{ mt: 3 }}>
-        <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+        <Typography variant="subtitle2" gutterBottom sx={{
+          fontWeight: 700
+        }}>
           Classification
         </Typography>
         <Grid container spacing={2}>
@@ -145,10 +157,14 @@ export function OccurrenceDetailsSection({ incident }: Props) {
           )}
         </Grid>
       </Box>
-
       {/* Description */}
       <Box sx={{ mt: 3 }}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 600
+          }}>
           Description of Occurrence / Variance
         </Typography>
         <Box

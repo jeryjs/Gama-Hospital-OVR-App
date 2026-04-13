@@ -112,7 +112,7 @@ export async function PUT(request: NextRequest) {
 
         const body = await validateBody(request, bulkCreateSharedAccessSchema);
 
-        const invitations = [];
+        const invitations = [] as (typeof ovrSharedAccess.$inferInsert & { accessUrl: string })[];
         const invitedBy = parseInt(session.user.id);
 
         for (const invite of body.invitations) {

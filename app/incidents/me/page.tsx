@@ -111,7 +111,9 @@ export default function MyReportsPage() {
 
                         {/* Submitted Reports Section */}
                         <Box>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
+                            <Typography variant="h6" gutterBottom sx={{
+                                fontWeight: 600
+                            }}>
                                 Submitted Reports
                             </Typography>
                             <IncidentsList

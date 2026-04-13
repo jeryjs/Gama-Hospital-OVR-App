@@ -89,10 +89,19 @@ export function RepeatIncidentDetector({ dateRange, loading = false }: RepeatInc
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between"
+                    }}>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                    }}>
                         <ContentCopy color="primary" />
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Repeat Incident Detector
                         </Typography>
                     </Stack>
@@ -110,7 +119,9 @@ export function RepeatIncidentDetector({ dateRange, loading = false }: RepeatInc
                     )}
                 </Stack>
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Similar incidents detected using pattern matching analysis
                 </Typography>
 
@@ -146,8 +157,16 @@ export function RepeatIncidentDetector({ dateRange, loading = false }: RepeatInc
                             </ListItemAvatar>
                             <ListItemText
                                 primary={
-                                    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-                                        <Typography variant="body2" fontWeight={600}>
+                                    <Stack
+                                        direction="row"
+                                        spacing={1}
+                                        sx={{
+                                            alignItems: "center",
+                                            flexWrap: "wrap"
+                                        }}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {cluster.pattern}
                                         </Typography>
                                         <Chip
@@ -164,11 +183,17 @@ export function RepeatIncidentDetector({ dateRange, loading = false }: RepeatInc
                                     </Stack>
                                 }
                                 secondary={
-                                    <Stack spacing={0.5} mt={1}>
-                                        <Typography variant="caption" color="text.secondary">
+                                    <Stack spacing={0.5} sx={{
+                                        mt: 1
+                                    }}>
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             📍 {cluster.location} • Last: {cluster.lastOccurrence}
                                         </Typography>
-                                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                                        <Stack direction="row" spacing={0.5} sx={{
+                                            flexWrap: "wrap"
+                                        }}>
                                             {cluster.incidents.map((id) => (
                                                 <Chip
                                                     key={id}
@@ -206,7 +231,9 @@ export function RepeatIncidentDetector({ dateRange, loading = false }: RepeatInc
                         borderColor: 'info.main',
                     }}
                 >
-                    <Typography variant="caption" color="info.main">
+                    <Typography variant="caption" sx={{
+                        color: "info.main"
+                    }}>
                         💡 Pattern detection uses text similarity analysis on incident descriptions.
                         Click on any pattern to view detailed comparison and root cause analysis.
                     </Typography>

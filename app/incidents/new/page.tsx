@@ -282,10 +282,13 @@ function OccurrenceDetailsSection({
       {/* Header Section */}
       <Typography
         variant="subtitle1"
-        fontWeight={700}
         gutterBottom
-        sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
-      >
+        sx={{
+          fontWeight: 700,
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          p: 1,
+          borderRadius: 1
+        }}>
         Occurrence Details
       </Typography>
       <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -346,7 +349,9 @@ function OccurrenceDetailsSection({
         </Grid>
       </Grid>
       <Alert severity="info" sx={{ mt: 2 }}>
-        <Typography variant="caption" fontWeight={600}>
+        <Typography variant="caption" sx={{
+          fontWeight: 600
+        }}>
           Do not file in the Medical Record
         </Typography>
       </Alert>
@@ -465,17 +470,18 @@ function PersonDetailsFields({
     <Box sx={{ mb: 4 }}>
       <Typography
         variant="subtitle1"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
+
           bgcolor: (theme) => alpha(
             isStaff ? theme.palette.warning.main : theme.palette.primary.main,
             0.1
           ),
+
           p: 1,
           borderRadius: 1
-        }}
-      >
+        }}>
         {isPatient && 'Patient Information'}
         {isStaff && 'Staff Involved Details'}
         {isPublic && 'Public Information'}
@@ -586,9 +592,11 @@ function PersonDetailsFields({
               fullWidth
               label="Sex"
               select
-              SelectProps={{ native: true }}
               value={formData.involvedPersonSex}
               onChange={(e) => onChange('involvedPersonSex', e.target.value)}
+              slotProps={{
+                select: { native: true }
+              }}
             >
               <option value=""></option>
               <option value="Male">Male</option>
@@ -630,10 +638,13 @@ function ClassificationSection({
     <Box sx={{ mb: 4 }}>
       <Typography
         variant="subtitle1"
-        fontWeight={700}
         gutterBottom
-        sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), p: 1, borderRadius: 1 }}
-      >
+        sx={{
+          fontWeight: 700,
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          p: 1,
+          borderRadius: 1
+        }}>
         Classification of Occurrence
       </Typography>
       <Box sx={{ mt: 2 }}>
@@ -662,11 +673,21 @@ function ClassificationSection({
               placeholder="Please provide a detailed description of what occurred..."
               minHeight={150}
             />
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
+            <Stack
+              direction="row"
+              sx={{
+                justifyContent: "space-between",
+                alignItems: "center",
+                mt: 0.5
+              }}>
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Please ensure the appropriate classification of Occurrence is selected above.
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 {descriptionLength} characters
               </Typography>
             </Stack>
@@ -748,13 +769,15 @@ function ImmediateActionsSection({
     <Box sx={{ mb: 4 }}>
       <Typography
         variant="subtitle1"
-        fontWeight={700}
         gutterBottom
-        sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.1), p: 1, borderRadius: 1 }}
-      >
+        sx={{
+          fontWeight: 700,
+          bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
+          p: 1,
+          borderRadius: 1
+        }}>
         Immediate Actions Taken
       </Typography>
-
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {/* Physician Informed & Seen - First row */}
         <Grid size={{ xs: 12, md: 3 }}>
@@ -885,7 +908,9 @@ function ImmediateActionsSection({
         {/* Supervisor Notification Subsection */}
         <Grid size={{ xs: 12 }}>
           <Divider sx={{ my: 2 }} />
-          <Typography variant="body2" fontWeight={600} gutterBottom>
+          <Typography variant="body2" gutterBottom sx={{
+            fontWeight: 600
+          }}>
             Supervisor Notification
           </Typography>
         </Grid>
@@ -985,22 +1010,25 @@ function RiskIdentificationSection({
     <Box sx={{ mb: 4 }}>
       <Typography
         variant="subtitle1"
-        fontWeight={700}
         gutterBottom
-        sx={{ bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.12 : 0.08), p: 1, borderRadius: 1 }}
-      >
+        sx={{
+          fontWeight: 700,
+          bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.12 : 0.08),
+          p: 1,
+          borderRadius: 1
+        }}>
         Incident Risk Classification
       </Typography>
-
       <Alert severity="info" sx={{ mt: 2, mb: 3 }}>
         Please assess the risk level of this incident by selecting the impact and likelihood below.
       </Alert>
-
       <Grid container spacing={3}>
         {/* Risk Matrix Reference */}
         <Grid size={{ xs: 12 }}>
           <Paper sx={(theme) => ({ p: 2, bgcolor: alpha(theme.palette.background.paper, theme.palette.mode === 'dark' ? 0.6 : 1) })}>
-            <Typography variant="body2" fontWeight={600} gutterBottom>
+            <Typography variant="body2" gutterBottom sx={{
+              fontWeight: 600
+            }}>
               Risk Assessment Matrix (Reference)
             </Typography>
 
@@ -1193,20 +1221,36 @@ function RiskIdentificationSection({
                 border: `2px solid ${riskLevel.color}`,
               })}
             >
-              <Stack direction="row" spacing={3} alignItems="center">
+              <Stack direction="row" spacing={3} sx={{
+                alignItems: "center"
+              }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     Risk Score
                   </Typography>
-                  <Typography variant="h3" fontWeight={700} sx={{ color: riskLevel.color }}>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      fontWeight: 700,
+                      color: riskLevel.color
+                    }}>
                     {score}
                   </Typography>
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" fontWeight={600} sx={{ color: riskLevel.color }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      color: riskLevel.color
+                    }}>
                     {riskLevel.label}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     Impact: {RISK_IMPACT_LEVELS.find(l => l.value === impact)?.label} ×
                     Likelihood: {RISK_LIKELIHOOD_LEVELS.find(l => l.value === likelihood)?.label}
                   </Typography>
@@ -1226,7 +1270,9 @@ function RiskIdentificationSection({
 function FooterSection() {
   return (
     <Box sx={{ mt: 4, p: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.05), borderRadius: 1 }}>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         <strong>important Notes:</strong>
         <br />• Completing this form does not constitute an admission of liability on any kind, on any person.
         <br />• Record only known facts; Brief explanation of the occurrence without comment or conclusion.
@@ -1250,7 +1296,13 @@ function FormHeader({
   onClearDraft: () => void;
 }) {
   return (
-    <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        alignItems: "center",
+        mb: 3
+      }}>
       <Button
         component={Link}
         href="/incidents"
@@ -1260,11 +1312,15 @@ function FormHeader({
         Back
       </Button>
       <Box sx={{ flex: 1 }}>
-        <Typography variant="h4" fontWeight={700}>
+        <Typography variant="h4" sx={{
+          fontWeight: 700
+        }}>
           New Report
         </Typography>
         {hasDraftSnapshot && draftUpdatedAt && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Updated draft at {dayjs(draftUpdatedAt).format('HH:mm, MMM DD')}
           </Typography>
         )}
@@ -1278,7 +1334,14 @@ function FormHeader({
           >
             Clear Draft
           </Button>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, textAlign: 'center' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 0.5,
+              textAlign: 'center'
+            }}>
             Start fresh
           </Typography>
         </Box>
@@ -1295,15 +1358,21 @@ function OVRHeaderSection() {
     <>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, md: 3 }}>
-          <Typography variant="h6" fontWeight={700}>
+          <Typography variant="h6" sx={{
+            fontWeight: 700
+          }}>
             Gama Hospital
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             مستشفى جاما
           </Typography>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={700}>
+          <Typography variant="h5" sx={{
+            fontWeight: 700
+          }}>
             OCCURRENCE VARIANCE REPORT (OVR)
           </Typography>
           <Typography variant="caption">GH 012 A</Typography>
@@ -1313,7 +1382,9 @@ function OVRHeaderSection() {
             variant="outlined"
             sx={{ p: 1, textAlign: 'center', bgcolor: (theme) => alpha(theme.palette.error.main, 0.1) }}
           >
-            <Typography variant="subtitle2" fontWeight={700}>
+            <Typography variant="subtitle2" sx={{
+              fontWeight: 700
+            }}>
               CONFIDENTIAL
             </Typography>
             <Typography variant="caption">
@@ -1322,7 +1393,6 @@ function OVRHeaderSection() {
           </Paper>
         </Grid>
       </Grid>
-
       <Divider sx={{ my: 3 }} />
     </>
   );
@@ -1346,7 +1416,9 @@ function FormActions({
 }) {
   return (
     <>
-      <Stack direction="row" spacing={2} justifyContent="flex-end">
+      <Stack direction="row" spacing={2} sx={{
+        justifyContent: "flex-end"
+      }}>
         <Button
           variant="outlined"
           startIcon={<Save />}
@@ -1364,7 +1436,6 @@ function FormActions({
           {loading ? 'Submitting...' : submitLabel}
         </Button>
       </Stack>
-
       {loading && <LinearProgress sx={{ mt: 2 }} />}
     </>
   );
@@ -1715,7 +1786,13 @@ export default function NewIncidentPage() {
     <AppLayout>
       <Dialog open={isFetchingServerDraft} maxWidth="xs" fullWidth>
         <DialogContent sx={{ py: 4 }}>
-          <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
             <CircularProgress size={20} />
             <Typography variant="body2">Fetching draft...</Typography>
           </Stack>
@@ -1771,16 +1848,21 @@ export default function NewIncidentPage() {
                   <Stack
                     direction={{ sm: 'column', md: 'row' }}
                     spacing={2}
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Person color="info" />
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Report will be filed as:
                         </Typography>
-                        <Typography variant="body1" fontWeight={600}>
+                        <Typography variant="body1" sx={{
+                          fontWeight: 600
+                        }}>
                           {session.user.name} ({formData.reporterPosition || 'Position not specified'})
                           {formData.reporterDepartment && `, ${formData.reporterDepartment}`}
                         </Typography>

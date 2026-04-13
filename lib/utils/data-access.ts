@@ -315,7 +315,7 @@ export function buildIncidentVisibilityFilter(
 /**
  * Securely fetch a single incident with access control
  * 
- * IMPORTANT: This function separates "not found" from "no permission":
+ * importANT: This function separates "not found" from "no permission":
  * - If incident doesn't exist → throws NotFoundError (404)
  * - If incident exists but user has no permission → throws AuthorizationError (403)
  * 

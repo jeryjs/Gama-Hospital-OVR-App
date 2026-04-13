@@ -28,16 +28,21 @@ export function IncidentsHeader({
     const content = (
         <Stack
             direction="row"
-            justifyContent="space-between"
-            alignItems="flex-start"
-            sx={{ mb: 3 }}
-        >
+            sx={{
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 3
+            }}>
             <Box>
-                <Typography variant="h4" fontWeight={700} gutterBottom>
+                <Typography variant="h4" gutterBottom sx={{
+                    fontWeight: 700
+                }}>
                     {title}
                 </Typography>
                 {(subtitle || count !== undefined) && (
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={{
+                        color: "text.secondary"
+                    }}>
                         {subtitle}
                         {count !== undefined && ` (${count})`}
                     </Typography>

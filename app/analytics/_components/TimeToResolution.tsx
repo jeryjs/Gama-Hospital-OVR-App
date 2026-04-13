@@ -88,14 +88,20 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Timer color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Time to Resolution by Severity
                     </Typography>
                 </Stack>
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Distribution of resolution times (in days) showing min, quartiles, and max
                 </Typography>
 
@@ -106,8 +112,16 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
 
                         return (
                             <Box key={item.severity}>
-                                <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                <Stack
+                                    direction="row"
+                                    sx={{
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        mb: 1
+                                    }}>
+                                    <Stack direction="row" spacing={1} sx={{
+                                        alignItems: "center"
+                                    }}>
                                         <Box
                                             sx={{
                                                 width: 12,
@@ -116,7 +130,9 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
                                                 bgcolor: item.color,
                                             }}
                                         />
-                                        <Typography variant="body2" fontWeight={600}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {item.severity}
                                         </Typography>
                                     </Stack>
@@ -130,7 +146,6 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
                                         Avg: {item.avg}d (Target: {item.target}d)
                                     </Typography>
                                 </Stack>
-
                                 {/* Box Plot */}
                                 <Box
                                     sx={{
@@ -241,26 +256,52 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
                 </Stack>
 
                 {/* Scale */}
-                <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="caption" color="text.secondary">0 days</Typography>
-                    <Typography variant="caption" color="text.secondary">{maxDays} days</Typography>
+                <Stack direction="row" sx={{
+                    justifyContent: "space-between"
+                }}>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>0 days</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>{maxDays} days</Typography>
                 </Stack>
 
                 {/* Legend */}
-                <Stack direction="row" spacing={3} justifyContent="center" flexWrap="wrap">
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Stack
+                    direction="row"
+                    spacing={3}
+                    sx={{
+                        justifyContent: "center",
+                        flexWrap: "wrap"
+                    }}>
+                    <Stack direction="row" spacing={0.5} sx={{
+                        alignItems: "center"
+                    }}>
                         <Box sx={{ width: 20, height: 2, bgcolor: 'text.secondary' }} />
-                        <Typography variant="caption" color="text.secondary">Whiskers (Min-Max)</Typography>
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>Whiskers (Min-Max)</Typography>
                     </Stack>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{
+                        alignItems: "center"
+                    }}>
                         <Box sx={{ width: 16, height: 12, bgcolor: alpha('#6B7280', 0.3), border: 1, borderColor: '#6B7280' }} />
-                        <Typography variant="caption" color="text.secondary">IQR (Q1-Q3)</Typography>
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>IQR (Q1-Q3)</Typography>
                     </Stack>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{
+                        alignItems: "center"
+                    }}>
                         <Box sx={{ width: 3, height: 12, bgcolor: '#6B7280', borderRadius: 1 }} />
-                        <Typography variant="caption" color="text.secondary">Median</Typography>
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>Median</Typography>
                     </Stack>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{
+                        alignItems: "center"
+                    }}>
                         <Box
                             sx={{
                                 width: 0,
@@ -270,7 +311,9 @@ export function TimeToResolution({ dateRange, loading = false }: TimeToResolutio
                                 borderTop: '6px solid #6B7280',
                             }}
                         />
-                        <Typography variant="caption" color="text.secondary">Target</Typography>
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>Target</Typography>
                     </Stack>
                 </Stack>
             </Stack>

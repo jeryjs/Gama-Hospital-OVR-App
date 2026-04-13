@@ -70,15 +70,21 @@ export function CorrectiveActionsTracker({ dateRange, loading = false }: Correct
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Task color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Corrective Actions Tracker
                     </Typography>
                 </Stack>
 
                 {/* Completion Donut */}
-                <Stack direction="row" spacing={3} alignItems="center">
+                <Stack direction="row" spacing={3} sx={{
+                    alignItems: "center"
+                }}>
                     <Box sx={{ position: 'relative', display: 'inline-flex' }}>
                         <CircularProgress
                             variant="determinate"
@@ -111,29 +117,45 @@ export function CorrectiveActionsTracker({ dateRange, loading = false }: Correct
                                 flexDirection: 'column',
                             }}
                         >
-                            <Typography variant="h5" fontWeight={700}>
+                            <Typography variant="h5" sx={{
+                                fontWeight: 700
+                            }}>
                                 {completionRate}%
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Complete
                             </Typography>
                         </Box>
                     </Box>
 
                     {/* Status Breakdown */}
-                    <Stack spacing={1} flex={1}>
+                    <Stack spacing={1} sx={{
+                        flex: 1
+                    }}>
                         {Object.entries(statusConfig).map(([key, config]) => {
                             const count = mockData[key as keyof typeof mockData] as number;
                             const percentage = Math.round((count / mockData.total) * 100);
 
                             return (
                                 <Box key={key}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
-                                        <Stack direction="row" spacing={0.5} alignItems="center">
+                                    <Stack
+                                        direction="row"
+                                        sx={{
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            mb: 0.5
+                                        }}>
+                                        <Stack direction="row" spacing={0.5} sx={{
+                                            alignItems: "center"
+                                        }}>
                                             <Box sx={{ color: config.color }}>{config.icon}</Box>
                                             <Typography variant="body2">{config.label}</Typography>
                                         </Stack>
-                                        <Typography variant="body2" fontWeight={600}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {count}
                                         </Typography>
                                     </Stack>
@@ -160,7 +182,9 @@ export function CorrectiveActionsTracker({ dateRange, loading = false }: Correct
 
                 {/* Upcoming Due */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Upcoming Due Dates
                     </Typography>
                     <List dense disablePadding>
@@ -182,9 +206,10 @@ export function CorrectiveActionsTracker({ dateRange, loading = false }: Correct
                                 <ListItemText
                                     primary={action.title}
                                     secondary={`Due: ${action.dueDate}`}
-                                    primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-                                    secondaryTypographyProps={{ variant: 'caption' }}
-                                />
+                                    slotProps={{
+                                        primary: { variant: 'body2', sx: { fontWeight: 500 } },
+                                        secondary: { variant: 'caption' }
+                                    }} />
                                 <Chip
                                     label={action.priority}
                                     size="small"
@@ -212,9 +237,16 @@ export function CorrectiveActionsTracker({ dateRange, loading = false }: Correct
                             borderColor: alpha('#EF4444', 0.3),
                         }}
                     >
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{
+                            alignItems: "center"
+                        }}>
                             <Warning sx={{ color: '#EF4444', fontSize: 20 }} />
-                            <Typography variant="body2" color="error.main" fontWeight={500}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "error.main",
+                                    fontWeight: 500
+                                }}>
                                 {mockData.overdue} overdue action{mockData.overdue > 1 ? 's' : ''} requiring attention
                             </Typography>
                         </Stack>

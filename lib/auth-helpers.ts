@@ -49,7 +49,7 @@ export function hasAllRoles(
  * @example getPrimaryRole(['employee', 'supervisor', 'super_admin']) // 'super_admin'
  */
 export function getPrimaryRole(roles: AppRole[]): AppRole {
-    // Import inside function to avoid circular dependency
+    // import inside function to avoid circular dependency
     for (const role of ROLE_PRIORITY) {
         if (roles.includes(role)) return role;
     }

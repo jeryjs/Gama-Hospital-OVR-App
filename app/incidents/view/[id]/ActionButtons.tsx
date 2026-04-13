@@ -64,14 +64,13 @@ export function ActionButtons({ incident, onUpdate }: Props) {
       <Stack
         direction="row"
         spacing={2}
-        justifyContent="flex-end"
         sx={{
+          justifyContent: "flex-end",
           p: 2,
           bgcolor: 'background.paper',
           borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
+          boxShadow: 3
+        }}>
         {canEdit && (
           <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
             {canEditDraft && !canEditAsQI ? 'Edit Draft' : 'Edit Report'}

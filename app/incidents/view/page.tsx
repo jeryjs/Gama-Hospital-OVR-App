@@ -46,14 +46,22 @@ export default function IncidentViewIndexPage() {
                     <Description sx={{ fontSize: 40, color: 'primary.main' }} />
                 </Box>
 
-                <Typography variant="h5" fontWeight={600} gutterBottom>
+                <Typography variant="h5" gutterBottom sx={{
+                    fontWeight: 600
+                }}>
                     Select an Incident
                 </Typography>
-                <Typography color="text.secondary" sx={{ mb: 4 }}>
+                <Typography
+                    sx={{
+                        color: "text.secondary",
+                        mb: 4
+                    }}>
                     Choose an incident from the sidebar to view details, or create a new report.
                 </Typography>
 
-                <Stack direction="row" spacing={2} justifyContent="center">
+                <Stack direction="row" spacing={2} sx={{
+                    justifyContent: "center"
+                }}>
                     <Button
                         variant="contained"
                         startIcon={<Add />}

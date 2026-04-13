@@ -222,7 +222,9 @@ export default function InvestigationDetailPage() {
             <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
                 {/* Header */}
                 <Paper sx={{ p: 3, mb: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack direction="row" spacing={2} sx={{
+                        alignItems: "center"
+                    }}>
                         {canOpenIncident ? (
                             <IconButton
                                 component={Link}
@@ -237,11 +239,15 @@ export default function InvestigationDetailPage() {
                             </IconButton>
                         )}
                         <Box sx={{ flex: 1 }}>
-                            <Typography variant="h5" fontWeight={700}>
+                            <Typography variant="h5" sx={{
+                                fontWeight: 700
+                            }}>
                                 Investigation INV-{investigation.id}
                             </Typography>
                             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Incident:{' '}
                                     {canOpenIncident ? (
                                         <Button
@@ -253,16 +259,25 @@ export default function InvestigationDetailPage() {
                                             {investigation.ovrReportId}
                                         </Button>
                                     ) : (
-                                        <Typography component="span" variant="body2" fontWeight={600}>
+                                        <Typography component="span" variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {investigation.ovrReportId}
                                         </Typography>
                                     )}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Created: {format(new Date(investigation.createdAt), 'MMM dd, yyyy')}
                                 </Typography>
                                 {investigation.submittedAt && (
-                                    <Typography variant="body2" color="success.main" fontWeight={600}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "success.main",
+                                            fontWeight: 600
+                                        }}>
                                         ✓ Submitted: {format(new Date(investigation.submittedAt), 'MMM dd, yyyy')}
                                     </Typography>
                                 )}
@@ -312,7 +327,13 @@ export default function InvestigationDetailPage() {
                                                 minHeight={150}
                                                 disabled={!canEdit}
                                             />
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block'
+                                                }}>
                                                 {findingsCount} / 100 characters minimum to submit
                                             </Typography>
                                         </Box>
@@ -328,7 +349,14 @@ export default function InvestigationDetailPage() {
                                                 minHeight={150}
                                                 disabled={!canEdit}
                                             />
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block',
+                                                    textAlign: 'right'
+                                                }}>
                                                 {problemsCount} / 50 characters minimum to submit
                                             </Typography>
                                         </Box>
@@ -344,7 +372,14 @@ export default function InvestigationDetailPage() {
                                                 minHeight={120}
                                                 disabled={!canEdit}
                                             />
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block',
+                                                    textAlign: 'right'
+                                                }}>
                                                 {causeDetailsCount} / 50 characters minimum to submit
                                             </Typography>
                                         </Box>
@@ -359,7 +394,9 @@ export default function InvestigationDetailPage() {
                                         />
 
                                         {canEdit && (
-                                            <Stack direction="row" spacing={2} justifyContent="flex-end">
+                                            <Stack direction="row" spacing={2} sx={{
+                                                justifyContent: "flex-end"
+                                            }}>
                                                 <Button
                                                     variant="outlined"
                                                     onClick={handleSave}
@@ -421,15 +458,21 @@ export default function InvestigationDetailPage() {
                                 <CardContent>
                                     <Stack spacing={2} divider={<Divider />}>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Investigation ID
                                             </Typography>
-                                            <Typography variant="body2" fontWeight={600}>
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 INV-{investigation.id}
                                             </Typography>
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Incident Reference
                                             </Typography>
                                             <Typography variant="body2">
@@ -443,14 +486,18 @@ export default function InvestigationDetailPage() {
                                                         {investigation.ovrReportId}
                                                     </Button>
                                                 ) : (
-                                                    <Typography component="span" variant="body2" fontWeight={600}>
+                                                    <Typography component="span" variant="body2" sx={{
+                                                        fontWeight: 600
+                                                    }}>
                                                         {investigation.ovrReportId}
                                                     </Typography>
                                                 )}
                                             </Typography>
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Created
                                             </Typography>
                                             <Typography variant="body2">
@@ -459,16 +506,22 @@ export default function InvestigationDetailPage() {
                                         </Box>
                                         {investigation.submittedAt && (
                                             <Box>
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Submitted
                                                 </Typography>
-                                                <Typography variant="body2" color="success.main">
+                                                <Typography variant="body2" sx={{
+                                                    color: "success.main"
+                                                }}>
                                                     {format(new Date(investigation.submittedAt), 'PPP')}
                                                 </Typography>
                                             </Box>
                                         )}
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Last Updated
                                             </Typography>
                                             <Typography variant="body2">
@@ -518,10 +571,25 @@ export default function InvestigationDetailPage() {
 
                                                 return (
                                                     <Paper key={action.id} variant="outlined" sx={{ p: 1.5 }}>
-                                                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                                                        <Stack
+                                                            direction="row"
+                                                            spacing={2}
+                                                            sx={{
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center"
+                                                            }}>
                                                             <Box sx={{ minWidth: 0, flex: 1 }}>
-                                                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                                <Stack
+                                                                    direction="row"
+                                                                    spacing={1}
+                                                                    useFlexGap
+                                                                    sx={{
+                                                                        alignItems: "center",
+                                                                        flexWrap: "wrap"
+                                                                    }}>
+                                                                    <Typography variant="subtitle2" sx={{
+                                                                        fontWeight: 600
+                                                                    }}>
                                                                         {action.title}
                                                                     </Typography>
                                                                     <Chip
@@ -533,7 +601,9 @@ export default function InvestigationDetailPage() {
                                                                         <Chip size="small" label="Overdue" color="error" />
                                                                     )}
                                                                 </Stack>
-                                                                <Typography variant="caption" color="text.secondary">
+                                                                <Typography variant="caption" sx={{
+                                                                    color: "text.secondary"
+                                                                }}>
                                                                     Due: {format(new Date(action.dueDate), 'MMM dd, yyyy')} • Checklist: {checklistProgress}%
                                                                 </Typography>
                                                             </Box>

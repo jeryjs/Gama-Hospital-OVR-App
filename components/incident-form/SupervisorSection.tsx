@@ -34,23 +34,26 @@ export function SupervisorSection({ incident }: Props) {
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
         variant="h6"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-        }}
-      >
+          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
+        }}>
         <SupervisorAccount /> Supervisor Action
       </Typography>
-
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600
+              }}>
               Supervisor Notified?
             </Typography>
             <Box sx={{ mt: 0.5 }}>
@@ -66,7 +69,12 @@ export function SupervisorSection({ incident }: Props) {
         {(incident.supervisorId || supervisorName) && (
           <Grid size={{ xs: 12, md: 6 }}>
             <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600
+                }}>
                 Supervisor
               </Typography>
               <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -76,7 +84,6 @@ export function SupervisorSection({ incident }: Props) {
           </Grid>
         )}
       </Grid>
-
       <Box sx={{ mt: 3 }}>
         <Box
           sx={{
@@ -86,7 +93,12 @@ export function SupervisorSection({ incident }: Props) {
             border: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 600
+            }}>
             Supervisor Action
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>

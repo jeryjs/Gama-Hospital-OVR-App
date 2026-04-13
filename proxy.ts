@@ -1,10 +1,7 @@
 import { withAuth } from 'next-auth/middleware';
 
 function isSharedTokenPath(pathname: string): boolean {
-  return (
-    /^\/incidents\/investigations\/[^/]+$/.test(pathname) ||
-    /^\/incidents\/corrective-actions\/[^/]+$/.test(pathname)
-  );
+  return (/^\/incidents\/investigations\/[^/]+$/.test(pathname) || /^\/incidents\/corrective-actions\/[^/]+$/.test(pathname));
 }
 
 export default withAuth(

@@ -69,15 +69,21 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
         >
             <CardContent>
                 <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                    }}>
                         <Edit color="warning" />
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             My Drafts
                         </Typography>
                         <Chip label={totalDrafts} size="small" color="warning" sx={{ ml: 1 }} />
                     </Stack>
 
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Continue working on your unsubmitted reports (saved locally)
                     </Typography>
 
@@ -102,17 +108,21 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
                                         <Stack spacing={1}>
                                             <Stack
                                                 direction="row"
-                                                justifyContent="space-between"
-                                                alignItems="center"
-                                            >
+                                                sx={{
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center"
+                                                }}>
                                                 <Typography
                                                     variant="subtitle2"
-                                                    fontWeight={600}
-                                                    sx={{ fontSize: '0.75rem' }}
-                                                >
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        fontSize: '0.75rem'
+                                                    }}>
                                                     {draft.id.slice(0, 20)}...
                                                 </Typography>
-                                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                <Stack direction="row" spacing={0.5} sx={{
+                                                    alignItems: "center"
+                                                }}>
                                                     <Chip
                                                         label="Draft"
                                                         size="small"
@@ -130,10 +140,14 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
                                                     </Tooltip>
                                                 </Stack>
                                             </Stack>
-                                            <Typography variant="body2" color="text.secondary" noWrap>
+                                            <Typography variant="body2" noWrap sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {draft.occurrenceCategory?.replace(/_/g, ' ') || 'No category'}
                                             </Typography>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Last updated:{' '}
                                                 {format(new Date(draft.updatedAt), 'MMM dd, yyyy HH:mm')}
                                             </Typography>
@@ -145,7 +159,9 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
                     </Grid>
 
                     {totalDrafts > 6 && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             +{totalDrafts - 6} more drafts
                         </Typography>
                     )}

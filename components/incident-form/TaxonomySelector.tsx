@@ -153,6 +153,7 @@ function TaxonomySelectorComponent({
                     filterOptions={filterOptions}
                     getOptionLabel={getOptionLabel}
                     isOptionEqualToValue={(option, value) =>
+                        typeof value === 'object' &&
                         option.category === value.category &&
                         option.subcategory === value.subcategory &&
                         option.detail === value.detail
@@ -188,7 +189,9 @@ function TaxonomySelectorComponent({
                 />
             ) : (
                 <Grid container spacing={2} columns={{ xs: 1, sm: 2, md: 3 }} sx={{ flexFlow: 'row !important', width: '-webkit-fill-available !important' }}>
-                    <Grid width='100%' key='category-input'>
+                    <Grid key='category-input' sx={{
+                        width: '100%'
+                    }}>
                         <FormControl fullWidth required={required}>
                             <InputLabel>Category</InputLabel>
                             <Select
@@ -208,7 +211,9 @@ function TaxonomySelectorComponent({
                         </FormControl>
                     </Grid>
 
-                    <Grid width='100%' key='subcategory-input'>
+                    <Grid key='subcategory-input' sx={{
+                        width: '100%'
+                    }}>
                         <FormControl fullWidth required={required} disabled={!categoryValue}>
                             <InputLabel>Subcategory</InputLabel>
                             <Select
@@ -228,7 +233,9 @@ function TaxonomySelectorComponent({
                         </FormControl>
                     </Grid>
 
-                    <Grid width='100%' key='details-input'>
+                    <Grid key='details-input' sx={{
+                        width: '100%'
+                    }}>
                         <FormControl fullWidth disabled={!subcategoryValue || details.length === 0}>
                             <InputLabel>Detail</InputLabel>
                             <Select

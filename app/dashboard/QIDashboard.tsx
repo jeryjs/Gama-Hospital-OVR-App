@@ -78,10 +78,14 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
           <Stack spacing={3}>
             {/* Welcome Header */}
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" gutterBottom sx={{
+                fontWeight: 700
+              }}>
                 Quality & Improvement Dashboard
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{
+                color: "text.secondary"
+              }}>
                 Welcome back, {session?.user?.name} • Monitor & Review OVR Reports
               </Typography>
             </Box>
@@ -99,10 +103,14 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
               {/* Action Items */}
               <Grid size={{ xs: 12, lg: 4 }}>
                 <Paper sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 600
+                  }}>
                     Your Action Items
                   </Typography>
-                  <Stack spacing={2} mt={2}>
+                  <Stack spacing={2} sx={{
+                    mt: 2
+                  }}>
                     {actionItems.map((item) => (
                       <Box
                         key={item.title}
@@ -121,7 +129,9 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                           },
                         }}
                       >
-                        <Stack direction="row" spacing={2} alignItems="center">
+                        <Stack direction="row" spacing={2} sx={{
+                          alignItems: "center"
+                        }}>
                           <Box
                             sx={{
                               width: 48,
@@ -133,15 +143,21 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                               justifyContent: 'center',
                             }}
                           >
-                            <Typography variant="h5" fontWeight={700} color={item.color}>
+                            <Typography variant="h5" color={item.color} sx={{
+                              fontWeight: 700
+                            }}>
                               {item.count}
                             </Typography>
                           </Box>
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" sx={{
+                              fontWeight: 600
+                            }}>
                               {item.title}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                              color: "text.secondary"
+                            }}>
                               {item.description}
                             </Typography>
                           </Box>
@@ -155,10 +171,14 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
               {/* Workflow Status */}
               <Grid size={{ xs: 12, lg: 8 }}>
                 <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 600
+                  }}>
                     Incident Workflow Status
                   </Typography>
-                  <Stack spacing={2} mt={2}>
+                  <Stack spacing={2} sx={{
+                    mt: 2
+                  }}>
                     {workflowStatuses.map((workflow) => {
                       const count = stats.byStatus[workflow.status as keyof typeof stats.byStatus];
                       const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
@@ -166,14 +186,26 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
 
                       return (
                         <Box key={workflow.status}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                          <Stack
+                            direction="row"
+                            sx={{
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 1
+                            }}>
+                            <Stack direction="row" spacing={1} sx={{
+                              alignItems: "center"
+                            }}>
                               <Box sx={{ color: `${config?.color}.main` }}>{workflow.icon}</Box>
-                              <Typography variant="body2" fontWeight={500}>
+                              <Typography variant="body2" sx={{
+                                fontWeight: 500
+                              }}>
                                 {workflow.label}
                               </Typography>
                             </Stack>
-                            <Typography variant="body2" fontWeight={700}>
+                            <Typography variant="body2" sx={{
+                              fontWeight: 700
+                            }}>
                               {count} ({percentage.toFixed(0)}%)
                             </Typography>
                           </Stack>
@@ -202,7 +234,9 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                   />
                 ) : (
                   <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{
+                      fontWeight: 600
+                    }}>
                       Recent Incidents Requiring Attention
                     </Typography>
                     <EmptyState
@@ -222,18 +256,36 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
               {/* Performance Metrics */}
               <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 600
+                  }}>
                     Performance Metrics
                   </Typography>
-                  <Stack spacing={2} mt={2}>
+                  <Stack spacing={2} sx={{
+                    mt: 2
+                  }}>
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           Avg Resolution Time
                         </Typography>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Stack direction="row" spacing={0.5} sx={{
+                          alignItems: "center"
+                        }}>
                           <TrendingDown fontSize="small" color="success" />
-                          <Typography variant="h6" fontWeight={700} color="success.main">
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              color: "success.main"
+                            }}>
                             {stats.avgResolutionTime}d
                           </Typography>
                         </Stack>
@@ -241,13 +293,27 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                     </Box>
                     <Divider />
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           Closure Rate
                         </Typography>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Stack direction="row" spacing={0.5} sx={{
+                          alignItems: "center"
+                        }}>
                           <TrendingUp fontSize="small" color="success" />
-                          <Typography variant="h6" fontWeight={700} color="success.main">
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              color: "success.main"
+                            }}>
                             {stats.total > 0 ? ((stats.byStatus.closed / stats.total) * 100).toFixed(0) : 0}%
                           </Typography>
                         </Stack>
@@ -255,22 +321,43 @@ export default function QIDashboard({ stats, session }: { stats: DashboardStats;
                     </Box>
                     <Divider />
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           Due Soon (≤2 working days)
                         </Typography>
-                        <Typography variant="h6" fontWeight={700} color={turnaround.dueSoon > 0 ? 'warning.main' : 'text.primary'}>
+                        <Typography variant="h6" color={turnaround.dueSoon > 0 ? 'warning.main' : 'text.primary'} sx={{
+                          fontWeight: 700
+                        }}>
                           {turnaround.dueSoon}
                         </Typography>
                       </Stack>
                     </Box>
                     <Divider />
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           Pending Items
                         </Typography>
-                        <Typography variant="h6" fontWeight={700} color="warning.main">
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: "warning.main"
+                          }}>
                           {stats.byStatus.submitted + stats.byStatus.qi_review + stats.byStatus.qi_final_actions}
                         </Typography>
                       </Stack>

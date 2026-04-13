@@ -71,9 +71,13 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Science color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Investigation Insights
                     </Typography>
                 </Stack>
@@ -90,11 +94,17 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
                             borderColor: 'divider',
                         }}
                     >
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Avg Duration
                         </Typography>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="h5" fontWeight={700}>
+                        <Stack direction="row" spacing={1} sx={{
+                            alignItems: "center"
+                        }}>
+                            <Typography variant="h5" sx={{
+                                fontWeight: 700
+                            }}>
                                 {mockData.avgDuration}d
                             </Typography>
                             <Chip
@@ -121,10 +131,17 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
                             borderColor: 'divider',
                         }}
                     >
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             On-Time Rate
                         </Typography>
-                        <Typography variant="h5" fontWeight={700} color="success.main">
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                fontWeight: 700,
+                                color: "success.main"
+                            }}>
                             {onTimeRate}%
                         </Typography>
                     </Box>
@@ -132,17 +149,28 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
 
                 {/* Duration Distribution */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Duration Distribution
                     </Typography>
                     <Stack spacing={1}>
                         {mockData.durationDistribution.map((item) => (
                             <Box key={item.range}>
-                                <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                                    <Typography variant="body2" color="text.secondary">
+                                <Stack
+                                    direction="row"
+                                    sx={{
+                                        justifyContent: "space-between",
+                                        mb: 0.5
+                                    }}>
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {item.range}
                                     </Typography>
-                                    <Typography variant="body2" fontWeight={600}>
+                                    <Typography variant="body2" sx={{
+                                        fontWeight: 600
+                                    }}>
                                         {item.count} ({item.percentage}%)
                                     </Typography>
                                 </Stack>
@@ -162,7 +190,9 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
 
                 {/* Root Causes */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Root Cause Analysis
                     </Typography>
                     <Stack spacing={1}>
@@ -171,9 +201,16 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
                             return (
                                 <Tooltip key={item.cause} title={`${item.count} investigations`} arrow>
                                     <Box>
-                                        <Stack direction="row" justifyContent="space-between" mb={0.5}>
+                                        <Stack
+                                            direction="row"
+                                            sx={{
+                                                justifyContent: "space-between",
+                                                mb: 0.5
+                                            }}>
                                             <Typography variant="body2">{item.cause}</Typography>
-                                            <Typography variant="body2" fontWeight={600}>
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 {item.percentage}%
                                             </Typography>
                                         </Stack>
@@ -199,7 +236,9 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
 
                 {/* Common Findings */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Common Findings
                     </Typography>
                     <Stack spacing={0.5}>
@@ -214,7 +253,9 @@ export function InvestigationInsights({ dateRange, loading = false }: Investigat
                                     borderColor: 'divider',
                                 }}
                             >
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     • {finding}
                                 </Typography>
                             </Box>

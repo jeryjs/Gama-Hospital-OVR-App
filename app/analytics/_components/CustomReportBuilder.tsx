@@ -90,14 +90,20 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Build color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Custom Report Builder
                     </Typography>
                 </Stack>
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Select metrics to include in your custom report dashboard
                 </Typography>
 
@@ -114,16 +120,29 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
 
                 {/* Available Metrics */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Available Metrics
                     </Typography>
 
                     {categories.map((category) => (
                         <Box key={category.id} sx={{ mb: 2 }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    fontWeight: 600
+                                }}>
                                 {category.label}
                             </Typography>
-                            <Stack direction="row" flexWrap="wrap" gap={1} mt={1}>
+                            <Stack
+                                direction="row"
+                                sx={{
+                                    flexWrap: "wrap",
+                                    gap: 1,
+                                    mt: 1
+                                }}>
                                 {availableMetrics
                                     .filter((m) => m.category === category.id)
                                     .map((metric) => {
@@ -160,7 +179,9 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
 
                 {/* Selected Metrics (Drag & Drop placeholder) */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Selected Metrics ({selectedMetrics.length})
                     </Typography>
 
@@ -175,7 +196,9 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
                                 textAlign: 'center',
                             }}
                         >
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 No metrics selected. Click on metrics above to add them.
                             </Typography>
                         </Box>
@@ -215,7 +238,9 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
                                         </ListItemIcon>
                                         <ListItemText
                                             primary={metric.label}
-                                            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                                            slotProps={{
+                                                primary: { variant: 'body2', sx: { fontWeight: 500 } }
+                                            }}
                                         />
                                         <Chip
                                             label={index + 1}
@@ -258,7 +283,9 @@ export function CustomReportBuilder({ loading = false }: CustomReportBuilderProp
                         borderColor: 'info.main',
                     }}
                 >
-                    <Typography variant="caption" color="info.main">
+                    <Typography variant="caption" sx={{
+                        color: "info.main"
+                    }}>
                         💡 Saved reports will appear in your dashboard for quick access.
                         Drag and drop to reorder metrics in your report layout.
                     </Typography>

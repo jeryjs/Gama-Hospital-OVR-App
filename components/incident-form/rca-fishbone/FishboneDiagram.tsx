@@ -162,9 +162,13 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                     disabled={disabled}
                 />
             </Box>
-
             {/* Diagram Controls */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack
+                direction="row"
+                sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     Fishbone Diagram
                 </Typography>
@@ -180,7 +184,6 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                     </IconButton>
                 </Stack>
             </Stack>
-
             {/* SVG Diagram */}
             <Paper
                 variant="outlined"
@@ -240,7 +243,6 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                     </svg>
                 </Box>
             </Paper>
-
             {/* Category Selection & Cause Management */}
             <Box>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -248,7 +250,9 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                 </Typography>
                 <Stack spacing={2}>
                     {/* Category selector */}
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Stack direction="row" spacing={1} useFlexGap sx={{
+                        flexWrap: "wrap"
+                    }}>
                         {fishbone.categories.map((cat) => (
                             <Button
                                 key={cat.id}
@@ -279,10 +283,11 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
 
                                 return (
                                     <Stack spacing={2}>
-                                        <Typography variant="body2" fontWeight={600} color={category.color}>
+                                        <Typography variant="body2" color={category.color} sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {category.label} - Contributing Causes
                                         </Typography>
-
                                         {/* Existing causes */}
                                         {category.causes.length > 0 ? (
                                             <Stack spacing={1}>
@@ -290,16 +295,15 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                                                     <Stack
                                                         key={cause.id}
                                                         direction="row"
-                                                        alignItems="center"
-                                                        justifyContent="space-between"
                                                         sx={{
+                                                            alignItems: "center",
+                                                            justifyContent: "space-between",
                                                             p: 1,
                                                             bgcolor: 'background.paper',
                                                             borderRadius: 1,
                                                             borderLeft: 2,
-                                                            borderColor: category.color,
-                                                        }}
-                                                    >
+                                                            borderColor: category.color
+                                                        }}>
                                                         <Typography variant="body2">{cause.text}</Typography>
                                                         {!disabled && (
                                                             <IconButton
@@ -318,7 +322,6 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                                                 No causes added yet. Add your first cause below.
                                             </Alert>
                                         )}
-
                                         {/* Add new cause */}
                                         {!disabled && (
                                             <Stack direction="row" spacing={1}>
@@ -358,7 +361,6 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                     )}
                 </Stack>
             </Box>
-
             {/* Validation hints */}
             {!fishbone.problemStatement.trim() && (
                 <Alert severity="info">

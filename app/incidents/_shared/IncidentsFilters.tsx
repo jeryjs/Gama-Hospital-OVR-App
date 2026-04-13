@@ -78,16 +78,20 @@ export function IncidentsFilters({
     if (!useDialog) {
         return (
             <Paper sx={{ p: 2, mb: 3 }}>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                <Stack direction="row" spacing={2} useFlexGap sx={{
+                    flexWrap: "wrap"
+                }}>
                     <TextField
                         placeholder={searchPlaceholder}
                         size="small"
                         value={filters.search}
                         onChange={(e) => handleChange('search', e.target.value)}
-                        InputProps={{
-                            startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-                        }}
                         sx={{ flex: 1, minWidth: 250 }}
+                        slotProps={{
+                            input: {
+                                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                            }
+                        }}
                     />
 
                     <Select
@@ -140,7 +144,13 @@ export function IncidentsFilters({
     // Dialog-based filter mode (original behavior)
     return (
         <>
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+            <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                    alignItems: "center",
+                    mb: 3
+                }}>
                 <TextField
                     placeholder={searchPlaceholder}
                     value={filters.search}
@@ -167,7 +177,6 @@ export function IncidentsFilters({
                     </Button>
                 )}
             </Stack>
-
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
                 <DialogTitle>Filter Incidents</DialogTitle>
                 <DialogContent sx={{ minWidth: 300, pt: 2 }}>
@@ -178,7 +187,9 @@ export function IncidentsFilters({
                             label="Status"
                             value={filters.status}
                             onChange={(e) => handleChange('status', e.target.value)}
-                            SelectProps={{ native: true }}
+                            slotProps={{
+                                select: { native: true }
+                            }}
                         >
                             <option value="">All Statuses</option>
                             {statusOptions.map(({ value, label }) => (
@@ -195,7 +206,9 @@ export function IncidentsFilters({
                                 label="Category"
                                 value={filters.category || ''}
                                 onChange={(e) => handleChange('category', e.target.value)}
-                                SelectProps={{ native: true }}
+                                slotProps={{
+                                    select: { native: true }
+                                }}
                             >
                                 <option value="">All Categories</option>
                                 {categories.map(({ value, label }) => (

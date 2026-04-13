@@ -55,10 +55,14 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
           <Stack spacing={3}>
             {/* Welcome Header */}
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" gutterBottom sx={{
+                fontWeight: 700
+              }}>
                 Welcome back, {session?.user?.name?.split(' ')[0]}!
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{
+                color: "text.secondary"
+              }}>
                 Track your incident reports and create new ones
               </Typography>
             </Box>
@@ -89,10 +93,14 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                       borderColor: 'divider',
                     }}
                   >
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                      fontWeight: 600
+                    }}>
                       💡 Quick Tip
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Reports are automatically saved as drafts in your browser. You can come back anytime to complete them.
                     </Typography>
                   </Box>
@@ -110,7 +118,9 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                   />
                 ) : (
                   <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{
+                      fontWeight: 600
+                    }}>
                       My Recent Reports
                     </Typography>
                     <EmptyState
@@ -130,10 +140,14 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
               {/* Reporting Guidelines */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02) }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 600
+                  }}>
                     📋 Reporting Guidelines
                   </Typography>
-                  <Grid container spacing={2} mt={1}>
+                  <Grid container spacing={2} sx={{
+                    mt: 1
+                  }}>
                     {[
                       { title: 'What to Report', text: 'Any incident, near-miss, or safety concern that could affect patients or staff' },
                       { title: 'When to Report', text: 'As soon as possible after the incident occurs or is discovered' },
@@ -142,10 +156,14 @@ export default function EmployeeDashboard({ stats, session }: { stats: Dashboard
                     ].map((item) => (
                       <Grid size={{ xs: 12, md: 3 }} key={item.title}>
                         <Box>
-                          <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
+                          <Typography variant="subtitle2" color="primary" gutterBottom sx={{
+                            fontWeight: 600
+                          }}>
                             {item.title}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             {item.text}
                           </Typography>
                         </Box>

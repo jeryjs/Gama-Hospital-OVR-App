@@ -32,8 +32,15 @@ export function IncidentsPagination({
     if (showRange) {
         return (
             <Box sx={{ mt: 3 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
+                <Stack
+                    direction="row"
+                    sx={{
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}>
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Showing {start}-{end} of {totalItems}
                     </Typography>
                     <Pagination
@@ -49,7 +56,12 @@ export function IncidentsPagination({
 
     // Centered pagination (default)
     return (
-        <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 3
+            }}>
             <Pagination
                 count={totalPages}
                 page={page}

@@ -120,30 +120,36 @@ export function StatCard({
                             color: isPositiveTrend ? 'success.main' : 'error.main',
                         }}
                     >
-                        <Typography variant="caption" fontWeight={600}>
+                        <Typography variant="caption" sx={{
+                            fontWeight: 600
+                        }}>
                             {trend}
                         </Typography>
                     </Box>
                 )}
             </Box>
-
             <Typography
                 variant="h4"
-                fontWeight={700}
                 sx={{
+                    fontWeight: 700,
                     color: urgent ? 'error.main' : 'text.primary',
-                    mb: 0.5,
-                }}
-            >
+                    mb: 0.5
+                }}>
                 {value}
             </Typography>
-
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+                color: "text.secondary"
+            }}>
                 {title}
             </Typography>
-
             {subtitle && (
-                <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block' }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.disabled",
+                        mt: 0.5,
+                        display: 'block'
+                    }}>
                     {subtitle}
                 </Typography>
             )}

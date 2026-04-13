@@ -67,23 +67,23 @@ export function IncidentCard({
                 <Box sx={{ flex: 1 }}>
                     <Typography
                         variant={isCompact ? 'body2' : 'h6'}
-                        fontWeight={600}
+                        onClick={onClick}
                         sx={{
+                            fontWeight: 600,
                             mb: 0.5,
                             cursor: onClick ? 'pointer' : 'default',
-                            '&:hover': onClick ? { color: 'primary.main' } : {},
-                        }}
-                        onClick={onClick}
-                    >
+                            '&:hover': onClick ? { color: 'primary.main' } : {}
+                        }}>
                         {incident.id}
                     </Typography>
 
                     {showCategory && (
                         <Typography
                             variant={isCompact ? 'caption' : 'body2'}
-                            color="text.secondary"
-                            sx={{ textTransform: 'capitalize' }}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                textTransform: 'capitalize'
+                            }}>
                             {incident.occurrenceCategory?.replace(/_/g, ' ')}
                         </Typography>
                     )}
@@ -100,13 +100,17 @@ export function IncidentCard({
             {!isCompact && (
                 <Stack spacing={0.5} sx={{ mb: 2 }}>
                     {showReporter && incident.reporter && (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Reporter: {incident.reporter.firstName} {incident.reporter.lastName}
                         </Typography>
                     )}
 
                     {showDate && (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Occurred: {format(new Date(incident.occurrenceDate), 'MMM dd, yyyy')}
                         </Typography>
                     )}

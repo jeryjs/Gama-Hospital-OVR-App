@@ -80,7 +80,9 @@ export function DateRangeSelector({
 
     return (
         <Box>
-            <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={0.5} sx={{
+                alignItems: "center"
+            }}>
                 <ButtonGroup size="small" variant="outlined">
                     {PRESETS.filter(p => p.value !== 'custom').map((p) => (
                         <Button
@@ -112,7 +114,6 @@ export function DateRangeSelector({
                     </Button>
                 </ButtonGroup>
             </Stack>
-
             <Popover
                 open={open}
                 anchorEl={anchorEl}
@@ -137,9 +138,13 @@ export function DateRangeSelector({
                 }}
             >
                 <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                    }}>
                         <DateRangeIcon color="primary" fontSize="small" />
-                        <Typography variant="subtitle2" fontWeight={600}>
+                        <Typography variant="subtitle2" sx={{
+                            fontWeight: 600
+                        }}>
                             Custom Date Range
                         </Typography>
                     </Stack>
@@ -153,8 +158,10 @@ export function DateRangeSelector({
                             size="small"
                             value={tempStart}
                             onChange={(e) => setTempStart(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
                             fullWidth
+                            slotProps={{
+                                inputLabel: { shrink: true }
+                            }}
                         />
                         <TextField
                             label="End Date"
@@ -162,17 +169,27 @@ export function DateRangeSelector({
                             size="small"
                             value={tempEnd}
                             onChange={(e) => setTempEnd(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
                             fullWidth
+                            slotProps={{
+                                inputLabel: { shrink: true }
+                            }}
                         />
                     </Stack>
 
                     {/* Quick presets within popover */}
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                mb: 1,
+                                display: 'block'
+                            }}>
                             Quick Select
                         </Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Stack direction="row" spacing={1} useFlexGap sx={{
+                            flexWrap: "wrap"
+                        }}>
                             {[
                                 { label: 'This Week', days: 7 },
                                 { label: 'This Month', days: 30 },
@@ -210,7 +227,9 @@ export function DateRangeSelector({
 
                     <Divider />
 
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Stack direction="row" spacing={1} sx={{
+                        justifyContent: "flex-end"
+                    }}>
                         <Button size="small" onClick={handleClose}>
                             Cancel
                         </Button>

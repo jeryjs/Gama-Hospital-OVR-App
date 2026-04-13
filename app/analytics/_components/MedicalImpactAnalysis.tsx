@@ -48,14 +48,25 @@ export function MedicalImpactAnalysis({ dateRange, loading = false }: MedicalImp
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between"
+                    }}>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                    }}>
                         <LocalHospital color="primary" />
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Medical Impact Analysis
                         </Typography>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         {totalIncidents} incidents
                     </Typography>
                 </Stack>
@@ -64,15 +75,29 @@ export function MedicalImpactAnalysis({ dateRange, loading = false }: MedicalImp
                 <Stack spacing={2}>
                     {mockData.map((item) => (
                         <Box key={item.level}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
-                                <Typography variant="body2" fontWeight={500}>
+                            <Stack
+                                direction="row"
+                                sx={{
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    mb: 0.5
+                                }}>
+                                <Typography variant="body2" sx={{
+                                    fontWeight: 500
+                                }}>
                                     {item.level}
                                 </Typography>
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                    <Typography variant="body2" fontWeight={700}>
+                                <Stack direction="row" spacing={1} sx={{
+                                    alignItems: "center"
+                                }}>
+                                    <Typography variant="body2" sx={{
+                                        fontWeight: 700
+                                    }}>
                                         {item.count}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         ({item.percentage}%)
                                     </Typography>
                                 </Stack>
@@ -122,31 +147,54 @@ export function MedicalImpactAnalysis({ dateRange, loading = false }: MedicalImp
                         borderColor: 'divider',
                     }}
                 >
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Impact Summary
                     </Typography>
                     <Stack direction="row" spacing={3}>
                         <Box>
-                            <Typography variant="h4" fontWeight={700} color="success.main">
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 700,
+                                    color: "success.main"
+                                }}>
                                 {mockData[0].percentage + mockData[1].percentage}%
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Minimal Impact
                             </Typography>
                         </Box>
                         <Box>
-                            <Typography variant="h4" fontWeight={700} color="warning.main">
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 700,
+                                    color: "warning.main"
+                                }}>
                                 {mockData[2].percentage + mockData[3].percentage}%
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Moderate Impact
                             </Typography>
                         </Box>
                         <Box>
-                            <Typography variant="h4" fontWeight={700} color="error.main">
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 700,
+                                    color: "error.main"
+                                }}>
                                 {mockData[4].percentage + mockData[5].percentage}%
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Severe Impact
                             </Typography>
                         </Box>

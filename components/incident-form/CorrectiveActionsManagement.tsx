@@ -185,7 +185,9 @@ export function CorrectiveActionsManagement({
     if (!canManage) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" sx={{
+                    fontWeight: 600
+                }}>
                     Corrective Actions In Progress
                 </Typography>
                 <Typography variant="body2">
@@ -215,7 +217,6 @@ export function CorrectiveActionsManagement({
                     color: 'secondary.main',
                 }}
             />
-
             <CardContent>
                 {actionIds.length === 0 ? (
                     <Alert severity="info">
@@ -243,7 +244,6 @@ export function CorrectiveActionsManagement({
                     </Alert>
                 )}
             </CardContent>
-
             {/* Create Action Dialog */}
             <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Create Corrective Action</DialogTitle>
@@ -316,7 +316,13 @@ export function CorrectiveActionsManagement({
                             />
 
                             {normalizedChecklistForValidation.length === 0 && (
-                                <Typography variant="caption" color="error.main" sx={{ mt: 0.5, display: 'block' }}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "error.main",
+                                        mt: 0.5,
+                                        display: 'block'
+                                    }}>
                                     At least one checklist item is required.
                                 </Typography>
                             )}
@@ -330,7 +336,6 @@ export function CorrectiveActionsManagement({
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Invite Handler Dialog */}
             <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Invite Action Handler</DialogTitle>
@@ -360,7 +365,6 @@ export function CorrectiveActionsManagement({
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {ErrorDialogComponent}
         </Card>
     );
@@ -407,10 +411,25 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                 bgcolor: isOverdue ? 'error.lighter' : 'background.paper',
             }}
         >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+            <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                    justifyContent: "space-between",
+                    alignItems: "flex-start"
+                }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        sx={{
+                            alignItems: "center",
+                            flexWrap: "wrap"
+                        }}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 600
+                        }}>
                             {action.title}
                         </Typography>
                         <Chip
@@ -448,7 +467,13 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                     </Box>
 
                     {/* Due date and handlers */}
-                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                    <Stack
+                        direction="row"
+                        spacing={2}
+                        sx={{
+                            alignItems: "center",
+                            mt: 1
+                        }}>
                         <Chip
                             icon={<ScheduleIcon sx={{ fontSize: 14 }} />}
                             label={`Due: ${format(new Date(action.dueDate), 'MMM d, yyyy')}`}
@@ -457,7 +482,9 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                             color={isOverdue ? 'error' : 'default'}
                         />
                         {sharedAccess.length > 0 && (
-                            <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Stack direction="row" spacing={0.5} sx={{
+                                alignItems: "center"
+                            }}>
                                 {sharedAccess.slice(0, 3).map((access) => (
                                     <Tooltip key={access.id} title={access.email}>
                                         <Avatar sx={{ width: 24, height: 24, fontSize: 11 }}>
@@ -466,7 +493,9 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                                     </Tooltip>
                                 ))}
                                 {sharedAccess.length > 3 && (
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         +{sharedAccess.length - 3}
                                     </Typography>
                                 )}
@@ -477,11 +506,21 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                     {/* Progress bar */}
                     {checklistProgress > 0 && (
                         <Box sx={{ mt: 1.5 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">
+                            <Stack
+                                direction="row"
+                                sx={{
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    mb: 0.5
+                                }}>
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Checklist Progress
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {Math.round(checklistProgress)}%
                                 </Typography>
                             </Stack>

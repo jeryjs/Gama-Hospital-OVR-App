@@ -102,9 +102,15 @@ const BarChart = ({ data, loading }: { data: TrendDataPoint[]; loading?: boolean
             {/* Y-axis labels */}
             <Box sx={{ display: 'flex', mb: 1 }}>
                 <Box sx={{ width: 40, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 200 }}>
-                    <Typography variant="caption" color="text.secondary">{maxVal}</Typography>
-                    <Typography variant="caption" color="text.secondary">{Math.round(maxVal / 2)}</Typography>
-                    <Typography variant="caption" color="text.secondary">0</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>{maxVal}</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>{Math.round(maxVal / 2)}</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>0</Typography>
                 </Box>
 
                 {/* Bars */}
@@ -136,7 +142,6 @@ const BarChart = ({ data, loading }: { data: TrendDataPoint[]; loading?: boolean
                     })}
                 </Box>
             </Box>
-
             {/* X-axis labels */}
             <Box sx={{ display: 'flex', pl: 5 }}>
                 <Box sx={{ flex: 1, display: 'flex', gap: 0.5 }}>
@@ -144,9 +149,11 @@ const BarChart = ({ data, loading }: { data: TrendDataPoint[]; loading?: boolean
                         <Typography
                             key={index}
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ flex: 1, textAlign: 'center' }}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                flex: 1,
+                                textAlign: 'center'
+                            }}>
                             {point.label}
                         </Typography>
                     ))}
@@ -178,10 +185,14 @@ export default function IncidentTrendChart({
             >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Incident Trend
                         </Typography>
-                        <Typography variant="h6" fontWeight="bold">
+                        <Typography variant="h6" sx={{
+                            fontWeight: "bold"
+                        }}>
                             {data[data.length - 1].value}
                         </Typography>
                     </Box>
@@ -207,10 +218,14 @@ export default function IncidentTrendChart({
         >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="h6" sx={{
+                        fontWeight: "bold"
+                    }}>
                         Incident Trends
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         {totalIncidents} total incidents in period
                     </Typography>
                 </Box>

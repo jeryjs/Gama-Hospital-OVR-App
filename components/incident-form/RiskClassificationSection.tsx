@@ -26,25 +26,25 @@ export function RiskClassificationSection({ incident }: Props) {
         <Paper sx={{ p: 3, mb: 3 }}>
             <Typography
                 variant="h6"
-                fontWeight={700}
                 gutterBottom
                 sx={{
+                    fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
                     pb: 2,
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-                }}
-            >
+                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`
+                }}>
                 <Assessment /> Risk Classification & Rating
             </Typography>
-
             {/* Risk Assessment Result */}
             {score && riskLevel ? (
                 <>
                     {/* Risk Matrix */}
                     <Box sx={{ mt: 3 }}>
-                        <Typography variant="body2" fontWeight={600} gutterBottom>
+                        <Typography variant="body2" gutterBottom sx={{
+                            fontWeight: 600
+                        }}>
                             Risk Assessment Matrix
                         </Typography>
                         <Box sx={{ overflowX: 'auto', mt: 2 }}>
@@ -133,20 +133,37 @@ export function RiskClassificationSection({ incident }: Props) {
                     </Box>
 
                     <Paper sx={{ p: 3, mt: 3, bgcolor: alpha(riskLevel.color, theme.palette.mode === 'dark' ? 0.18 : 0.08), border: `2px solid ${riskLevel.color}` }}>
-                        <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
+                        <Stack
+                            direction="row"
+                            spacing={3}
+                            sx={{
+                                alignItems: "center",
+                                flexWrap: "wrap"
+                            }}>
                             <Box>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Risk Score
                                 </Typography>
-                                <Typography variant="h2" fontWeight={700} color={riskLevel.color}>
+                                <Typography variant="h2" color={riskLevel.color} sx={{
+                                    fontWeight: 700
+                                }}>
                                     {score}
                                 </Typography>
                             </Box>
                             <Box sx={{ flex: 1 }}>
-                                <Typography variant="h5" fontWeight={600} color={riskLevel.color}>
+                                <Typography variant="h5" color={riskLevel.color} sx={{
+                                    fontWeight: 600
+                                }}>
                                     {riskLevel.label}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: "text.secondary",
+                                        mt: 0.5
+                                    }}>
                                     Impact: {impactLabel} ({impact}) × Likelihood: {likelihoodLabel} ({likelihood})
                                 </Typography>
                             </Box>
@@ -154,7 +171,13 @@ export function RiskClassificationSection({ incident }: Props) {
                     </Paper>
                 </>
             ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontStyle: 'italic' }}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        mt: 2,
+                        fontStyle: 'italic'
+                    }}>
                     No risk assessment recorded
                 </Typography>
             )}

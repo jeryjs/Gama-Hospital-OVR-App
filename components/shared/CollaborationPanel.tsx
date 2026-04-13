@@ -148,7 +148,9 @@ export function CollaborationPanel({
             <CardHeader
                 title={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Discussion
                         </Typography>
                         <Chip
@@ -163,16 +165,27 @@ export function CollaborationPanel({
                     bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                 }}
             />
-
             <CardContent>
 
                 {/* Comments List */}
                 {isLoading ? (
-                    <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            textAlign: "center",
+                            py: 4
+                        }}>
                         Loading comments...
                     </Typography>
                 ) : !comments || comments.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            textAlign: "center",
+                            py: 4
+                        }}>
                         No comments yet. Start the discussion!
                     </Typography>
                 ) : (
@@ -206,10 +219,14 @@ export function CollaborationPanel({
                                         <ListItemText
                                             primary={
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                    <Typography variant="subtitle2" sx={{
+                                                        fontWeight: 600
+                                                    }}>
                                                         {comment.user?.firstName} {comment.user?.lastName}
                                                     </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
+                                                    <Typography variant="caption" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                                                     </Typography>
                                                     {comment.updatedAt !== comment.createdAt && (
@@ -284,7 +301,9 @@ export function CollaborationPanel({
                                     onChange={(e) => setNewComment(e.target.value)}
                                     sx={{ mb: 1 }}
                                 />
-                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                <Stack direction="row" spacing={1} sx={{
+                                    justifyContent: "flex-end"
+                                }}>
                                     {canAttach && (
                                         <Button
                                             size="small"

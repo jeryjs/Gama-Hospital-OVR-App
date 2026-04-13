@@ -161,10 +161,14 @@ export default function AlertsPanel({
                 }}
             >
                 <NotificationsActive sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                <Typography variant="h6" color="text.secondary">
+                <Typography variant="h6" sx={{
+                    color: "text.secondary"
+                }}>
                     No Active Alerts
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     All systems operating normally
                 </Typography>
             </Paper>
@@ -184,7 +188,9 @@ export default function AlertsPanel({
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Badge badgeContent={criticalCount} color="error">
-                        <Typography variant="h6" fontWeight="bold">
+                        <Typography variant="h6" sx={{
+                            fontWeight: "bold"
+                        }}>
                             Alerts & Anomalies
                         </Typography>
                     </Badge>
@@ -201,7 +207,6 @@ export default function AlertsPanel({
                     </IconButton>
                 </Box>
             </Box>
-
             <Collapse in={expanded}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {alerts.map((alert) => (
@@ -231,7 +236,9 @@ export default function AlertsPanel({
                         >
                             <AlertTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>{alert.title}</span>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {formatTimeAgo(alert.timestamp)}
                                 </Typography>
                             </AlertTitle>
@@ -242,7 +249,6 @@ export default function AlertsPanel({
                     ))}
                 </Box>
             </Collapse>
-
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                 <Button
                     startIcon={<Refresh />}

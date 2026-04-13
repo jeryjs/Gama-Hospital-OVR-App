@@ -120,10 +120,12 @@ export default function CorrectiveActionsPage() {
                                     size="small"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    InputProps={{
-                                        startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-                                    }}
                                     sx={{ flex: 1 }}
+                                    slotProps={{
+                                        input: {
+                                            startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                                        }
+                                    }}
                                 />
                                 <Select
                                     value={statusFilter}
@@ -157,7 +159,9 @@ export default function CorrectiveActionsPage() {
                                         {!actions || actions.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                                                    <Typography variant="body1" color="text.secondary">
+                                                    <Typography variant="body1" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         No corrective actions found
                                                     </Typography>
                                                 </TableCell>
@@ -169,7 +173,9 @@ export default function CorrectiveActionsPage() {
                                                 return (
                                                     <TableRow key={action.id} hover>
                                                         <TableCell>
-                                                            <Typography variant="body2" fontWeight={600}>
+                                                            <Typography variant="body2" sx={{
+                                                                fontWeight: 600
+                                                            }}>
                                                                 ACT-{action.id}
                                                             </Typography>
                                                         </TableCell>

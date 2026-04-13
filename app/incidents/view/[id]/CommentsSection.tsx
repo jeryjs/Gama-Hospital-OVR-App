@@ -110,12 +110,16 @@ export function CommentsSection({ incidentId }: Props) {
         <CommentIcon color="primary" sx={{ fontSize: 20 }} />
         <Typography
           variant="subtitle1"
-          fontWeight={600}
-          sx={{ flex: 1, color: 'text.primary' }}
-        >
+          sx={{
+            fontWeight: 600,
+            flex: 1,
+            color: 'text.primary'
+          }}>
           Comments
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           {comments.length}
         </Typography>
         <Button
@@ -126,12 +130,17 @@ export function CommentsSection({ incidentId }: Props) {
           {expanded ? 'Hide' : 'Show'}
         </Button>
       </Box>
-
       {expanded && (
         <>
           <Stack spacing={1.5} sx={{ mt: 2, mb: 2 }}>
             {comments.length === 0 ? (
-              <Typography variant="caption" color="text.secondary" textAlign="center" py={1}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  textAlign: "center",
+                  py: 1
+                }}>
                 No comments yet
               </Typography>
             ) : (
@@ -148,7 +157,9 @@ export function CommentsSection({ incidentId }: Props) {
                     },
                   }}
                 >
-                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                  <Stack direction="row" spacing={1.5} sx={{
+                    alignItems: "flex-start"
+                  }}>
                     <Avatar
                       src={comment.user?.profilePicture || undefined}
                       alt={
@@ -167,19 +178,47 @@ export function CommentsSection({ incidentId }: Props) {
                       {comment.user?.firstName?.[0] || '?'}
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                      <Stack
+                        direction="row"
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: 1
+                        }}>
                         <Box>
-                          <Typography variant="caption" fontWeight={700} display="block" sx={{ color: 'text.primary' }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              display: "block",
+                              color: 'text.primary'
+                            }}>
                             {comment.user
                               ? `${comment.user.firstName ?? ''} ${comment.user.lastName ?? ''}`
                               : 'Unknown'}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              display: "block"
+                            }}>
                             {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
                           </Typography>
                         </Box>
-                        <Stack direction="row" alignItems="center" gap={0.5}>
-                          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', minWidth: 'max-content' }}>
+                        <Stack
+                          direction="row"
+                          sx={{
+                            alignItems: "center",
+                            gap: 0.5
+                          }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              textAlign: 'right',
+                              minWidth: 'max-content'
+                            }}>
                             {format(new Date(comment.createdAt), 'HH:mm')}
                           </Typography>
                           {comment.userId?.toString() === session?.user?.id && (
@@ -209,7 +248,9 @@ export function CommentsSection({ incidentId }: Props) {
                               },
                             }}
                           />
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Stack direction="row" spacing={1} sx={{
+                            justifyContent: "flex-end"
+                          }}>
                             <Button
                               size="small"
                               variant="outlined"
@@ -249,7 +290,9 @@ export function CommentsSection({ incidentId }: Props) {
             )}
           </Stack>
 
-          <Stack direction="row" spacing={1.5} alignItems="flex-start">
+          <Stack direction="row" spacing={1.5} sx={{
+            alignItems: "flex-start"
+          }}>
             <Avatar
               src={session?.user?.image || undefined}
               alt={session?.user?.name || ''}
@@ -280,27 +323,29 @@ export function CommentsSection({ incidentId }: Props) {
                     paddingRight: 0,
                   },
                 }}
-                InputProps={{
-                  endAdornment: (
-                    <Button
-                      variant="contained"
-                      startIcon={<Send sx={{ fontSize: 16 }} />}
-                      onClick={handleSubmit}
-                      disabled={submitting || !newComment.trim()}
-                      size="small"
-                      sx={{
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        boxShadow: 'none',
-                        borderRadius: 1,
-                        ml: 1,
-                        minWidth: 80,
-                      }}
-                    >
-                      {submitting ? 'Posting...' : 'Post'}
-                    </Button>
-                  ),
-                  sx: { alignItems: 'flex-end' },
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <Button
+                        variant="contained"
+                        startIcon={<Send sx={{ fontSize: 16 }} />}
+                        onClick={handleSubmit}
+                        disabled={submitting || !newComment.trim()}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          boxShadow: 'none',
+                          borderRadius: 1,
+                          ml: 1,
+                          minWidth: 80,
+                        }}
+                      >
+                        {submitting ? 'Posting...' : 'Post'}
+                      </Button>
+                    ),
+                    sx: { alignItems: 'flex-end' },
+                  }
                 }}
               />
             </Box>

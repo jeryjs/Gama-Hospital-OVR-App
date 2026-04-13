@@ -56,10 +56,19 @@ export function GeospatialIncidentMap({ dateRange, loading = false }: Geospatial
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between"
+                    }}>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                    }}>
                         <Map color="primary" />
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Incident Hotspot Map
                         </Typography>
                     </Stack>
@@ -118,17 +127,16 @@ export function GeospatialIncidentMap({ dateRange, loading = false }: Geospatial
                     {/* Floor plan label */}
                     <Typography
                         variant="caption"
-                        color="text.secondary"
                         sx={{
+                            color: "text.secondary",
                             position: 'absolute',
                             top: 8,
                             left: 8,
                             bgcolor: 'background.paper',
                             px: 1,
                             py: 0.5,
-                            borderRadius: 1,
-                        }}
-                    >
+                            borderRadius: 1
+                        }}>
                         <Layers fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
                         Main Building - Floor 1
                     </Typography>
@@ -141,7 +149,9 @@ export function GeospatialIncidentMap({ dateRange, loading = false }: Geospatial
                                 key={hotspot.id}
                                 title={
                                     <Box>
-                                        <Typography variant="body2" fontWeight={600}>{hotspot.name}</Typography>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>{hotspot.name}</Typography>
                                         <Typography variant="caption">{hotspot.incidents} incidents</Typography>
                                     </Box>
                                 }
@@ -197,17 +207,27 @@ export function GeospatialIncidentMap({ dateRange, loading = false }: Geospatial
                             borderColor: 'divider',
                         }}
                     >
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             📍 Connect your building floor plans for precise incident mapping
                         </Typography>
                     </Box>
                 </Box>
 
                 {/* Legend and Stats */}
-                <Stack direction="row" spacing={3} justifyContent="space-between" flexWrap="wrap">
+                <Stack
+                    direction="row"
+                    spacing={3}
+                    sx={{
+                        justifyContent: "space-between",
+                        flexWrap: "wrap"
+                    }}>
                     <Stack direction="row" spacing={2}>
                         {Object.entries(severityColors).map(([severity, color]) => (
-                            <Stack key={severity} direction="row" alignItems="center" spacing={0.5}>
+                            <Stack key={severity} direction="row" spacing={0.5} sx={{
+                                alignItems: "center"
+                            }}>
                                 <Box
                                     sx={{
                                         width: 12,
@@ -218,24 +238,35 @@ export function GeospatialIncidentMap({ dateRange, loading = false }: Geospatial
                                         borderColor: color,
                                     }}
                                 />
-                                <Typography variant="caption" color="text.secondary" textTransform="capitalize">
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        textTransform: "capitalize"
+                                    }}>
                                     {severity}
                                 </Typography>
                             </Stack>
                         ))}
                     </Stack>
 
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>
                         Marker size indicates incident frequency
                     </Typography>
                 </Stack>
 
                 {/* Top Hotspots List */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Top Incident Locations
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} sx={{
+                        flexWrap: "wrap"
+                    }}>
                         {mockHotspots
                             .sort((a, b) => b.incidents - a.incidents)
                             .slice(0, 4)

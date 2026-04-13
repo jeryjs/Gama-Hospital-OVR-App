@@ -101,10 +101,12 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
                                         </Typography>
                                         <Typography
                                             variant="h3"
-                                            fontWeight={700}
                                             color={
                                                 showConditionalColor ? 'text.primary' : colors.text
                                             }
+                                            sx={{
+                                                fontWeight: 700
+                                            }}
                                         >
                                             {metric.value}
                                         </Typography>

@@ -70,13 +70,21 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                 borderColor: isSubmitted ? alpha('#10B981', 0.2) : alpha('#F59E0B', 0.2),
             }}
         >
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    alignItems: "center",
+                    mb: 2
+                }}>
                 {isSubmitted ? (
                     <CompleteIcon sx={{ color: 'success.main' }} />
                 ) : (
                     <PendingIcon sx={{ color: 'warning.main' }} />
                 )}
-                <Typography variant="h6" fontWeight={600}>
+                <Typography variant="h6" sx={{
+                    fontWeight: 600
+                }}>
                     Investigation {isSubmitted ? 'Summary' : 'In Progress'}
                 </Typography>
                 <Chip
@@ -85,13 +93,21 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                     color={isSubmitted ? 'success' : 'warning'}
                 />
             </Stack>
-
             <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
                 {/* Investigators */}
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{
+                    color: "text.secondary"
+                }}>
                     Investigators
                 </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{
+                        flexWrap: "wrap",
+                        mb: 2
+                    }}>
                     {investigators.length > 0 ? (
                         investigators.map((investigator) => (
                             <Chip
@@ -110,7 +126,9 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                             />
                         ))
                     ) : (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             No investigators assigned
                         </Typography>
                     )}
@@ -119,7 +137,9 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                 {/* Findings snippet (if submitted) */}
                 {isSubmitted && investigation.findings && (
                     <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Findings
                         </Typography>
                         <Box
@@ -144,7 +164,9 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                 {/* Problems Identified snippet (if submitted) */}
                 {isSubmitted && investigation.problemsIdentified && (
                     <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Problems Identified
                         </Typography>
                         <Box
@@ -169,7 +191,9 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                 {/* Cause Classification (if available) */}
                 {investigation.causeClassification && (
                     <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Cause Classification
                         </Typography>
                         <Chip

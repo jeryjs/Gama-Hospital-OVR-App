@@ -94,13 +94,18 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
             <Stack
                 direction="row"
                 spacing={1}
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 2 }}
-            >
-                <Stack direction="row" spacing={1} alignItems="center">
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 2
+                }}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <TaskIcon sx={{ color: 'primary.main' }} />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Corrective Actions
                     </Typography>
                 </Stack>
@@ -121,7 +126,6 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                     />
                 </Stack>
             </Stack>
-
             <LinearProgress
                 variant="determinate"
                 value={progress}
@@ -135,7 +139,6 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                     },
                 }}
             />
-
             <Stack spacing={1.5}>
                 {actions.map((action) => {
                     const assignees = action.assigneeUsers || [];
@@ -153,15 +156,28 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                                 borderColor: isOverdue ? 'error.main' : 'divider',
                             }}
                         >
-                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                            <Stack
+                                direction="row"
+                                sx={{
+                                    justifyContent: "space-between",
+                                    alignItems: "flex-start"
+                                }}>
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                                    <Typography fontWeight={600} noWrap>
+                                    <Typography noWrap sx={{
+                                        fontWeight: 600
+                                    }}>
                                         {action.title}
                                     </Typography>
 
                                     {/* Assignees */}
                                     {assignees.length > 0 && (
-                                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                                        <Stack
+                                            direction="row"
+                                            spacing={0.5}
+                                            sx={{
+                                                alignItems: "center",
+                                                mt: 0.5
+                                            }}>
                                             {assignees.slice(0, 3).map((assignee) => (
                                                 <Avatar
                                                     key={assignee.id}
@@ -172,11 +188,18 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                                                 </Avatar>
                                             ))}
                                             {assignees.length > 3 && (
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     +{assignees.length - 3}
                                                 </Typography>
                                             )}
-                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    ml: 0.5
+                                                }}>
                                                 {assignees.length === 1
                                                     ? `${assignees[0].firstName || ''} ${assignees[0].lastName || ''}`.trim()
                                                     : `${assignees.length} assignees`}
@@ -206,7 +229,14 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                                     )}
                                 </Box>
 
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 2, flexShrink: 0 }}>
+                                <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    sx={{
+                                        alignItems: "center",
+                                        ml: 2,
+                                        flexShrink: 0
+                                    }}>
                                     {action.dueDate && (
                                         <Chip
                                             icon={<ScheduleIcon sx={{ fontSize: 14 }} />}

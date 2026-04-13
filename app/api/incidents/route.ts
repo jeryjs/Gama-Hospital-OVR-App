@@ -17,7 +17,7 @@ import { buildIncidentVisibilityFilter } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { generateOVRId } from '@/lib/generate-ovr-id';
 import { ACCESS_CONTROL } from '@/lib/access-control';
-import { and, asc, desc, eq, like, or, sql, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, like, or, sql, ne, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const offset = (query.page - 1) * query.limit;
 
     // Build where conditions
-    const conditions = [];
+    const conditions: SQL<unknown>[] = [];
 
     // Determine if this is a "my reports" request (reporterId matches current user)
     const isMyReportsRequest = query.reporterId === userId;
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     // Apply filters
     if (query.status) {
       if (query.status !== 'draft') {
-        conditions.push(sql`${ovrReports.status} = ${query.status}` as any);
+        conditions.push(sql`${ovrReports.status} = ${query.status}` as SQL<unknown>);
       }
     }
 
@@ -99,14 +99,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (query.search) {
-      conditions.push(
-        or(
-          like(ovrReports.id, `%${query.search}%`), // Search by OVR ID
-          like(ovrReports.description, `%${query.search}%`),
-          like(ovrReports.involvedPersonName, `%${query.search}%`),
-          like(ovrReports.involvedPersonMRN, `%${query.search}%`)
-        )
+      const searchCondition = or(
+        like(ovrReports.id, `%${query.search}%`), // Search by OVR ID
+        like(ovrReports.description, `%${query.search}%`),
+        like(ovrReports.involvedPersonName, `%${query.search}%`),
+        like(ovrReports.involvedPersonMRN, `%${query.search}%`)
       );
+
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

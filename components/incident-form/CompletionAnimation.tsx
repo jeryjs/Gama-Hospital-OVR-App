@@ -84,12 +84,14 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 3,
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                },
+            slotProps={{
+                paper: {
+                    sx: {
+                        borderRadius: 3,
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                    },
+                }
             }}
         >
             <style>{scaleInAnimation}{fadeInAnimation}</style>
@@ -119,11 +121,18 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
                         animation: 'fadeIn 0.6s ease-out 0.3s both',
                     }}
                 >
-                    <Typography variant="h4" fontWeight={600} color="success.main">
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 600,
+                            color: "success.main"
+                        }}>
                         Incident Closed Successfully!
                     </Typography>
 
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={{
+                        color: "text.secondary"
+                    }}>
                         Incident <strong>{incidentId}</strong> has been successfully resolved and archived.
                     </Typography>
 
@@ -138,13 +147,19 @@ export function CompletionAnimation({ open, incidentId, onClose }: CompletionAni
                             mt: 2,
                         }}
                     >
-                        <Typography variant="body2" color="success.dark">
+                        <Typography variant="body2" sx={{
+                            color: "success.dark"
+                        }}>
                             ✓ Case review completed
                         </Typography>
-                        <Typography variant="body2" color="success.dark">
+                        <Typography variant="body2" sx={{
+                            color: "success.dark"
+                        }}>
                             ✓ Feedback provided to reporter
                         </Typography>
-                        <Typography variant="body2" color="success.dark">
+                        <Typography variant="body2" sx={{
+                            color: "success.dark"
+                        }}>
                             ✓ All actions closed
                         </Typography>
                     </Box>

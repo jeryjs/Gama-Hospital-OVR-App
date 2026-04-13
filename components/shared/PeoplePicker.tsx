@@ -140,12 +140,20 @@ function UserOptionStandard({
         <Tooltip
             title={
                 <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{
+                        fontWeight: 600
+                    }}>
                         {fullName}
                     </Typography>
                     <Typography variant="caption">{user.email}</Typography>
                     {user.roles && user.roles.length > 0 && (
-                        <Typography variant="caption" display="block" sx={{ mt: 0.5, opacity: 0.8 }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                display: "block",
+                                mt: 0.5,
+                                opacity: 0.8
+                            }}>
                             Roles: {user.roles.join(', ')}
                         </Typography>
                     )}
@@ -188,26 +196,24 @@ function UserOptionStandard({
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                         variant="body2"
-                        fontWeight={500}
                         sx={{
+                            fontWeight: 500,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
+                            whiteSpace: 'nowrap'
+                        }}>
                         {fullName}
                     </Typography>
                     {user.department && (
                         <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                                color: "text.secondary",
                                 display: 'block',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
+                                whiteSpace: 'nowrap'
+                            }}>
                             {user.department}
                         </Typography>
                     )}
@@ -273,37 +279,40 @@ function UserOptionModern({
             <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                     variant="body1"
-                    fontWeight={600}
                     sx={{
+                        fontWeight: 600,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
+                        whiteSpace: 'nowrap'
+                    }}>
                     {fullName}
                 </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     {user.department && (
                         <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                                color: "text.secondary",
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
+                                whiteSpace: 'nowrap'
+                            }}>
                             {user.department}
                         </Typography>
                     )}
                     {user.roles && user.roles.length > 0 && (
                         <>
-                            {user.department && <Typography variant="caption" color="text.disabled">•</Typography>}
+                            {user.department && <Typography variant="caption" sx={{
+                                color: "text.disabled"
+                            }}>•</Typography>}
                             <Typography
                                 variant="caption"
-                                color="primary.main"
-                                sx={{ fontWeight: 500 }}
-                            >
+                                sx={{
+                                    color: "primary.main",
+                                    fontWeight: 500
+                                }}>
                                 {user.roles[0]}
                             </Typography>
                         </>
@@ -395,11 +404,15 @@ function UserCard({
                 {initials}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2" fontWeight={500} noWrap>
+                <Typography variant="body2" noWrap sx={{
+                    fontWeight: 500
+                }}>
                     {fullName}
                 </Typography>
                 {user.department && (
-                    <Typography variant="caption" color="text.secondary" noWrap>
+                    <Typography variant="caption" noWrap sx={{
+                        color: "text.secondary"
+                    }}>
                         {user.department}
                     </Typography>
                 )}
@@ -625,38 +638,42 @@ export function PeoplePicker({
                         error={error}
                         helperText={helperText}
                         autoFocus={autoFocus}
-                        InputProps={{
-                            ...params.InputProps,
-                            startAdornment: (
-                                <>
-                                    {!multiple && !value && (
-                                        <InputAdornment position="start">
-                                            <SearchIcon color="action" fontSize="small" />
-                                        </InputAdornment>
-                                    )}
-                                    {params.InputProps.startAdornment}
-                                </>
-                            ),
-                            endAdornment: (
-                                <>
-                                    {isLoading ? (
-                                        <CircularProgress color="inherit" size={20} sx={{ mr: 1 }} />
-                                    ) : null}
-                                    {params.InputProps.endAdornment}
-                                </>
-                            ),
+                        slotProps={{
+                            ...params.slotProps,
+
+                            input: {
+                                ...params.slotProps.input,
+                                startAdornment: (
+                                    <>
+                                        {!multiple && !value && (
+                                            <InputAdornment position="start">
+                                                <SearchIcon color="action" fontSize="small" />
+                                            </InputAdornment>
+                                        )}
+                                        {params.slotProps.input.startAdornment}
+                                    </>
+                                ),
+                                endAdornment: (
+                                    <>
+                                        {isLoading ? (
+                                            <CircularProgress color="inherit" size={20} sx={{ mr: 1 }} />
+                                        ) : null}
+                                        {params.slotProps.input.endAdornment}
+                                    </>
+                                ),
+                            }
                         }}
                     />
                 )}
                 renderOption={(props, option) => (
                     <OptionComponent key={option.id} user={option} props={props} />
                 )}
-                renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => {
-                        const { key, ...tagProps } = getTagProps({ index });
+                renderValue={(tagValue, _) => {
+                    const tagArray = Array.isArray(tagValue) ? tagValue : tagValue ? [tagValue] : [];
+                    return tagArray.map((option, index) => {
                         return (
                             <TagComponent
-                                key={key}
+                                key={option.id}
                                 user={option}
                                 onDelete={() => {
                                     const newValue = Array.isArray(value)
@@ -667,22 +684,23 @@ export function PeoplePicker({
                                 disabled={disabled}
                             />
                         );
-                    })
-                }
-                // Handle keyboard navigation
-                ListboxProps={{
-                    sx: {
-                        maxHeight: 300,
-                        '& .MuiAutocomplete-option': {
-                            padding: 0,
-                        },
-                    },
+                    });
                 }}
                 sx={{
                     '& .MuiAutocomplete-inputRoot': {
                         flexWrap: 'wrap',
                         gap: 0.5,
                     },
+                }}
+                slotProps={{
+                    listbox: {
+                        sx: {
+                            maxHeight: 300,
+                            '& .MuiAutocomplete-option': {
+                                padding: 0,
+                            },
+                        },
+                    }
                 }}
             />
             {/* Manual entry toggle */}

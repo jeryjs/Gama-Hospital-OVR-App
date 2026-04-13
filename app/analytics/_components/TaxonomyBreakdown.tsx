@@ -144,9 +144,10 @@ function CategoryItem({ category, depth, maxCount }: CategoryItemProps) {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                         <Typography
                             variant="body2"
-                            fontWeight={depth === 0 ? 600 : 400}
-                            sx={{ color: depth === 0 ? 'text.primary' : 'text.secondary' }}
-                        >
+                            sx={{
+                                fontWeight: depth === 0 ? 600 : 400,
+                                color: depth === 0 ? 'text.primary' : 'text.secondary'
+                            }}>
                             {category.name}
                         </Typography>
                         <Chip
@@ -182,7 +183,6 @@ function CategoryItem({ category, depth, maxCount }: CategoryItemProps) {
                     </Box>
                 </Box>
             </Box>
-
             {hasChildren && (
                 <Collapse in={expanded}>
                     {category.children!.map((child) => (
@@ -225,10 +225,14 @@ export default function TaxonomyBreakdown({
         <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Incident Taxonomy Breakdown
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Hierarchical category distribution
                     </Typography>
                 </Box>
@@ -239,7 +243,6 @@ export default function TaxonomyBreakdown({
                     size="small"
                 />
             </Box>
-
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {placeholderData.map((category) => (
                     <CategoryItem

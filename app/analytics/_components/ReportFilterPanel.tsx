@@ -51,8 +51,15 @@ export function ReportFilterPanel({ filters, onChange, onClose }: ReportFilterPa
         <Paper sx={{ p: 2 }}>
             <Stack spacing={2}>
                 {/* Header */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="subtitle1" fontWeight={600}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}>
+                    <Typography variant="subtitle1" sx={{
+                        fontWeight: 600
+                    }}>
                         Filters
                     </Typography>
                     <Stack direction="row" spacing={1}>
@@ -112,7 +119,9 @@ function FilterControls({ filters, onChange }: FilterControlsProps) {
     );
 
     return (
-        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={2} useFlexGap sx={{
+            flexWrap: "wrap"
+        }}>
             {/* Status Filter */}
             <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>Status</InputLabel>
@@ -131,7 +140,6 @@ function FilterControls({ filters, onChange }: FilterControlsProps) {
                     ))}
                 </Select>
             </FormControl>
-
             {/* Category Filter */}
             <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>Category</InputLabel>
@@ -150,7 +158,6 @@ function FilterControls({ filters, onChange }: FilterControlsProps) {
                     ))}
                 </Select>
             </FormControl>
-
             {/* Department Filter */}
             <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>Department</InputLabel>
@@ -169,7 +176,6 @@ function FilterControls({ filters, onChange }: FilterControlsProps) {
                     ))}
                 </Select>
             </FormControl>
-
             {/* Location Filter */}
             <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>Location</InputLabel>
@@ -244,10 +250,18 @@ function ActiveFiltersChips({ filters, onChange }: ActiveFiltersChipsProps) {
 
     return (
         <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            <Typography
+                variant="caption"
+                sx={{
+                    color: "text.secondary",
+                    mb: 1,
+                    display: 'block'
+                }}>
                 Active Filters
             </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Stack direction="row" spacing={1} useFlexGap sx={{
+                flexWrap: "wrap"
+            }}>
                 {filters.statuses.map((status) => (
                     <Chip
                         key={`status-${status}`}

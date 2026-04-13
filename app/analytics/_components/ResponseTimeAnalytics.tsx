@@ -77,10 +77,14 @@ export default function ResponseTimeAnalytics({
         <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Response Time Funnel
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Average time between status transitions
                     </Typography>
                 </Box>
@@ -91,7 +95,6 @@ export default function ResponseTimeAnalytics({
                     variant="outlined"
                 />
             </Box>
-
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                 {placeholderData.map((stage, index) => {
                     const isOverTarget = stage.avgHours > stage.target;
@@ -122,22 +125,29 @@ export default function ResponseTimeAnalytics({
                             >
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={600}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {stage.from} → {stage.to}
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             {stage.count} transitions
                                         </Typography>
                                     </Box>
                                     <Box sx={{ textAlign: 'right' }}>
                                         <Typography
                                             variant="h6"
-                                            fontWeight={700}
-                                            sx={{ color: statusColor }}
-                                        >
+                                            sx={{
+                                                fontWeight: 700,
+                                                color: statusColor
+                                            }}>
                                             {formatDuration(stage.avgHours)}
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             Target: {formatDuration(stage.target)}
                                         </Typography>
                                     </Box>
@@ -163,7 +173,6 @@ export default function ResponseTimeAnalytics({
                                     />
                                 </Box>
                             </Box>
-
                             {/* Arrow connector */}
                             {index < placeholderData.length - 1 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 0.5 }}>
@@ -187,7 +196,12 @@ export default function ResponseTimeAnalytics({
                     }}
                 >
                     <CheckIcon sx={{ color: 'success.main' }} />
-                    <Typography variant="body2" fontWeight={600} color="success.main">
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontWeight: 600,
+                            color: "success.main"
+                        }}>
                         Case Closed
                     </Typography>
                 </Box>

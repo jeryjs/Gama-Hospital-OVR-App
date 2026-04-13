@@ -1,4 +1,4 @@
-import { Person, Badge, Group, HelpOutline } from '@mui/icons-material';
+import { Person, Badge, Group, HelpOutlined } from '@mui/icons-material';
 import { alpha, Box, Grid, Paper, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 
@@ -8,7 +8,12 @@ interface Props {
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <Box>
-    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+    <Typography
+      variant="caption"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 600
+      }}>
       {label}
     </Typography>
     <Typography variant="body2">{value || 'N/A'}</Typography>
@@ -26,7 +31,7 @@ const getTypeConfig = (personInvolved: string) => {
       return { title: 'Public Information', icon: <Group />, color: 'info' as const };
     case 'organization':
     default:
-      return { title: 'Organization Information', icon: <HelpOutline />, color: 'secondary' as const };
+      return { title: 'Organization Information', icon: <HelpOutlined />, color: 'secondary' as const };
   }
 };
 
@@ -42,20 +47,18 @@ export function PersonInvolvedSection({ incident }: Props) {
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
         variant="h6"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           pb: 2,
           borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-          color: (theme) => theme.palette[color].main,
-        }}
-      >
+          color: (theme) => theme.palette[color].main
+        }}>
         {icon} {title}
       </Typography>
-
       <Grid container spacing={3} sx={{ mt: 1 }}>
         {/* Name - All types */}
         <Grid size={{ xs: 12, md: 4 }}>
@@ -132,7 +135,6 @@ export function PersonInvolvedSection({ incident }: Props) {
           </>
         )}
       </Grid>
-
       {isPatient && (
         <Box
           sx={{
@@ -143,7 +145,12 @@ export function PersonInvolvedSection({ incident }: Props) {
             textAlign: 'center',
           }}
         >
-          <Typography variant="caption" fontWeight={600} color="info.main">
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              color: "info.main"
+            }}>
             ⚠️ CONFIDENTIAL - Do not file in the Medical Record
           </Typography>
         </Box>

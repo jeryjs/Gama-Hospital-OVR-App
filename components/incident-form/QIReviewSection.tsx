@@ -83,7 +83,9 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
     if (!canEditQIReview) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" sx={{
+                    fontWeight: 600
+                }}>
                     Awaiting QI Review
                 </Typography>
                 <Typography variant="body2">
@@ -107,7 +109,6 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                     },
                 }}
             />
-
             <CardContent>
                 {/* Decision Radio Group */}
                 <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
@@ -125,10 +126,14 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <ApproveIcon color="success" />
                                     <Box>
-                                        <Typography variant="body1" fontWeight={500}>
+                                        <Typography variant="body1" sx={{
+                                            fontWeight: 500
+                                        }}>
                                             Approve
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             Queue for investigation setup
                                         </Typography>
                                     </Box>
@@ -142,10 +147,14 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <RejectIcon color="error" />
                                     <Box>
-                                        <Typography variant="body1" fontWeight={500}>
+                                        <Typography variant="body1" sx={{
+                                            fontWeight: 500
+                                        }}>
                                             Reject
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             Keep in QI review with rejection feedback
                                         </Typography>
                                     </Box>
@@ -192,7 +201,6 @@ export function QIReviewSection({ incidentId, onSuccess }: QIReviewSectionProps)
                     {submitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
             </CardContent>
-
             {ErrorDialogComponent}
         </Card>
     );

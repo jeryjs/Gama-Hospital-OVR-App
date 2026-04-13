@@ -122,7 +122,12 @@ export default function LoginPage() {
             gap: 2,
           }}
         >
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: "text.secondary",
+              mb: 2
+            }}>
             Checking authentication...
           </Typography>
           <Box
@@ -204,10 +209,17 @@ export default function LoginPage() {
                 >
                   OVR System
                 </Typography>
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 1
+                  }}>
                   Gama Hospital
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Occurrence Variance Reporting System
                 </Typography>
               </Box>
@@ -225,7 +237,12 @@ export default function LoginPage() {
 
               {/* Sign In Section */}
               <Box>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 3
+                  }}>
                   Sign in with your Microsoft account
                 </Typography>
 
@@ -277,7 +294,12 @@ export default function LoginPage() {
               </Box>
 
               {/* Footer Note */}
-              <Typography variant="caption" color="text.secondary" sx={{ pt: 2 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  pt: 2
+                }}>
                 Company email accounts are auto-enabled as Employee on first login; admins manage elevated roles.
               </Typography>
             </Stack>

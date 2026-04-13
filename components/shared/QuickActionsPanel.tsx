@@ -37,11 +37,15 @@ export function QuickActionsPanel({ actions, title }: QuickActionsPanelProps) {
     return (
         <Paper sx={{ p: 2.5 }}>
             {title && (
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        fontWeight: 600,
+                        mb: 2
+                    }}>
                     {title}
                 </Typography>
             )}
-
             <Stack spacing={1.5}>
                 {actions.map((action, index) => {
                     // Default first action to contained, others to outlined

@@ -67,10 +67,14 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
           <Stack spacing={3}>
             {/* Welcome Header */}
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" gutterBottom sx={{
+                fontWeight: 700
+              }}>
                 Admin Dashboard
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{
+                color: "text.secondary"
+              }}>
                 Welcome back, {session?.user?.name} • System Overview
               </Typography>
             </Box>
@@ -89,8 +93,15 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
               <Grid size={{ xs: 12, lg: 8 }}>
                 <Paper sx={{ p: 3, height: '100%' }}>
                   <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between">
-                      <Typography variant="h6" fontWeight={600}>
+                    <Stack
+                      direction="row"
+                      sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between"
+                      }}>
+                      <Typography variant="h6" sx={{
+                        fontWeight: 600
+                      }}>
                         Incident Pipeline
                       </Typography>
                       <Button size="small" startIcon={<Assessment />} onClick={() => router.push('/incidents')}>
@@ -103,11 +114,21 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
                         const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
                         return (
                           <Box key={status}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                              <Typography variant="body2" fontWeight={500}>
+                            <Stack
+                              direction="row"
+                              sx={{
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                mb: 1
+                              }}>
+                              <Typography variant="body2" sx={{
+                                fontWeight: 500
+                              }}>
                                 {getStatusLabel(status)}
                               </Typography>
-                              <Typography variant="body2" fontWeight={700}>
+                              <Typography variant="body2" sx={{
+                                fontWeight: 700
+                              }}>
                                 {count}
                               </Typography>
                             </Stack>
@@ -133,7 +154,9 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
               {/* Department Breakdown */}
               <Grid size={{ xs: 12, lg: 6 }}>
                 <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 600
+                  }}>
                     Incidents by Department
                   </Typography>
                   <TableContainer sx={{ mt: 2 }}>

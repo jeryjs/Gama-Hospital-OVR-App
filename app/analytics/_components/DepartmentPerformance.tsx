@@ -97,9 +97,13 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Business color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Department Performance
                     </Typography>
                 </Stack>
@@ -114,19 +118,48 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
                         borderColor: 'divider',
                     }}
                 >
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 2 }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 600,
+                            flex: 2
+                        }}>
                         Department
                     </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1, textAlign: 'center' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 600,
+                            flex: 1,
+                            textAlign: 'center'
+                        }}>
                         QI Rate
                     </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1, textAlign: 'center' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 600,
+                            flex: 1,
+                            textAlign: 'center'
+                        }}>
                         Avg Time
                     </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1, textAlign: 'center' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 600,
+                            flex: 1,
+                            textAlign: 'center'
+                        }}>
                         Incidents
                     </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1, textAlign: 'center' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 600,
+                            flex: 1,
+                            textAlign: 'center'
+                        }}>
                         Score
                     </Typography>
                 </Stack>
@@ -152,10 +185,20 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
                                     },
                                 }}
                             >
-                                <Stack direction="row" spacing={2} alignItems="center">
+                                <Stack direction="row" spacing={2} sx={{
+                                    alignItems: "center"
+                                }}>
                                     {/* Department Name */}
-                                    <Stack sx={{ flex: 2 }} direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2" fontWeight={600}>
+                                    <Stack
+                                        direction="row"
+                                        spacing={1}
+                                        sx={{
+                                            alignItems: "center",
+                                            flex: 2
+                                        }}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {dept.department}
                                         </Typography>
                                         {dept.trend !== 0 && (
@@ -173,8 +216,12 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
 
                                     {/* QI Completion Rate */}
                                     <Box sx={{ flex: 1 }}>
-                                        <Stack alignItems="center" spacing={0.5}>
-                                            <Typography variant="body2" fontWeight={600}>
+                                        <Stack spacing={0.5} sx={{
+                                            alignItems: "center"
+                                        }}>
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 {dept.qiCompletionRate}%
                                             </Typography>
                                             <LinearProgress
@@ -192,7 +239,9 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
 
                                     {/* Avg Investigation Time */}
                                     <Box sx={{ flex: 1, textAlign: 'center' }}>
-                                        <Typography variant="body2" fontWeight={500}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 500
+                                        }}>
                                             {dept.avgInvestigationTime}d
                                         </Typography>
                                     </Box>
@@ -229,14 +278,18 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
                 </Stack>
 
                 {/* Score Legend */}
-                <Stack direction="row" spacing={2} justifyContent="center">
+                <Stack direction="row" spacing={2} sx={{
+                    justifyContent: "center"
+                }}>
                     {[
                         { label: 'Excellent (90+)', color: '#10B981' },
                         { label: 'Good (80-89)', color: '#3B82F6' },
                         { label: 'Fair (70-79)', color: '#F59E0B' },
                         { label: 'Needs Improvement (<70)', color: '#EF4444' },
                     ].map((item) => (
-                        <Stack key={item.label} direction="row" alignItems="center" spacing={0.5}>
+                        <Stack key={item.label} direction="row" spacing={0.5} sx={{
+                            alignItems: "center"
+                        }}>
                             <Box
                                 sx={{
                                     width: 8,
@@ -245,7 +298,9 @@ export function DepartmentPerformance({ dateRange, filters, loading = false }: D
                                     bgcolor: item.color,
                                 }}
                             />
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {item.label}
                             </Typography>
                         </Stack>

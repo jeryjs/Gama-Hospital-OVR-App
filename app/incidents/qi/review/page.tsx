@@ -200,7 +200,9 @@ export default function QIReviewPage() {
                     {!incidents || incidents.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                          <Typography variant="body1" color="text.secondary">
+                          <Typography variant="body1" sx={{
+                            color: "text.secondary"
+                          }}>
                             No incidents pending review
                           </Typography>
                         </TableCell>
@@ -209,7 +211,9 @@ export default function QIReviewPage() {
                       incidents.map((incident) => (
                         <TableRow key={incident.id} hover>
                           <TableCell>
-                            <Typography variant="body2" fontWeight={600}>
+                            <Typography variant="body2" sx={{
+                              fontWeight: 600
+                            }}>
                               {incident.id}
                             </Typography>
                           </TableCell>
@@ -232,7 +236,9 @@ export default function QIReviewPage() {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Stack direction="row" spacing={1} sx={{
+                              justifyContent: "flex-end"
+                            }}>
                               <Button
                                 size="small"
                                 component={Link}

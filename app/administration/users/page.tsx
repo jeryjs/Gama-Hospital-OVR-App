@@ -20,7 +20,7 @@ import {
   History,
   Info,
   Warning,
-  CheckCircleOutline,
+  CheckCircleOutlined,
   Block,
   Assignment,
   TrendingUp,
@@ -180,10 +180,14 @@ function StatCard({ icon, label, value, color = '#3B82F6' }: StatCardProps) {
         {icon}
       </Box>
       <Box>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           {label}
         </Typography>
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h6" sx={{
+          fontWeight: 600
+        }}>
           {value}
         </Typography>
       </Box>
@@ -284,12 +288,15 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pb: 1 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <PersonAdd color="primary" />
-          <Typography variant="h6" fontWeight={700}>Create User</Typography>
+          <Typography variant="h6" sx={{
+            fontWeight: 700
+          }}>Create User</Typography>
         </Stack>
       </DialogTitle>
-
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Alert severity="info">
@@ -347,7 +354,9 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
                 setFormData({ ...formData, roles: nextRoles as AppRole[] });
               }}
               renderValue={(selected) => (
-                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                <Stack direction="row" spacing={0.5} useFlexGap sx={{
+                  flexWrap: "wrap"
+                }}>
                   {(selected as string[]).map((roleValue) => {
                     const role = ROLE_OPTIONS.find((r) => r.value === roleValue);
                     return (
@@ -370,8 +379,12 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
                 <MenuItem key={role.value} value={role.value}>
                   <Checkbox checked={((formData.roles as string[]) || []).includes(role.value)} />
                   <Stack spacing={0}>
-                    <Typography variant="body2" fontWeight={600}>{role.label}</Typography>
-                    <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                    <Typography variant="body2" sx={{
+                      fontWeight: 600
+                    }}>{role.label}</Typography>
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>{role.description}</Typography>
                   </Stack>
                 </MenuItem>
               ))}
@@ -430,7 +443,9 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
 
           {includesSuperAdmin && (
             <Alert severity="warning">
-              <Typography variant="body2" fontWeight={600}>High-risk action</Typography>
+              <Typography variant="body2" sx={{
+                fontWeight: 600
+              }}>High-risk action</Typography>
               <Typography variant="body2">
                 Assigning Super Admin requires explicit confirmation.
               </Typography>
@@ -459,7 +474,6 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
           />
         </Stack>
       </DialogContent>
-
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancel</Button>
         <Button
@@ -598,7 +612,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [formData.employeeId, user?.employeeId]);
+  }, [formData.employeeId, user?.employeeId, user?.id]);
 
   // Calculate permissions based on roles
   const permissionPreview = useMemo(() => {
@@ -739,12 +753,16 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
         onClose={handleClose}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: { minHeight: '60vh' },
+        slotProps={{
+          paper: {
+            sx: { minHeight: '60vh' },
+          }
         }}
       >
         <DialogTitle sx={{ pb: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" spacing={2} sx={{
+            alignItems: "center"
+          }}>
             <Avatar
               src={user.profilePicture || undefined}
               sx={{
@@ -757,10 +775,14 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               {userInitials}
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h6" sx={{
+                fontWeight: 600
+              }}>
                 {user.firstName} {user.lastName}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {user.email}
               </Typography>
             </Box>
@@ -807,14 +829,16 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                 value={user.email}
                 disabled
                 fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Info fontSize="small" color="disabled" />
-                    </InputAdornment>
-                  ),
-                }}
                 helperText="Email cannot be changed once linked to identity"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Info fontSize="small" color="disabled" />
+                      </InputAdornment>
+                    ),
+                  }
+                }}
               />
 
               <TextField
@@ -830,16 +854,18 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       ? 'This Employee ID may already be in use'
                       : 'Unique identifier for this employee'
                 }
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {employeeIdChecking ? (
-                        <CircularProgress size={20} />
-                      ) : employeeIdValid && formData.employeeId ? (
-                        <CheckCircleOutline fontSize="small" color="success" />
-                      ) : null}
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {employeeIdChecking ? (
+                          <CircularProgress size={20} />
+                        ) : employeeIdValid && formData.employeeId ? (
+                          <CheckCircleOutlined fontSize="small" color="success" />
+                        ) : null}
+                      </InputAdornment>
+                    ),
+                  }
                 }}
               />
 
@@ -888,8 +914,12 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       />
                     }
                     label={
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography fontWeight={500}>
+                      <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                      }}>
+                        <Typography sx={{
+                          fontWeight: 500
+                        }}>
                           Account Status: {formData.isActive ? 'Active' : 'Inactive'}
                         </Typography>
                         {formData.isActive ? (
@@ -924,7 +954,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                         </Stack>
                       }
                     >
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 500
+                      }}>
                         Deactivating this account will:
                       </Typography>
                       <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
@@ -949,7 +981,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               </Alert>
 
               <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{
+                  color: "text.secondary"
+                }}>
                   Assigned Roles
                 </Typography>
                 <FormControl fullWidth sx={{ mt: 1 }}>
@@ -966,7 +1000,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       setFormData({ ...formData, roles: nextRoles as any });
                     }}
                     renderValue={(selected) => (
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      <Stack direction="row" spacing={0.5} useFlexGap sx={{
+                        flexWrap: "wrap"
+                      }}>
                         {(selected as string[]).map((roleValue) => {
                           const role = ROLE_OPTIONS.find((r) => r.value === roleValue);
                           return (
@@ -989,14 +1025,24 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       <MenuItem key={role.value} value={role.value}>
                         <Checkbox checked={((formData.roles as string[]) || []).includes(role.value)} />
                         <Stack spacing={0}>
-                          <Typography variant="body2" fontWeight={600}>{role.label}</Typography>
-                          <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 600
+                          }}>{role.label}</Typography>
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>{role.description}</Typography>
                         </Stack>
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    mt: 1,
+                    display: 'block'
+                  }}>
                   Tip: Keep at least one administrative role on your own account to avoid lockout.
                 </Typography>
 
@@ -1018,7 +1064,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
 
                 {isHighRiskChange && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
-                    <Typography variant="body2" fontWeight={600}>High-risk change detected</Typography>
+                    <Typography variant="body2" sx={{
+                      fontWeight: 600
+                    }}>High-risk change detected</Typography>
                     <Typography variant="body2">
                       This change affects Super Admin access or deactivates a management-level account. Secondary confirmation is required.
                     </Typography>
@@ -1027,8 +1075,16 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               </Box>
 
               <Box>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                  <Typography variant="subtitle2" color="text.secondary">
+                <Stack
+                  direction="row"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 1
+                  }}>
+                  <Typography variant="subtitle2" sx={{
+                    color: "text.secondary"
+                  }}>
                     Last profile sync
                   </Typography>
                   <Chip
@@ -1043,10 +1099,18 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               <Divider />
 
               <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{
+                  color: "text.secondary"
+                }}>
                   Permission Preview
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 2,
+                    display: 'block'
+                  }}>
                   Based on current roles, this user has access to:
                 </Typography>
 
@@ -1066,10 +1130,14 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       >
                         <CheckCircle fontSize="small" sx={{ color: '#10B981' }} />
                         <Box>
-                          <Typography variant="body2" fontWeight={500}>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 500
+                          }}>
                             {perm.label}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             {perm.description}
                           </Typography>
                         </Box>
@@ -1122,11 +1190,15 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               <Divider />
 
               <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{
+                  color: "text.secondary"
+                }}>
                   Account Timeline
                 </Typography>
                 <Stack spacing={1.5} sx={{ mt: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={2}>
+                  <Stack direction="row" spacing={2} sx={{
+                    alignItems: "center"
+                  }}>
                     <Box
                       sx={{
                         width: 8,
@@ -1140,7 +1212,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" alignItems="center" spacing={2}>
+                  <Stack direction="row" spacing={2} sx={{
+                    alignItems: "center"
+                  }}>
                     <Box
                       sx={{
                         width: 8,
@@ -1159,17 +1233,25 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               <Divider />
 
               <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{
+                  color: "text.secondary"
+                }}>
                   Admin Activity Audit
                 </Typography>
 
                 {auditLoading ? (
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                  }}>
                     <CircularProgress size={16} />
-                    <Typography variant="body2" color="text.secondary">Loading activity...</Typography>
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>Loading activity...</Typography>
                   </Stack>
                 ) : auditLogs.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     No admin activity logged yet for this user.
                   </Typography>
                 ) : (
@@ -1180,21 +1262,34 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                       return (
                         <Paper key={log.id} variant="outlined" sx={{ p: 1.5 }}>
                           <Stack spacing={0.5}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                              <Typography variant="body2" fontWeight={600}>
+                            <Stack
+                              direction="row"
+                              sx={{
+                                justifyContent: "space-between",
+                                alignItems: "center"
+                              }}>
+                              <Typography variant="body2" sx={{
+                                fontWeight: 600
+                              }}>
                                 {log.action === 'user_created' ? 'User created' : 'User updated'}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                              }}>
                                 {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                               </Typography>
                             </Stack>
 
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                              color: "text.secondary"
+                            }}>
                               By {log.actor?.name || 'Unknown'}{log.actor?.email ? ` (${log.actor.email})` : ''}
                             </Typography>
 
                             {log.reason && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                              }}>
                                 Reason: {log.reason}
                               </Typography>
                             )}
@@ -1208,7 +1303,9 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                                     : `${field}: ${JSON.stringify(value)}`;
 
                                   return (
-                                    <Typography key={`${log.id}-${field}`} component="li" variant="caption" color="text.secondary">
+                                    <Typography key={`${log.id}-${field}`} component="li" variant="caption" sx={{
+                                      color: "text.secondary"
+                                    }}>
                                       {line}
                                     </Typography>
                                   );
@@ -1253,7 +1350,6 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={confirmHighRiskOpen} onClose={() => setConfirmHighRiskOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Confirm High-Risk Change</DialogTitle>
         <DialogContent>
@@ -1423,10 +1519,20 @@ export default function UsersManagementPage() {
           <Stack spacing={3}>
             {/* Header */}
             <Stack spacing={1.5}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <AdminPanelSettings fontSize="large" color="primary" />
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" sx={{
+                    fontWeight: 700
+                  }}>
                     User Management
                   </Typography>
                 </Stack>
@@ -1438,7 +1544,9 @@ export default function UsersManagementPage() {
                   Create User
                 </Button>
               </Stack>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{
+                color: "text.secondary"
+              }}>
                 Manage user roles, permissions, and account status ({pagination.total} total
                 users)
               </Typography>
@@ -1446,16 +1554,24 @@ export default function UsersManagementPage() {
 
             {/* Filters */}
             <Paper sx={{ p: 2 }}>
-              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: "center",
+                  flexWrap: "wrap"
+                }}>
                 <TextField
                   placeholder="Search users..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   size="small"
-                  InputProps={{
-                    startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
                   sx={{ flex: 1, minWidth: 200 }}
+                  slotProps={{
+                    input: {
+                      startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }
+                  }}
                 />
 
                 <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -1559,7 +1675,9 @@ export default function UsersManagementPage() {
                     {!isLoading && users.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                          <Typography color="text.secondary">
+                          <Typography sx={{
+                            color: "text.secondary"
+                          }}>
                             No users found matching your filters
                           </Typography>
                         </TableCell>
@@ -1579,11 +1697,15 @@ export default function UsersManagementPage() {
                             }}
                           >
                             <TableCell>
-                              <Typography variant="body2" fontWeight={600}>
+                              <Typography variant="body2" sx={{
+                                fontWeight: 600
+                              }}>
                                 {user.firstName} {user.lastName}
                               </Typography>
                               {user.position && (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                  color: "text.secondary"
+                                }}>
                                   {user.position}
                                 </Typography>
                               )}
@@ -1595,7 +1717,9 @@ export default function UsersManagementPage() {
                               <Typography variant="body2">{user.employeeId || 'N/A'}</Typography>
                             </TableCell>
                             <TableCell>
-                              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                              <Stack direction="row" spacing={0.5} useFlexGap sx={{
+                                flexWrap: "wrap"
+                              }}>
                                 {user.roles?.map((roleValue) => {
                                   const roleInfo = getRoleInfo(roleValue);
                                   return (
@@ -1683,7 +1807,6 @@ export default function UsersManagementPage() {
           </Stack>
         </motion.div>
       </Box>
-
       {/* Edit Dialog */}
       <EnhancedEditUserDialog
         open={!!editUser}
@@ -1691,14 +1814,12 @@ export default function UsersManagementPage() {
         onClose={() => setEditUser(null)}
         onSave={handleSaveUser}
       />
-
       <CreateUserDialog
         open={createUserOpen}
         onClose={() => setCreateUserOpen(false)}
         onCreate={handleCreateUser}
         departments={departments.map((d) => ({ id: d.id, name: d.name }))}
       />
-
       <Snackbar
         open={toast.open}
         autoHideDuration={3500}

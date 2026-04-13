@@ -68,7 +68,9 @@ export function RecentIncidentsList({
                     borderBottom: `1px solid ${theme.palette.divider}`,
                 }}
             >
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle1" sx={{
+                    fontWeight: 600
+                }}>
                     {title}
                 </Typography>
                 {showViewAll && (
@@ -82,7 +84,6 @@ export function RecentIncidentsList({
                     </Button>
                 )}
             </Box>
-
             {/* List */}
             {displayedIncidents.length === 0 ? (
                 <EmptyState
@@ -127,14 +128,13 @@ export function RecentIncidentsList({
                                         >
                                             <Typography
                                                 variant="body2"
-                                                fontWeight={500}
                                                 sx={{
+                                                    fontWeight: 500,
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
                                                     whiteSpace: 'nowrap',
-                                                    maxWidth: 180,
-                                                }}
-                                            >
+                                                    maxWidth: 180
+                                                }}>
                                                 {incident.id}
                                             </Typography>
                                             <StatusChip status={incident.status} size="small" />
@@ -151,21 +151,27 @@ export function RecentIncidentsList({
                                         >
                                             <Typography
                                                 variant="caption"
-                                                color="text.secondary"
                                                 sx={{
+                                                    color: "text.secondary",
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
+                                                    whiteSpace: 'nowrap'
+                                                }}>
                                                 {incident.occurrenceCategory || 'Uncategorized'} • {incident.reporter}
                                             </Typography>
-                                            <Typography variant="caption" color="text.disabled" sx={{ flexShrink: 0 }}>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.disabled",
+                                                    flexShrink: 0
+                                                }}>
                                                 {format(createdDate, 'MMM d, h:mm a')}
                                             </Typography>
                                         </Box>
                                     }
-                                    secondaryTypographyProps={{ component: 'div' }}
+                                    slotProps={{
+                                        secondary: { component: 'div' }
+                                    }}
                                 />
                             </ListItemButton>
                         );

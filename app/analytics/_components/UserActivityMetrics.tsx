@@ -113,13 +113,19 @@ export default function UserActivityMetrics({
 
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{
+                fontWeight: 600
+            }}>
                 User Activity Metrics
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mb: 2
+                }}>
                 Top contributors by role
             </Typography>
-
             <Tabs
                 value={activeTab}
                 onChange={(_, v) => setActiveTab(v)}
@@ -136,7 +142,6 @@ export default function UserActivityMetrics({
                     />
                 ))}
             </Tabs>
-
             <List disablePadding>
                 {currentData.map((user, index) => (
                     <ListItem
@@ -178,7 +183,9 @@ export default function UserActivityMetrics({
                         <ListItemText
                             primary={
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2" fontWeight={500}>
+                                    <Typography variant="body2" sx={{
+                                        fontWeight: 500
+                                    }}>
                                         {user.name}
                                     </Typography>
                                     {index < 3 && (
@@ -202,7 +209,9 @@ export default function UserActivityMetrics({
                                 </Box>
                             }
                             secondary={user.department}
-                            secondaryTypographyProps={{ variant: 'caption' }}
+                            slotProps={{
+                                secondary: { variant: 'caption' }
+                            }}
                         />
 
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -235,7 +244,6 @@ export default function UserActivityMetrics({
                     </ListItem>
                 ))}
             </List>
-
             <Box
                 sx={{
                     mt: 2,
@@ -246,11 +254,15 @@ export default function UserActivityMetrics({
                     justifyContent: 'space-between',
                 }}
             >
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Total {tabConfig[activeTab].label.toLowerCase()}:{' '}
                     {currentData.reduce((sum, u) => sum + u.count, 0)}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Showing top 5
                 </Typography>
             </Box>

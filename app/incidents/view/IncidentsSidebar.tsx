@@ -116,8 +116,15 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
         >
             {/* Header */}
             <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6" fontWeight={600}>
+                <Stack
+                    direction="row"
+                    sx={{
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {isMyReports ? 'My Reports' : 'All Incidents'}
                     </Typography>
                     <IconButton size="small" onClick={onToggle}>
@@ -144,7 +151,6 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                     }}
                 />
             </Box>
-
             {/* New Report Button */}
             <Box sx={{ p: 2 }}>
                 <Button
@@ -157,7 +163,6 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                     New Report
                 </Button>
             </Box>
-
             {/* Drafts Section (only for My Reports) */}
             {isMyReports && drafts.length > 0 && (
                 <>
@@ -173,13 +178,22 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                                 sx={{ borderRadius: 1, mb: 0.5 }}
                             >
                                 <Box sx={{ width: '100%' }}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="body2" fontWeight={500} noWrap>
+                                    <Stack
+                                        direction="row"
+                                        sx={{
+                                            justifyContent: "space-between",
+                                            alignItems: "center"
+                                        }}>
+                                        <Typography variant="body2" noWrap sx={{
+                                            fontWeight: 500
+                                        }}>
                                             Draft
                                         </Typography>
                                         <Chip label="Draft" size="small" color="warning" sx={{ height: 20, fontSize: '0.65rem' }} />
                                     </Stack>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {format(new Date(draft.updatedAt), 'MMM d, h:mm a')}
                                     </Typography>
                                 </Box>
@@ -189,7 +203,6 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                     <Divider sx={{ mx: 2, my: 1 }} />
                 </>
             )}
-
             {/* Incidents List */}
             <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>
                 {isLoading ? (
@@ -204,7 +217,9 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                     </Box>
                 ) : filteredIncidents.length === 0 ? (
                     <Box sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {searchTerm ? 'No incidents match your search' : 'No incidents found'}
                         </Typography>
                     </Box>
@@ -233,8 +248,15 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                                     }}
                                 >
                                     <Box sx={{ width: '100%' }}>
-                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            <Typography variant="body2" fontWeight={600} noWrap>
+                                        <Stack
+                                            direction="row"
+                                            sx={{
+                                                justifyContent: "space-between",
+                                                alignItems: "center"
+                                            }}>
+                                            <Typography variant="body2" noWrap sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 {incident.id}
                                             </Typography>
                                             <Chip
@@ -249,7 +271,9 @@ export function IncidentsSidebar({ collapsed, onToggle }: IncidentsSidebarProps)
                                                 }}
                                             />
                                         </Stack>
-                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                        <Typography variant="caption" noWrap sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             {format(new Date(incident.occurrenceDate || incident.createdAt), 'MMM d, yyyy')}
                                         </Typography>
                                     </Box>

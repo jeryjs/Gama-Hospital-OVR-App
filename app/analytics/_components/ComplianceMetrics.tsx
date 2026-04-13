@@ -122,10 +122,14 @@ const MetricRow = ({ metric, loading }: { metric: MetricData; loading?: boolean 
                         {metric.icon}
                     </Box>
                     <Box>
-                        <Typography variant="body2" fontWeight="medium">
+                        <Typography variant="body2" sx={{
+                            fontWeight: "medium"
+                        }}>
                             {metric.label}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             {metric.description}
                         </Typography>
                     </Box>
@@ -134,10 +138,11 @@ const MetricRow = ({ metric, loading }: { metric: MetricData; loading?: boolean 
                     {getStatusIcon(metric.value, metric.target)}
                 </Tooltip>
             </Box>
-
             <Box sx={{ mt: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                    <Typography variant="h5" fontWeight="bold">
+                    <Typography variant="h5" sx={{
+                        fontWeight: "bold"
+                    }}>
                         {metric.value}%
                     </Typography>
                     <Chip
@@ -161,7 +166,13 @@ const MetricRow = ({ metric, loading }: { metric: MetricData; loading?: boolean 
                     }}
                 />
                 {gapToTarget > 0 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.5,
+                            display: 'block'
+                        }}>
                         {gapToTarget}% to reach target
                     </Typography>
                 )}
@@ -196,14 +207,17 @@ const OverallScore = ({ metrics }: { metrics: MetricData[] }) => {
                 borderColor: `${statusColors[status]}40`,
             }}
         >
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" gutterBottom sx={{
+                color: "text.secondary"
+            }}>
                 Overall Compliance Score
             </Typography>
             <Typography
                 variant="h2"
-                fontWeight="bold"
-                sx={{ color: statusColors[status] }}
-            >
+                sx={{
+                    fontWeight: "bold",
+                    color: statusColors[status]
+                }}>
                 {overallScore}%
             </Typography>
             <Chip
@@ -259,15 +273,20 @@ export default function ComplianceMetrics({
                 borderColor: 'divider',
             }}
         >
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{
+                fontWeight: "bold"
+            }}>
                 Compliance Metrics
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mb: 3
+                }}>
                 Track regulatory and procedural compliance
             </Typography>
-
             <OverallScore metrics={metrics} />
-
             {metrics.map((metric, index) => (
                 <MetricRow key={index} metric={metric} loading={loading} />
             ))}

@@ -221,13 +221,14 @@ export function FixedToolbar() {
 
                 {/* Link */}
                 <ToolbarButton
-                    icon={<LinkIcon fontSize="small" />}
+                    icon={<LinkIcon sx={{
+                        fontSize: "small"
+                    }} />}
                     tooltip={hasLink ? 'Remove Link' : 'Insert Link (Ctrl+K)'}
                     isActive={hasLink}
                     onClick={handleLinkClick}
                 />
             </Box>
-
             {/* Link Dialog */}
             <Dialog
                 open={linkDialogOpen}

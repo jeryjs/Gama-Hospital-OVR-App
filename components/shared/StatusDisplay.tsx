@@ -108,12 +108,19 @@ export function StatusDisplay({
                             bgcolor: `${color}.main`,
                         }}
                     />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {label}
                     </Typography>
                 </Box>
                 {(showDescription || variant === 'detailed') && (
-                    <Typography variant="body2" color="text.secondary" sx={{ pl: 2.5 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            pl: 2.5
+                        }}>
                         {description}
                     </Typography>
                 )}
@@ -131,7 +138,13 @@ export function StatusDisplay({
                                 },
                             }}
                         />
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                mt: 0.5,
+                                display: 'block'
+                            }}>
                             {progress}% complete
                         </Typography>
                     </Box>
@@ -145,10 +158,14 @@ export function StatusDisplay({
         return (
             <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{
+                        fontWeight: 600
+                    }}>
                         {label}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         {progress}%
                     </Typography>
                 </Box>
@@ -166,7 +183,13 @@ export function StatusDisplay({
                     }}
                 />
                 {showDescription && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.5,
+                            display: 'block'
+                        }}>
                         {description}
                     </Typography>
                 )}

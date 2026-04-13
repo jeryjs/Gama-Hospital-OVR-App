@@ -134,15 +134,23 @@ export function ErrorLayout({
                         </Box>
                     </motion.div>
 
-                    <Typography variant="h5" fontWeight={700} gutterBottom>
+                    <Typography variant="h5" gutterBottom sx={{
+                        fontWeight: 700
+                    }}>
                         {title || config.defaultTitle}
                     </Typography>
 
-                    <Typography color="text.secondary" sx={{ mb: 4 }}>
+                    <Typography
+                        sx={{
+                            color: "text.secondary",
+                            mb: 4
+                        }}>
                         {parsedError.message || config.defaultMessage}
                     </Typography>
 
-                    <Stack direction="row" spacing={2} justifyContent="center">
+                    <Stack direction="row" spacing={2} sx={{
+                        justifyContent: "center"
+                    }}>
                         {showBack && (
                             <Button
                                 variant="outlined"
@@ -191,13 +199,19 @@ export function ErrorLayout({
                     borderColor: alpha(config.color, 0.2),
                 }}
             >
-                <Stack direction="row" spacing={2} alignItems="flex-start">
+                <Stack direction="row" spacing={2} sx={{
+                    alignItems: "flex-start"
+                }}>
                     <Icon sx={{ color: config.color, mt: 0.5 }} />
                     <Box sx={{ flex: 1 }}>
-                        <Typography fontWeight={600} gutterBottom>
+                        <Typography gutterBottom sx={{
+                            fontWeight: 600
+                        }}>
                             {title || config.defaultTitle}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {parsedError.message || config.defaultMessage}
                         </Typography>
                         {onRetry && (

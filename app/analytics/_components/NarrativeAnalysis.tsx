@@ -94,14 +94,20 @@ export function NarrativeAnalysis({ dateRange, loading = false }: NarrativeAnaly
     return (
         <Paper sx={{ p: 3, height: '100%' }}>
             <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Cloud color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Narrative Analysis
                     </Typography>
                 </Stack>
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Common terms extracted from incident descriptions
                 </Typography>
 
@@ -148,10 +154,17 @@ export function NarrativeAnalysis({ dateRange, loading = false }: NarrativeAnaly
 
                 {/* Category Legend */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Categories
                     </Typography>
-                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                    <Stack
+                        direction="row"
+                        sx={{
+                            flexWrap: "wrap",
+                            gap: 1
+                        }}>
                         {Object.entries(categoryColors).slice(0, 6).map(([category, color]) => (
                             <Chip
                                 key={category}
@@ -170,7 +183,9 @@ export function NarrativeAnalysis({ dateRange, loading = false }: NarrativeAnaly
 
                 {/* Top Keywords */}
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography variant="subtitle2" gutterBottom sx={{
+                        fontWeight: 600
+                    }}>
                         Top Keywords
                     </Typography>
                     <Stack spacing={1}>
@@ -178,23 +193,28 @@ export function NarrativeAnalysis({ dateRange, loading = false }: NarrativeAnaly
                             <Stack
                                 key={item.word}
                                 direction="row"
-                                alignItems="center"
-                                justifyContent="space-between"
                                 sx={{
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
                                     p: 1,
                                     borderRadius: 1,
-                                    bgcolor: (theme) => alpha(categoryColors[item.category], 0.05),
-                                }}
-                            >
-                                <Stack direction="row" alignItems="center" spacing={1}>
+                                    bgcolor: (theme) => alpha(categoryColors[item.category], 0.05)
+                                }}>
+                                <Stack direction="row" spacing={1} sx={{
+                                    alignItems: "center"
+                                }}>
                                     <Typography
                                         variant="body2"
-                                        fontWeight={700}
-                                        sx={{ color: 'text.secondary', width: 20 }}
-                                    >
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: 'text.secondary',
+                                            width: 20
+                                        }}>
                                         #{index + 1}
                                     </Typography>
-                                    <Typography variant="body2" fontWeight={600}>
+                                    <Typography variant="body2" sx={{
+                                        fontWeight: 600
+                                    }}>
                                         {item.word}
                                     </Typography>
                                 </Stack>

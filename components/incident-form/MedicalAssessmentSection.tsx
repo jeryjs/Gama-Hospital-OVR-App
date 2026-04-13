@@ -9,7 +9,12 @@ interface Props {
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <Box>
-    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+    <Typography
+      variant="caption"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 600
+      }}>
       {label}
     </Typography>
     <Typography variant="body2">{value || 'N/A'}</Typography>
@@ -28,23 +33,26 @@ export function MedicalAssessmentSection({ incident }: Props) {
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
         variant="h6"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-        }}
-      >
+          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
+        }}>
         <LocalHospital /> Part 4: Physician Follow-up
       </Typography>
-
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600
+              }}>
               Physician Notified?
             </Typography>
             <Box sx={{ mt: 0.5 }}>
@@ -58,7 +66,12 @@ export function MedicalAssessmentSection({ incident }: Props) {
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600
+              }}>
               Did Physician See the Patient?
             </Typography>
             <Box sx={{ mt: 0.5 }}>
@@ -71,10 +84,14 @@ export function MedicalAssessmentSection({ incident }: Props) {
           </Box>
         </Grid>
       </Grid>
-
       {incident.assessment && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 600
+            }}>
             Assessment / Diagnosis
           </Typography>
           <Box
@@ -92,7 +109,6 @@ export function MedicalAssessmentSection({ incident }: Props) {
           </Box>
         </Box>
       )}
-
       <Grid container spacing={2} sx={{ mt: 2 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <InfoRow label="Injury Outcome" value={injuryOutcomeLabel} />
@@ -102,7 +118,12 @@ export function MedicalAssessmentSection({ incident }: Props) {
         {treatmentLabels && treatmentLabels.length > 0 && (
           <Grid size={{ xs: 12 }}>
             <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600
+                }}>
                 Nature of Treatment/Exam
               </Typography>
               <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -122,10 +143,14 @@ export function MedicalAssessmentSection({ incident }: Props) {
         )}
 
       </Grid>
-
       {incident.treatmentProvided && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 600
+            }}>
             Physician's Notes
           </Typography>
           <Box

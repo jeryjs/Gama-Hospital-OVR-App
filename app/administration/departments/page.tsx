@@ -447,16 +447,22 @@ function LocationCard({ location, canEdit, canDelete, onEdit, onDelete }: Locati
             }}
         >
             <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Box sx={{ cursor: 'grab', color: 'text.disabled', display: 'flex' }}>
                         <DragIndicator fontSize="small" />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
+                        <Typography variant="body2" noWrap sx={{
+                            fontWeight: 600
+                        }}>
                             {location.name}
                         </Typography>
                         {(location.building || location.floor) && (
-                            <Typography variant="caption" color="text.secondary" noWrap>
+                            <Typography variant="caption" noWrap sx={{
+                                color: "text.secondary"
+                            }}>
                                 {[location.building, location.floor].filter(Boolean).join(' • ')}
                             </Typography>
                         )}
@@ -855,10 +861,20 @@ export default function DepartmentsManagementPage() {
                     style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
                 >
                     {/* Header */}
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack
+                        direction="row"
+                        sx={{
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2
+                        }}>
+                        <Stack direction="row" spacing={1} sx={{
+                            alignItems: "center"
+                        }}>
                             <Business fontSize="large" color="primary" />
-                            <Typography variant="h4" fontWeight={700}>
+                            <Typography variant="h4" sx={{
+                                fontWeight: 700
+                            }}>
                                 Department & Location Management
                             </Typography>
                         </Stack>
@@ -913,10 +929,12 @@ export default function DepartmentsManagementPage() {
                                     onChange={(e) => setSearch(e.target.value)}
                                     size="small"
                                     fullWidth
-                                    InputProps={{
-                                        startAdornment: (
-                                            <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
-                                        ),
+                                    slotProps={{
+                                        input: {
+                                            startAdornment: (
+                                                <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                                            ),
+                                        }
                                     }}
                                 />
                             </Box>
@@ -932,7 +950,9 @@ export default function DepartmentsManagementPage() {
                                     ))
                                 ) : filteredDepartments.length === 0 ? (
                                     <Box sx={{ p: 3, textAlign: 'center' }}>
-                                        <Typography color="text.secondary">
+                                        <Typography sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             {search ? 'No departments match your search' : 'No departments found'}
                                         </Typography>
                                     </Box>
@@ -958,12 +978,16 @@ export default function DepartmentsManagementPage() {
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={
-                                                        <Typography variant="body2" fontWeight={600} noWrap>
+                                                        <Typography variant="body2" noWrap sx={{
+                                                            fontWeight: 600
+                                                        }}>
                                                             {dept.name}
                                                         </Typography>
                                                     }
                                                     secondary={
-                                                        <Typography variant="caption" color="text.secondary">
+                                                        <Typography variant="caption" sx={{
+                                                            color: "text.secondary"
+                                                        }}>
                                                             {dept.locations?.length || 0} location{(dept.locations?.length || 0) !== 1 ? 's' : ''}
                                                             {dept.head && <> • {dept.head.firstName} {dept.head.lastName}</>}
                                                         </Typography>
@@ -989,8 +1013,15 @@ export default function DepartmentsManagementPage() {
                                             bgcolor: (theme) => alpha(theme.palette.primary.main, 0.03),
                                         }}
                                     >
-                                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                                            <Stack direction="row" alignItems="center" spacing={2}>
+                                        <Stack
+                                            direction="row"
+                                            sx={{
+                                                alignItems: "center",
+                                                justifyContent: "space-between"
+                                            }}>
+                                            <Stack direction="row" spacing={2} sx={{
+                                                alignItems: "center"
+                                            }}>
                                                 <Box
                                                     sx={{
                                                         width: 48,
@@ -1005,8 +1036,12 @@ export default function DepartmentsManagementPage() {
                                                     <Business color="primary" />
                                                 </Box>
                                                 <Box>
-                                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                                        <Typography variant="h6" fontWeight={700}>
+                                                    <Stack direction="row" spacing={1} sx={{
+                                                        alignItems: "center"
+                                                    }}>
+                                                        <Typography variant="h6" sx={{
+                                                            fontWeight: 700
+                                                        }}>
                                                             {activeDepartment.name}
                                                         </Typography>
                                                         {!activeDepartment.isActive && (
@@ -1021,7 +1056,9 @@ export default function DepartmentsManagementPage() {
                                                             />
                                                         )}
                                                     </Stack>
-                                                    <Typography variant="body2" color="text.secondary">
+                                                    <Typography variant="body2" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         {activeDepartment.locations?.length || 0} location{(activeDepartment.locations?.length || 0) !== 1 ? 's' : ''}
                                                         {activeDepartment.head && (
                                                             <> • Head: {activeDepartment.head.firstName} {activeDepartment.head.lastName}</>
@@ -1081,7 +1118,12 @@ export default function DepartmentsManagementPage() {
                                                 <Typography variant="h6" gutterBottom>
                                                     No locations yet
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: "text.secondary",
+                                                        mb: 2
+                                                    }}>
                                                     Add locations to this department to organize your facility.
                                                 </Typography>
                                                 {canCreate && (
@@ -1135,7 +1177,9 @@ export default function DepartmentsManagementPage() {
                                     <Typography variant="h6">
                                         {isLoading ? 'Loading...' : 'Select a department'}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Choose a department from the list to view its locations
                                     </Typography>
                                 </Box>
@@ -1144,35 +1188,30 @@ export default function DepartmentsManagementPage() {
                     </Paper>
                 </motion.div>
             </Box>
-
             {/* Dialogs */}
             <CreateDepartmentDialog
                 open={createDeptDialogOpen}
                 onClose={() => setCreateDeptDialogOpen(false)}
                 onSave={handleCreateDepartment}
             />
-
             <EditDepartmentDialog
                 open={!!editDepartment}
                 department={editDepartment}
                 onClose={() => setEditDepartment(null)}
                 onSave={handleUpdateDepartment}
             />
-
             <DeleteDepartmentDialog
                 open={!!deleteDepartment}
                 department={deleteDepartment}
                 onClose={() => setDeleteDepartment(null)}
                 onConfirm={handleDeleteDepartment}
             />
-
             <AddLocationDialog
                 open={addLocationDialogOpen}
                 department={activeDepartment}
                 onClose={() => setAddLocationDialogOpen(false)}
                 onSave={handleCreateLocation}
             />
-
             <EditLocationDialog
                 open={!!editLocation}
                 location={editLocation}
@@ -1180,7 +1219,6 @@ export default function DepartmentsManagementPage() {
                 onClose={() => setEditLocation(null)}
                 onSave={handleUpdateLocation}
             />
-
             <DeleteLocationDialog
                 open={!!deleteLocation}
                 location={deleteLocation}

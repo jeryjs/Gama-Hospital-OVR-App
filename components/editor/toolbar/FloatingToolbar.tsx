@@ -242,7 +242,9 @@ export function FloatingToolbar() {
                                     <Divider orientation="vertical" flexItem sx={{ mx: 0.25, height: 20 }} />
 
                                     <ToolbarButton
-                                        icon={<LinkIcon fontSize="small" />}
+                                        icon={<LinkIcon sx={{
+                                            fontSize: "small"
+                                        }} />}
                                         tooltip={hasLink ? 'Remove Link' : 'Insert Link (Ctrl+K)'}
                                         isActive={hasLink}
                                         onClick={handleLinkClick}
@@ -253,7 +255,6 @@ export function FloatingToolbar() {
                     </Fade>
                 )}
             </Popper>
-
             {/* Link Dialog */}
             <Dialog
                 open={linkDialogOpen}

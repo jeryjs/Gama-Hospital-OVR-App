@@ -20,11 +20,15 @@ export function ReporterCard({ reporter, variant = 'full', label = 'Reported by'
     // Compact - just avatar and name inline
     if (variant === 'compact') {
         return (
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{
+                alignItems: "center"
+            }}>
                 <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main' }}>
                     {getInitials(reporter.firstName, reporter.lastName)}
                 </Avatar>
-                <Typography variant="body2" fontWeight={500}>
+                <Typography variant="body2" sx={{
+                    fontWeight: 500
+                }}>
                     {fullName}
                 </Typography>
             </Stack>
@@ -34,16 +38,22 @@ export function ReporterCard({ reporter, variant = 'full', label = 'Reported by'
     // Inline - single line with all info
     if (variant === 'inline') {
         return (
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={1.5} sx={{
+                alignItems: "center"
+            }}>
                 <Avatar sx={{ width: 32, height: 32, fontSize: 13, bgcolor: 'primary.main' }}>
                     {getInitials(reporter.firstName, reporter.lastName)}
                 </Avatar>
                 <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{
+                        fontWeight: 600
+                    }}>
                         {fullName}
                     </Typography>
                     {reporter.department && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             {reporter.department}
                         </Typography>
                     )}
@@ -64,10 +74,19 @@ export function ReporterCard({ reporter, variant = 'full', label = 'Reported by'
                 borderColor: 'divider',
             }}
         >
-            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ mb: 1.5, display: 'block' }}>
+            <Typography
+                variant="caption"
+                sx={{
+                    color: "text.secondary",
+                    fontWeight: 500,
+                    mb: 1.5,
+                    display: 'block'
+                }}>
                 {label}
             </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} sx={{
+                alignItems: "center"
+            }}>
                 <Avatar
                     sx={{
                         width: 48,
@@ -80,22 +99,32 @@ export function ReporterCard({ reporter, variant = 'full', label = 'Reported by'
                     {getInitials(reporter.firstName, reporter.lastName)}
                 </Avatar>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
+                    <Typography variant="subtitle1" sx={{
+                        fontWeight: 600
+                    }}>
                         {fullName}
                     </Typography>
                     <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                         {reporter.email && (
-                            <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Stack direction="row" spacing={0.5} sx={{
+                                alignItems: "center"
+                            }}>
                                 <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {reporter.email}
                                 </Typography>
                             </Stack>
                         )}
                         {reporter.department && (
-                            <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Stack direction="row" spacing={0.5} sx={{
+                                alignItems: "center"
+                            }}>
                                 <DeptIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {reporter.department}
                                 </Typography>
                             </Stack>

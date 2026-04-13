@@ -171,7 +171,9 @@ export function InvestigationManagement({
     if (!investigationId && !canManage) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" sx={{
+                    fontWeight: 600
+                }}>
                     Awaiting Investigation
                 </Typography>
                 <Typography variant="body2">
@@ -230,12 +232,18 @@ export function InvestigationManagement({
                     bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                 }}
             />
-
             <CardContent>
                 {/* Investigation Info & Link */}
                 <Box sx={{ mb: 2, p: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), borderRadius: 1 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                    <Stack
+                        direction="row"
+                        sx={{
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Investigation ID: <strong>INV-{investigationId}</strong>
                         </Typography>
                         <Button
@@ -329,7 +337,6 @@ export function InvestigationManagement({
                     </Alert>
                 )}
             </CardContent>
-
             {/* Invite Dialog */}
             <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Invite Investigator</DialogTitle>
@@ -359,7 +366,6 @@ export function InvestigationManagement({
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {ErrorDialogComponent}
         </Card>
     );

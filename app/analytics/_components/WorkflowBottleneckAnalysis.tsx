@@ -75,10 +75,14 @@ export default function WorkflowBottleneckAnalysis({
         <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Workflow Bottleneck Analysis
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Average time spent at each workflow stage
                     </Typography>
                 </Box>
@@ -91,7 +95,6 @@ export default function WorkflowBottleneckAnalysis({
                     />
                 )}
             </Box>
-
             {/* Waterfall visualization */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {placeholderData.map((stage, index) => {
@@ -119,10 +122,14 @@ export default function WorkflowBottleneckAnalysis({
                             >
                                 {/* Stage name */}
                                 <Box sx={{ width: 120, flexShrink: 0 }}>
-                                    <Typography variant="body2" fontWeight={500} noWrap>
+                                    <Typography variant="body2" noWrap sx={{
+                                        fontWeight: 500
+                                    }}>
                                         {stage.name}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {stage.pendingCount} pending
                                     </Typography>
                                 </Box>
@@ -187,7 +194,6 @@ export default function WorkflowBottleneckAnalysis({
                     );
                 })}
             </Box>
-
             {/* Legend */}
             <Box
                 sx={{
@@ -203,26 +209,34 @@ export default function WorkflowBottleneckAnalysis({
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: 'success.main' }} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Within target
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: 'error.main' }} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Bottleneck
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{ width: 2, height: 12, bgcolor: 'grey.400' }} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Target threshold
                         </Typography>
                     </Box>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>
                         Total avg: {placeholderData.reduce((sum, s) => sum + s.avgDays, 0).toFixed(1)} days
                     </Typography>
                 </Box>

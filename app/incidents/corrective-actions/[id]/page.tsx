@@ -16,7 +16,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
 import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
-import { ArrowBack, CheckCircle, DeleteOutline, Edit, Save, UploadFile } from '@mui/icons-material';
+import { ArrowBack, CheckCircle, DeleteOutlined, Edit, Save, UploadFile } from '@mui/icons-material';
 import {
     Alert,
     alpha,
@@ -297,21 +297,29 @@ export default function CorrectiveActionDetailPage() {
             <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
                 {/* Header */}
                 <Paper sx={{ p: 3, mb: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack direction="row" spacing={2} sx={{
+                        alignItems: "center"
+                    }}>
                         {isQIUser && (
                             <IconButton component={Link} href="/incidents/corrective-actions" size="small">
                                 <ArrowBack />
                             </IconButton>
                         )}
                         <Box sx={{ flex: 1 }}>
-                            <Typography variant="h5" fontWeight={700}>
+                            <Typography variant="h5" sx={{
+                                fontWeight: 700
+                            }}>
                                 {action.title}
                             </Typography>
                             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Action ID: ACT-{action.id}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Incident:{' '}
                                     {canOpenIncident ? (
                                         <Button
@@ -323,7 +331,9 @@ export default function CorrectiveActionDetailPage() {
                                             {action.ovrReportId}
                                         </Button>
                                     ) : (
-                                        <Typography component="span" variant="body2" fontWeight={600}>
+                                        <Typography component="span" variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {action.ovrReportId}
                                         </Typography>
                                     )}
@@ -381,7 +391,9 @@ export default function CorrectiveActionDetailPage() {
                                         emptyText="No description provided"
                                     />
                                     <Divider sx={{ my: 2 }} />
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         <strong>Due Date:</strong> {format(new Date(action.dueDate), 'PPP')}
                                     </Typography>
                                 </CardContent>
@@ -431,7 +443,12 @@ export default function CorrectiveActionDetailPage() {
                                             ))}
 
                                             {canEdit && (
-                                                <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+                                                <Stack
+                                                    direction="row"
+                                                    sx={{
+                                                        justifyContent: "flex-end",
+                                                        mt: 1
+                                                    }}>
                                                     <Button
                                                         variant="outlined"
                                                         startIcon={<Save />}
@@ -459,7 +476,12 @@ export default function CorrectiveActionDetailPage() {
                                     }}
                                 />
                                 <CardContent>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            mb: 1
+                                        }}>
                                         Report / Details
                                     </Typography>
                                     <Paper variant="outlined" sx={{ p: 2, minHeight: 120 }}>
@@ -469,7 +491,12 @@ export default function CorrectiveActionDetailPage() {
                                     </Paper>
 
                                     <Box sx={{ mt: 2 }}>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: "text.secondary",
+                                                mb: 1
+                                            }}>
                                             Attached Documents ({evidenceFiles.length})
                                         </Typography>
 
@@ -479,10 +506,20 @@ export default function CorrectiveActionDetailPage() {
                                             <Stack spacing={1}>
                                                 {evidenceFiles.map((file, index) => (
                                                     <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
-                                                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                                                        <Stack
+                                                            direction="row"
+                                                            spacing={1}
+                                                            sx={{
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center"
+                                                            }}>
                                                             <Box>
-                                                                <Typography variant="body2" fontWeight={600}>{file.name}</Typography>
-                                                                <Typography variant="caption" color="text.secondary">
+                                                                <Typography variant="body2" sx={{
+                                                                    fontWeight: 600
+                                                                }}>{file.name}</Typography>
+                                                                <Typography variant="caption" sx={{
+                                                                    color: "text.secondary"
+                                                                }}>
                                                                     {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
                                                                 </Typography>
                                                             </Box>
@@ -494,7 +531,13 @@ export default function CorrectiveActionDetailPage() {
                                     </Box>
 
                                     {canEdit && (
-                                        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
+                                        <Stack
+                                            direction="row"
+                                            spacing={2}
+                                            sx={{
+                                                justifyContent: "flex-end",
+                                                mt: 2
+                                            }}>
                                             <Button
                                                 variant="contained"
                                                 onClick={() => setIsEditDialogOpen(true)}
@@ -540,15 +583,21 @@ export default function CorrectiveActionDetailPage() {
                                 <CardContent>
                                     <Stack spacing={2} divider={<Divider />}>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Action ID
                                             </Typography>
-                                            <Typography variant="body2" fontWeight={600}>
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 ACT-{action.id}
                                             </Typography>
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Incident Reference
                                             </Typography>
                                             <Typography variant="body2">
@@ -562,14 +611,18 @@ export default function CorrectiveActionDetailPage() {
                                                         {action.ovrReportId}
                                                     </Button>
                                                 ) : (
-                                                    <Typography component="span" variant="body2" fontWeight={600}>
+                                                    <Typography component="span" variant="body2" sx={{
+                                                        fontWeight: 600
+                                                    }}>
                                                         {action.ovrReportId}
                                                     </Typography>
                                                 )}
                                             </Typography>
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Status
                                             </Typography>
                                             <Chip
@@ -579,7 +632,9 @@ export default function CorrectiveActionDetailPage() {
                                             />
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Due Date
                                             </Typography>
                                             <Typography variant="body2" color={isOverdue ? 'error.main' : 'text.primary'}>
@@ -587,7 +642,9 @@ export default function CorrectiveActionDetailPage() {
                                             </Typography>
                                         </Box>
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Created
                                             </Typography>
                                             <Typography variant="body2">
@@ -596,10 +653,14 @@ export default function CorrectiveActionDetailPage() {
                                         </Box>
                                         {action.completedAt && (
                                             <Box>
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Completed
                                                 </Typography>
-                                                <Typography variant="body2" color="success.main">
+                                                <Typography variant="body2" sx={{
+                                                    color: "success.main"
+                                                }}>
                                                     {format(new Date(action.completedAt), 'PPP')}
                                                 </Typography>
                                             </Box>
@@ -611,7 +672,6 @@ export default function CorrectiveActionDetailPage() {
                     </Grid>
                 </Grid>
             </Box>
-
             <Dialog
                 open={isEditDialogOpen}
                 onClose={submitting ? undefined : () => setIsEditDialogOpen(false)}
@@ -637,12 +697,20 @@ export default function CorrectiveActionDetailPage() {
                         />
 
                         <Box>
-                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                            <Stack
+                                direction="row"
+                                spacing={1}
+                                sx={{
+                                    alignItems: "center",
+                                    mb: 1
+                                }}>
                                 <Button component="label" variant="outlined" startIcon={<UploadFile />}>
                                     Attach Documents
                                     <input hidden multiple type="file" onChange={handleEvidenceSelect} />
                                 </Button>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Files are stored as attachment metadata in this phase.
                                 </Typography>
                             </Stack>
@@ -653,10 +721,20 @@ export default function CorrectiveActionDetailPage() {
                                 <Stack spacing={1}>
                                     {evidenceFiles.map((file, index) => (
                                         <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
-                                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                                            <Stack
+                                                direction="row"
+                                                spacing={1}
+                                                sx={{
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center"
+                                                }}>
                                                 <Box>
-                                                    <Typography variant="body2" fontWeight={600}>{file.name}</Typography>
-                                                    <Typography variant="caption" color="text.secondary">
+                                                    <Typography variant="body2" sx={{
+                                                        fontWeight: 600
+                                                    }}>{file.name}</Typography>
+                                                    <Typography variant="caption" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
                                                     </Typography>
                                                 </Box>
@@ -665,7 +743,7 @@ export default function CorrectiveActionDetailPage() {
                                                     color="error"
                                                     onClick={() => handleRemoveEvidence(index)}
                                                 >
-                                                    <DeleteOutline fontSize="small" />
+                                                    <DeleteOutlined fontSize="small" />
                                                 </IconButton>
                                             </Stack>
                                         </Paper>

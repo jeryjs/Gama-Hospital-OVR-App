@@ -14,7 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import { fadeIn } from '@/lib/theme';
 
-// Import report components
+// import report components
 import { DateRangeSelector } from './_components/DateRangeSelector';
 import { ReportFilterPanel } from './_components/ReportFilterPanel';
 
@@ -95,17 +95,30 @@ export default function ReportsPage() {
                 <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
                     <Stack spacing={3}>
                         {/* Header */}
-                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+                        <Stack
+                            direction="row"
+                            sx={{
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                flexWrap: "wrap",
+                                gap: 2
+                            }}>
                             <Box>
-                                <Typography variant="h4" fontWeight={700} gutterBottom>
+                                <Typography variant="h4" gutterBottom sx={{
+                                    fontWeight: 700
+                                }}>
                                     Incident Reports & Analytics
                                 </Typography>
-                                <Typography variant="body1" color="text.secondary">
+                                <Typography variant="body1" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Comprehensive insights into incident patterns, performance metrics, and operational trends
                                 </Typography>
                             </Box>
 
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack direction="row" spacing={1} sx={{
+                                alignItems: "center"
+                            }}>
                                 <DateRangeSelector
                                     preset={datePreset}
                                     dateRange={dateRange}
@@ -182,7 +195,6 @@ export default function ReportsPage() {
                     </Stack>
                 </motion.div>
             </Box>
-
             {/* Export Menu */}
             <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}>
                 <MenuItem onClick={() => handleExport('pdf')}>Export as PDF</MenuItem>

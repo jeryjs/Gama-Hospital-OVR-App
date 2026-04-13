@@ -511,7 +511,7 @@ export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;
 export const updateIncidentSchema = createIncidentSchema.partial();
 
 export const patchIncidentSchema = updateIncidentSchema.extend({
-  editComment: z.preprocess((val) => {
+  editComment: z.preprocess((val: unknown) => {
     if (typeof val !== 'string') return val;
     const trimmed = val.trim();
     return trimmed.length > 0 ? trimmed : undefined;
@@ -531,19 +531,19 @@ export type PatchIncidentInput = z.infer<typeof patchIncidentSchema>;
  * QI Review - Approve or reject submitted incident
  */
 export const qiReviewSchema = z.object({
-  decision: z.preprocess((val) => {
+  decision: z.preprocess((val: unknown) => {
     if (typeof val !== 'string') return val;
     const normalized = val.trim().toLowerCase();
     if (normalized === 'approved') return 'approve';
     if (normalized === 'rejected') return 'reject';
     return normalized;
   }, z.enum(['approve', 'reject'])),
-  rejectionReason: z.preprocess((val) => {
+  rejectionReason: z.preprocess((val: unknown) => {
     if (typeof val !== 'string') return val;
     const trimmed = val.trim();
     return trimmed.length > 0 ? trimmed : undefined;
   }, z.string().min(20, 'Rejection reason must be at least 20 characters').optional()),
-}).refine((data) => {
+}).refine((data: any) => {
   // If rejected, rejection reason is required
   if (data.decision === 'reject') {
     return !!data.rejectionReason;
@@ -573,7 +573,7 @@ export const updateInvestigationSchema = z.object({
   correctiveActionPlan: z.string().optional(), // JSON string
   rcaAnalysis: z.string().optional(),
   fishboneAnalysis: z.string().optional(),
-}).refine((data) => {
+}).refine((data: any) => {
   // At least one field must be provided for update
   return Object.values(data).some(val => val !== undefined && val !== null);
 }, {
@@ -601,7 +601,7 @@ export const createCorrectiveActionSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters').max(255, 'Title too long'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   dueDate: z.string().datetime('Invalid date format'),
-  checklist: z.string().refine((val) => {
+  checklist: z.string().refine((val: any) => {
     // Must be valid JSON array
     try {
       const parsed = JSON.parse(val);

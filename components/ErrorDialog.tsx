@@ -153,8 +153,10 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                elevation: 8,
+            slotProps={{
+                paper: {
+                    elevation: 8,
+                }
             }}
         >
             <DialogTitle sx={{ pb: 1 }}>
@@ -165,7 +167,6 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                     </Typography>
                 </Box>
             </DialogTitle>
-
             <DialogContent>
                 {/* Main error alert */}
                 <Alert severity={severity} sx={{ mb: hasDetails ? 2 : 0 }}>
@@ -204,9 +205,10 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                                     <ListItemText
                                         primary={formatDetailPath(detail.path)}
                                         secondary={detail.message}
-                                        primaryTypographyProps={{ variant: 'body2' }}
-                                        secondaryTypographyProps={{ variant: 'caption' }}
-                                    />
+                                        slotProps={{
+                                            primary: { variant: 'body2' },
+                                            secondary: { variant: 'caption' }
+                                        }} />
                                 </ListItem>
                             ))}
                         </List>
@@ -229,12 +231,22 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                         <BugIcon fontSize="small" color="action" />
                         <Box>
                             {error.code && (
-                                <Typography variant="caption" display="block" color="text.secondary">
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        display: "block",
+                                        color: "text.secondary"
+                                    }}>
                                     Error Code: <strong>{error.code}</strong>
                                 </Typography>
                             )}
                             {error.timestamp && (
-                                <Typography variant="caption" display="block" color="text.secondary">
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        display: "block",
+                                        color: "text.secondary"
+                                    }}>
                                     Time: {new Date(error.timestamp).toLocaleString()}
                                 </Typography>
                             )}
@@ -242,7 +254,6 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                     </Box>
                 )}
             </DialogContent>
-
             <DialogActions sx={{ px: 3, pb: 2 }}>
                 <Button
                     onClick={onClose}

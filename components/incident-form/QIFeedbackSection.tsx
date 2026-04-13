@@ -76,25 +76,22 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography
         variant="h6"
-        fontWeight={700}
         gutterBottom
         sx={{
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-        }}
-      >
+          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
+        }}>
         <Assessment /> Quality Improvement Department Feedback
       </Typography>
-
       {isClosed && incident.closedAt && (
         <Alert severity="success" icon={<CheckCircle />} sx={{ mt: 2 }}>
           Case closed on {format(new Date(incident.closedAt), 'MMM dd, yyyy HH:mm')}
         </Alert>
       )}
-
       <Box sx={{ mt: 3 }}>
         {canSubmit ? (
           <Stack spacing={3}>
@@ -111,7 +108,9 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
             </Box>
 
             <Box>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              <Typography variant="subtitle2" gutterBottom sx={{
+                fontWeight: 600
+              }}>
                 Assessment Checklist
               </Typography>
               <Grid container spacing={1}>
@@ -151,11 +150,13 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
             <TextField
               fullWidth
               select
-              SelectProps={{ native: true }}
               label="Severity Level *"
               value={severityLevel}
               onChange={(e) => setSeverityLevel(e.target.value)}
               required
+              slotProps={{
+                select: { native: true }
+              }}
             >
               <option value=""></option>
               {SEVERITY_LEVELS.map((level) => (
@@ -194,7 +195,9 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
 
             {incident.severityLevel && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" sx={{
+                  fontWeight: 600
+                }}>
                   Severity Level
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>

@@ -56,29 +56,26 @@ export function EmptyState({
             >
                 {icon || <InboxOutlined sx={{ fontSize: isCompact ? 48 : 64 }} />}
             </Box>
-
             <Typography
                 variant={isCompact ? 'subtitle1' : 'h6'}
-                color="text.secondary"
-                fontWeight={500}
                 gutterBottom={!!description}
-            >
+                sx={{
+                    color: "text.secondary",
+                    fontWeight: 500
+                }}>
                 {title}
             </Typography>
-
             {description && (
                 <Typography
                     variant="body2"
-                    color="text.disabled"
                     sx={{
+                        color: "text.disabled",
                         maxWidth: 320,
-                        mb: action ? 3 : 0,
-                    }}
-                >
+                        mb: action ? 3 : 0
+                    }}>
                     {description}
                 </Typography>
             )}
-
             {action && <Box sx={{ mt: isCompact ? 2 : 3 }}>{action}</Box>}
         </Box>
     );
