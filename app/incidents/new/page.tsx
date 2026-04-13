@@ -1661,14 +1661,20 @@ export default function NewIncidentPage() {
             return;
           }
 
-          const targetStatus: IncidentStatusValue = requiresEditComment
-            ? (serverIncidentStatus || 'submitted')
-            : 'draft';
+          const preparedPayload = prepareIncidentPayload(
+            formData,
+            requiresEditComment ? (serverIncidentStatus || 'submitted') : 'draft'
+          );
 
-          const payload = {
-            ...prepareIncidentPayload(formData, targetStatus),
-            ...(requiresEditComment ? { editComment: editComment.trim() } : {}),
-          };
+          const payload = requiresEditComment
+            ? (() => {
+              const { status: _status, ...withoutStatus } = preparedPayload;
+              return {
+                ...withoutStatus,
+                editComment: editComment.trim(),
+              };
+            })()
+            : preparedPayload;
 
           const res = await fetch(`/api/incidents/${serverDraftIncidentId}`, {
             method: 'PATCH',
@@ -1738,13 +1744,22 @@ export default function NewIncidentPage() {
       }
 
       const payload = serverDraftIncidentId
-        ? {
-          ...prepareIncidentPayload(
+        ? (() => {
+          const preparedPayload = prepareIncidentPayload(
             formData,
             requiresEditComment ? (serverIncidentStatus || 'submitted') : 'submitted'
-          ),
-          ...(requiresEditComment ? { editComment: editComment.trim() } : {}),
-        }
+          );
+
+          if (requiresEditComment) {
+            const { status: _status, ...withoutStatus } = preparedPayload;
+            return {
+              ...withoutStatus,
+              editComment: editComment.trim(),
+            };
+          }
+
+          return preparedPayload;
+        })()
         : preparePayload(formData);
 
       const res = serverDraftIncidentId
