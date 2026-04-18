@@ -7,11 +7,12 @@ import {
     calculateRiskScore,
     getRiskLevel,
 } from '@/lib/constants';
-import { Assessment, Edit, Save } from '@mui/icons-material';
-import { alpha, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Assessment } from '@mui/icons-material';
+import { alpha, Box, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { theme } from '@/lib/theme';
+import { Section, SectionEditControls } from '@/components/shared';
 
 interface Props {
     incident: OVRReport;
@@ -37,6 +38,16 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
     const riskLevel = score ? getRiskLevel(score) : null;
     const impactLabel = RISK_IMPACT_LEVELS.find((l) => l.value === riskImpact)?.label;
     const likelihoodLabel = RISK_LIKELIHOOD_LEVELS.find((l) => l.value === riskLikelihood)?.label;
+    const hasChanges =
+        riskImpact !== (incident.riskImpact || 0) ||
+        riskLikelihood !== (incident.riskLikelihood || 0);
+
+    const handleCancel = () => {
+        setRiskImpact(incident.riskImpact || 0);
+        setRiskLikelihood(incident.riskLikelihood || 0);
+        setIsEditing(false);
+        setIsSaving(false);
+    };
 
     const handleSave = async () => {
         if (!riskImpact || !riskLikelihood) {
@@ -73,40 +84,21 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
     };
 
     return (
-        <Paper sx={{ p: 3, mb: 3 }}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                    pb: 2,
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-                }}
-            >
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                    }}
-                >
-                    <Assessment /> Risk Classification & Rating
-                </Typography>
-
-                {canEditSection && (
-                    <Button
-                        variant="outlined"
-                        startIcon={isEditing ? <Save /> : <Edit />}
-                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                        disabled={isSaving}
-                    >
-                        {isEditing ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
-                    </Button>
-                )}
-            </Box>
+        <Section
+            title="Risk Classification & Rating"
+            icon={<Assessment />}
+            action={
+                <SectionEditControls
+                    canEdit={canEditSection}
+                    isEditing={isEditing}
+                    hasChanges={hasChanges}
+                    isSaving={isSaving}
+                    onStartEdit={() => setIsEditing(true)}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                />
+            }
+        >
 
             {isEditing && (
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mt: 2 }}>
@@ -272,6 +264,6 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
                     No risk assessment recorded
                 </Typography>
             )}
-        </Paper>
+        </Section>
     );
 }

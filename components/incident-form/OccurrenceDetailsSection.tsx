@@ -4,10 +4,11 @@ import { PERSON_INVOLVED_OPTIONS } from '@/lib/constants';
 import { RichTextPreview } from '@/components/editor';
 import { getTaxonomyItem, loadTaxonomy, type TaxonomyData } from '@/lib/services/taxonomyService';
 import { Person, Place, Warning } from '@mui/icons-material';
-import { Box, Chip, Grid, Paper, Typography, alpha } from '@mui/material';
+import { Box, Chip, Grid, Typography, alpha } from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
+import { Section } from '@/components/shared';
 
 interface Props {
   incident: OVRReportWithRelations;
@@ -48,20 +49,7 @@ export function OccurrenceDetailsSection({ incident }: Props) {
   )?.label;
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-        sx={{
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
-        }}>
-        <Place /> Occurrence Details
-      </Typography>
+    <Section title="Occurrence Details" icon={<Place />}>
       <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 4 }}>
           <InfoRow
@@ -179,6 +167,6 @@ export function OccurrenceDetailsSection({ incident }: Props) {
           <RichTextPreview value={incident.description} emptyText="No description provided" />
         </Box>
       </Box>
-    </Paper>
+    </Section>
   );
 }

@@ -1,17 +1,15 @@
 'use client';
 
 import { INJURY_OUTCOMES, TREATMENT_TYPES } from '@/lib/constants';
-import { Cancel, CheckCircle, Edit, LocalHospital, Save } from '@mui/icons-material';
+import { Cancel, CheckCircle, LocalHospital } from '@mui/icons-material';
 import {
     alpha,
     Autocomplete,
     Box,
-    Button,
     Chip,
     FormControl,
     FormControlLabel,
     Grid,
-    Paper,
     Radio,
     RadioGroup,
     TextField,
@@ -19,6 +17,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
+import { Section, SectionEditControls } from '@/components/shared';
 
 interface Props {
     incident: OVRReport;
@@ -92,6 +91,18 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
 
     const includeHospitalizedDetails =
         treatmentTypes.includes('hospitalized') || treatmentTypes.includes('transferred');
+    const baselineTreatmentTypes = incident.treatmentTypes || [];
+    const treatmentTypesEqual =
+        treatmentTypes.length === baselineTreatmentTypes.length &&
+        treatmentTypes.every((value, index) => value === baselineTreatmentTypes[index]);
+    const hasChanges =
+        physicianNotified !== Boolean(incident.physicianNotified) ||
+        physicianSawPatient !== Boolean(incident.physicianSawPatient) ||
+        assessment.trim() !== (incident.assessment || '').trim() ||
+        injuryOutcome !== (incident.injuryOutcome || '') ||
+        !treatmentTypesEqual ||
+        hospitalizedDetails.trim() !== (incident.hospitalizedDetails || '').trim() ||
+        treatmentProvided.trim() !== (incident.treatmentProvided || '').trim();
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -130,41 +141,34 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
         }
     };
 
-    return (
-        <Paper sx={{ p: 3, mb: 3 }}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                    pb: 2,
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-                }}
-            >
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                    }}
-                >
-                    <LocalHospital /> Part 4: Physician Follow-up
-                </Typography>
+    const handleCancel = () => {
+        setPhysicianNotified(Boolean(incident.physicianNotified));
+        setPhysicianSawPatient(Boolean(incident.physicianSawPatient));
+        setAssessment(incident.assessment || '');
+        setInjuryOutcome(incident.injuryOutcome || '');
+        setTreatmentTypes(incident.treatmentTypes || []);
+        setHospitalizedDetails(incident.hospitalizedDetails || '');
+        setTreatmentProvided(incident.treatmentProvided || '');
+        setIsEditing(false);
+        setIsSaving(false);
+    };
 
-                {canEditSection && (
-                    <Button
-                        variant="outlined"
-                        startIcon={isEditing ? <Save /> : <Edit />}
-                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                        disabled={isSaving}
-                    >
-                        {isEditing ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
-                    </Button>
-                )}
-            </Box>
+    return (
+        <Section
+            title="Physician Follow-up"
+            icon={<LocalHospital />}
+            action={
+                <SectionEditControls
+                    canEdit={canEditSection}
+                    isEditing={isEditing}
+                    hasChanges={hasChanges}
+                    isSaving={isSaving}
+                    onStartEdit={() => setIsEditing(true)}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                />
+            }
+        >
 
             {isEditing ? (
                 <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -398,6 +402,6 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
                     )}
                 </>
             )}
-        </Paper>
+        </Section>
     );
 }

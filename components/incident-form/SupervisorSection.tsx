@@ -1,15 +1,13 @@
 'use client';
 
-import { CheckCircle, Cancel, Edit, Save, SupervisorAccount } from '@mui/icons-material';
+import { CheckCircle, Cancel, SupervisorAccount } from '@mui/icons-material';
 import {
     alpha,
     Box,
-    Button,
     Chip,
     FormControl,
     FormControlLabel,
     Grid,
-    Paper,
     Radio,
     RadioGroup,
     TextField,
@@ -17,6 +15,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
+import { Section, SectionEditControls } from '@/components/shared';
 
 interface Props {
     incident: OVRReportWithRelations;
@@ -41,6 +40,9 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
     const [isSaving, setIsSaving] = useState(false);
     const [supervisorNotified, setSupervisorNotified] = useState(Boolean(incident.supervisorNotified));
     const [supervisorAction, setSupervisorAction] = useState(incident.supervisorAction || '');
+    const hasChanges =
+        supervisorNotified !== Boolean(incident.supervisorNotified) ||
+        supervisorAction.trim() !== (incident.supervisorAction || '').trim();
 
     useEffect(() => {
         setSupervisorNotified(Boolean(incident.supervisorNotified));
@@ -77,41 +79,29 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
         }
     };
 
-    return (
-        <Paper sx={{ p: 3, mb: 3 }}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                    pb: 2,
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-                }}
-            >
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                    }}
-                >
-                    <SupervisorAccount /> Supervisor Action
-                </Typography>
+    const handleCancel = () => {
+        setSupervisorNotified(Boolean(incident.supervisorNotified));
+        setSupervisorAction(incident.supervisorAction || '');
+        setIsEditing(false);
+        setIsSaving(false);
+    };
 
-                {canEditSection && (
-                    <Button
-                        variant="outlined"
-                        startIcon={isEditing ? <Save /> : <Edit />}
-                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                        disabled={isSaving}
-                    >
-                        {isEditing ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
-                    </Button>
-                )}
-            </Box>
+    return (
+        <Section
+            title="Supervisor Action"
+            icon={<SupervisorAccount />}
+            action={
+                <SectionEditControls
+                    canEdit={canEditSection}
+                    isEditing={isEditing}
+                    hasChanges={hasChanges}
+                    isSaving={isSaving}
+                    onStartEdit={() => setIsEditing(true)}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                />
+            }
+        >
 
             {isEditing ? (
                 <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -213,6 +203,6 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
                     </Box>
                 </>
             )}
-        </Paper>
+        </Section>
     );
 }

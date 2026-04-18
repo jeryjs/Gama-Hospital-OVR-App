@@ -41,3 +41,6 @@ export { ErrorLayout } from './ErrorLayout';
 export type { ErrorLayoutProps, ErrorVariant } from './ErrorLayout';
 
 export { ReporterCard } from './ReporterCard';
+
+export { Section, SectionEditControls } from './Section';
+export type { SectionProps, SectionEditControlsProps } from './Section';

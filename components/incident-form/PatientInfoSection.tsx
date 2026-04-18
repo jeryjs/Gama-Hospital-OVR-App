@@ -1,6 +1,7 @@
 import { Person, Badge, Group, HelpOutlined } from '@mui/icons-material';
-import { alpha, Box, Grid, Paper, Typography } from '@mui/material';
+import { alpha, Box, Grid, Typography } from '@mui/material';
 import type { OVRReport } from '../../app/incidents/_shared/types';
+import { Section } from '@/components/shared';
 
 interface Props {
   incident: OVRReport;
@@ -44,21 +45,13 @@ export function PersonInvolvedSection({ incident }: Props) {
   const isPublicOrOrganization = isPublic || isOrganization;
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-        sx={{
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-          color: (theme) => theme.palette[color].main
-        }}>
-        {icon} {title}
-      </Typography>
+    <Section
+      title={title}
+      icon={icon}
+      headerSx={{
+        color: `${color}.main`
+      }}
+    >
       <Grid container spacing={3} sx={{ mt: 1 }}>
         {/* Name - All types */}
         <Grid size={{ xs: 12, md: 4 }}>
@@ -155,7 +148,7 @@ export function PersonInvolvedSection({ incident }: Props) {
           </Typography>
         </Box>
       )}
-    </Paper>
+    </Section>
   );
 }
 

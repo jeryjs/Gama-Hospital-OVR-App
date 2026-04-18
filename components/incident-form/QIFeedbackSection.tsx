@@ -11,7 +11,6 @@ import {
   Checkbox,
   FormControlLabel,
   Grid,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -22,6 +21,7 @@ import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { Section } from '@/components/shared';
 
 interface Props {
   incident: OVRReport;
@@ -66,20 +66,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   };
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-        sx={{
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          pb: 2,
-          borderBottom: (theme) => `2px solid ${theme.palette.divider}`
-        }}>
-        <Assessment /> Quality Improvement Department Feedback
-      </Typography>
+    <Section title="Quality Improvement Department Feedback" icon={<Assessment />}>
       {isClosed && incident.closedAt && (
         <Alert severity="success" icon={<CheckCircle />} sx={{ mt: 2 }}>
           Case closed on {format(new Date(incident.closedAt), 'MMM dd, yyyy HH:mm')}
@@ -207,6 +194,6 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
           </>
         )}
       </Box>
-    </Paper>
+    </Section>
   );
 }
