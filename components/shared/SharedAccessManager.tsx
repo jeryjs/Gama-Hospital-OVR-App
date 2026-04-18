@@ -17,12 +17,8 @@ import {
 } from '@mui/icons-material';
 import {
     Alert,
-    alpha,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     Dialog,
     DialogActions,
@@ -41,6 +37,7 @@ import { useState } from 'react';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
 import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
+import { Section } from './Section';
 
 export interface SharedAccessManagerProps {
     resourceType: 'investigation' | 'corrective_action';
@@ -174,29 +171,25 @@ export function SharedAccessManager({
 
     return (
         <>
-            <Card elevation={isCompact ? 1 : 2}>
-                <CardHeader
-                    title={`${roleLabel} Access`}
-                    subheader={`Manage ${roleLabel.toLowerCase()} invitations`}
-                    action={
-                        <Tooltip title={`Invite ${roleLabel}`} arrow={true}>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                onClick={() => setInviteDialogOpen(true)}
-                                startIcon={<PersonAdd />}
-                            >
-                                Invite
-                            </Button>
-                        </Tooltip>
-                    }
-                    sx={{
-                        bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.08),
-                        color: 'secondary.main',
-                    }}
-                />
-
-                <CardContent>
+            <Section
+                container="card"
+                elevation={isCompact ? 1 : 2}
+                title={`${roleLabel} Access`}
+                subtitle={`Manage ${roleLabel.toLowerCase()} invitations`}
+                tone="secondary"
+                action={
+                    <Tooltip title={`Invite ${roleLabel}`} arrow={true}>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => setInviteDialogOpen(true)}
+                            startIcon={<PersonAdd />}
+                        >
+                            Invite
+                        </Button>
+                    </Tooltip>
+                }
+            >
                     {/* Success message */}
                     {copiedUrl && (
                         <Alert severity="success" sx={{ mb: 2 }}>
@@ -279,8 +272,7 @@ export function SharedAccessManager({
                             ))}
                         </List>
                     )}
-                </CardContent>
-            </Card>
+            </Section>
 
             {/* Invite Dialog */}
             <Dialog

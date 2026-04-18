@@ -42,6 +42,7 @@ export interface SectionProps {
     headerSx?: SxProps<Theme>;
     contentSx?: SxProps<Theme>;
     mb?: number;
+    elevation?: number;
 }
 
 export function Section({
@@ -56,10 +57,11 @@ export function Section({
     headerSx,
     contentSx,
     mb = 3,
+    elevation,
 }: SectionProps) {
     if (container === 'card') {
         return (
-            <Card elevation={2} sx={sx}>
+            <Card elevation={elevation ?? 2} sx={sx}>
                 <CardHeader
                     title={title}
                     subheader={subtitle}

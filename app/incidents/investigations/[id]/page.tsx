@@ -538,77 +538,77 @@ export default function InvestigationDetailPage() {
                                 title="Investigation Info"
                             >
                                 <Stack spacing={2} divider={<Divider />}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Investigation ID
+                                        </Typography>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
+                                            INV-{investigation.id}
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Incident Reference
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {canOpenIncident ? (
+                                                <Button
+                                                    component={Link}
+                                                    href={`/incidents/view/${investigation.ovrReportId}`}
+                                                    size="small"
+                                                    sx={{ p: 0, textTransform: 'none' }}
+                                                >
+                                                    {investigation.ovrReportId}
+                                                </Button>
+                                            ) : (
+                                                <Typography component="span" variant="body2" sx={{
+                                                    fontWeight: 600
+                                                }}>
+                                                    {investigation.ovrReportId}
+                                                </Typography>
+                                            )}
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Created
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {format(new Date(investigation.createdAt), 'PPP')}
+                                        </Typography>
+                                    </Box>
+                                    {investigation.submittedAt && (
                                         <Box>
                                             <Typography variant="caption" sx={{
                                                 color: "text.secondary"
                                             }}>
-                                                Investigation ID
+                                                Submitted
                                             </Typography>
                                             <Typography variant="body2" sx={{
-                                                fontWeight: 600
+                                                color: "success.main"
                                             }}>
-                                                INV-{investigation.id}
+                                                {format(new Date(investigation.submittedAt), 'PPP')}
                                             </Typography>
                                         </Box>
-                                        <Box>
-                                            <Typography variant="caption" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                Incident Reference
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {canOpenIncident ? (
-                                                    <Button
-                                                        component={Link}
-                                                        href={`/incidents/view/${investigation.ovrReportId}`}
-                                                        size="small"
-                                                        sx={{ p: 0, textTransform: 'none' }}
-                                                    >
-                                                        {investigation.ovrReportId}
-                                                    </Button>
-                                                ) : (
-                                                    <Typography component="span" variant="body2" sx={{
-                                                        fontWeight: 600
-                                                    }}>
-                                                        {investigation.ovrReportId}
-                                                    </Typography>
-                                                )}
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                Created
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {format(new Date(investigation.createdAt), 'PPP')}
-                                            </Typography>
-                                        </Box>
-                                        {investigation.submittedAt && (
-                                            <Box>
-                                                <Typography variant="caption" sx={{
-                                                    color: "text.secondary"
-                                                }}>
-                                                    Submitted
-                                                </Typography>
-                                                <Typography variant="body2" sx={{
-                                                    color: "success.main"
-                                                }}>
-                                                    {format(new Date(investigation.submittedAt), 'PPP')}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                        <Box>
-                                            <Typography variant="caption" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                Last Updated
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {format(new Date(investigation.updatedAt), 'PPP')}
-                                            </Typography>
-                                        </Box>
+                                    )}
+                                    <Box>
+                                        <Typography variant="caption" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Last Updated
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {format(new Date(investigation.updatedAt), 'PPP')}
+                                        </Typography>
+                                    </Box>
                                 </Stack>
                             </Section>
 

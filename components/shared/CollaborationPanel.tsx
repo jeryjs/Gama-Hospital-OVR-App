@@ -21,9 +21,6 @@ import {
     Avatar,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     Divider,
     IconButton,
@@ -33,7 +30,6 @@ import {
     ListItemText,
     Menu,
     MenuItem,
-    Paper,
     Stack,
     TextField,
     Typography,
@@ -43,6 +39,7 @@ import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useComments } from '@/lib/hooks';
 import type { Comment } from '@/lib/api/schemas';
+import { Section } from './Section';
 
 export interface CollaborationPanelProps {
     resourceType: 'investigation' | 'corrective_action';
@@ -144,216 +141,213 @@ export function CollaborationPanel({
     const isCompact = variant === 'compact';
 
     return (
-        <Card elevation={isCompact ? 1 : 2}>
-            <CardHeader
-                title={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>
-                            Discussion
-                        </Typography>
-                        <Chip
-                            label={comments?.length || 0}
-                            size="small"
-                            color="primary"
-                        />
-                    </Box>
-                }
-                subheader="Internal collaboration and activity"
-                sx={{
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                }}
-            />
-            <CardContent>
-
-                {/* Comments List */}
-                {isLoading ? (
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "text.secondary",
-                            textAlign: "center",
-                            py: 4
-                        }}>
-                        Loading comments...
+        <Section
+            container="card"
+            tone="primary"
+            elevation={isCompact ? 1 : 2}
+            title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
+                        Discussion
                     </Typography>
-                ) : !comments || comments.length === 0 ? (
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "text.secondary",
-                            textAlign: "center",
-                            py: 4
-                        }}>
-                        No comments yet. Start the discussion!
-                    </Typography>
-                ) : (
-                    <List sx={{ p: 0 }}>
-                        {comments.map((comment, index) => {
-                            const isOwnComment = comment.userId === Number(session?.user?.id);
-                            const isEditing = editingId === comment.id;
+                    <Chip
+                        label={comments?.length || 0}
+                        size="small"
+                        color="primary"
+                    />
+                </Box>
+            }
+            subtitle="Internal collaboration and activity"
+        >
 
-                            return (
-                                <Box key={comment.id}>
-                                    {index > 0 && <Divider sx={{ my: 2 }} />}
-                                    <ListItem
-                                        alignItems="flex-start"
-                                        sx={{ px: 0 }}
-                                        secondaryAction={
-                                            isOwnComment && !isEditing ? (
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={(e) => handleMenuOpen(e, comment.id)}
-                                                >
-                                                    <MoreVert fontSize="small" />
-                                                </IconButton>
-                                            ) : null
+            {/* Comments List */}
+            {isLoading ? (
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        textAlign: "center",
+                        py: 4
+                    }}>
+                    Loading comments...
+                </Typography>
+            ) : !comments || comments.length === 0 ? (
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        textAlign: "center",
+                        py: 4
+                    }}>
+                    No comments yet. Start the discussion!
+                </Typography>
+            ) : (
+                <List sx={{ p: 0 }}>
+                    {comments.map((comment, index) => {
+                        const isOwnComment = comment.userId === Number(session?.user?.id);
+                        const isEditing = editingId === comment.id;
+
+                        return (
+                            <Box key={comment.id}>
+                                {index > 0 && <Divider sx={{ my: 2 }} />}
+                                <ListItem
+                                    alignItems="flex-start"
+                                    sx={{ px: 0 }}
+                                    secondaryAction={
+                                        isOwnComment && !isEditing ? (
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => handleMenuOpen(e, comment.id)}
+                                            >
+                                                <MoreVert fontSize="small" />
+                                            </IconButton>
+                                        ) : null
+                                    }
+                                >
+                                    <ListItemAvatar>
+                                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                            {comment.user?.firstName?.[0] || '?'}
+                                        </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                                <Typography variant="subtitle2" sx={{
+                                                    fontWeight: 600
+                                                }}>
+                                                    {comment.user?.firstName} {comment.user?.lastName}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
+                                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                                </Typography>
+                                                {comment.updatedAt !== comment.createdAt && (
+                                                    <Chip label="edited" size="small" sx={{ height: 16, fontSize: '0.65rem' }} />
+                                                )}
+                                            </Box>
                                         }
-                                    >
-                                        <ListItemAvatar>
-                                            <Avatar sx={{ bgcolor: 'primary.main' }}>
-                                                {comment.user?.firstName?.[0] || '?'}
-                                            </Avatar>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                    <Typography variant="subtitle2" sx={{
-                                                        fontWeight: 600
-                                                    }}>
-                                                        {comment.user?.firstName} {comment.user?.lastName}
-                                                    </Typography>
-                                                    <Typography variant="caption" sx={{
-                                                        color: "text.secondary"
-                                                    }}>
-                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                                                    </Typography>
-                                                    {comment.updatedAt !== comment.createdAt && (
-                                                        <Chip label="edited" size="small" sx={{ height: 16, fontSize: '0.65rem' }} />
-                                                    )}
-                                                </Box>
-                                            }
-                                            secondary={
-                                                isEditing ? (
-                                                    <Box sx={{ mt: 1 }}>
-                                                        <TextField
-                                                            multiline
-                                                            rows={2}
-                                                            fullWidth
-                                                            value={editText}
-                                                            onChange={(e) => setEditText(e.target.value)}
+                                        secondary={
+                                            isEditing ? (
+                                                <Box sx={{ mt: 1 }}>
+                                                    <TextField
+                                                        multiline
+                                                        rows={2}
+                                                        fullWidth
+                                                        value={editText}
+                                                        onChange={(e) => setEditText(e.target.value)}
+                                                        size="small"
+                                                    />
+                                                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                                                        <Button
                                                             size="small"
-                                                        />
-                                                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                                                            <Button
-                                                                size="small"
-                                                                variant="contained"
-                                                                onClick={() => handleEditComment(comment.id)}
-                                                            >
-                                                                Save
-                                                            </Button>
-                                                            <Button
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    setEditingId(null);
-                                                                    setEditText('');
-                                                                }}
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </Stack>
-                                                    </Box>
-                                                ) : (
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}
-                                                    >
-                                                        {comment.comment}
-                                                    </Typography>
-                                                )
-                                            }
-                                        />
-                                    </ListItem>
-                                </Box>
-                            );
-                        })}
-                    </List>
-                )}
+                                                            variant="contained"
+                                                            onClick={() => handleEditComment(comment.id)}
+                                                        >
+                                                            Save
+                                                        </Button>
+                                                        <Button
+                                                            size="small"
+                                                            onClick={() => {
+                                                                setEditingId(null);
+                                                                setEditText('');
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </Stack>
+                                                </Box>
+                                            ) : (
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}
+                                                >
+                                                    {comment.comment}
+                                                </Typography>
+                                            )
+                                        }
+                                    />
+                                </ListItem>
+                            </Box>
+                        );
+                    })}
+                </List>
+            )}
 
-                <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2 }} />
 
-                {/* Comment Input */}
-                {canComment && (
-                    <Box sx={{ mt: 3 }}>
-                        {!canUseCommentsApi ? (
-                            <Alert severity="info">
-                                Sign in with a full account to view and post discussion comments.
-                            </Alert>
-                        ) : (
-                            <>
-                                <TextField
-                                    multiline
-                                    rows={isCompact ? 2 : 3}
-                                    fullWidth
-                                    placeholder="Add a comment... (Use @ to mention team members)"
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    sx={{ mb: 1 }}
-                                />
-                                <Stack direction="row" spacing={1} sx={{
-                                    justifyContent: "flex-end"
-                                }}>
-                                    {canAttach && (
-                                        <Button
-                                            size="small"
-                                            startIcon={<AttachFile />}
-                                            disabled
-                                        >
-                                            Attach File (Coming Soon)
-                                        </Button>
-                                    )}
-                                    {newComment.trim() && (
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={handleAddComment}
-                                            disabled={!newComment.trim()}
-                                            startIcon={<Send />}
-                                        >
-                                            Comment
-                                        </Button>
-                                    )}
-                                </Stack>
-                            </>
-                        )}
-                    </Box>
-                )}
+            {/* Comment Input */}
+            {canComment && (
+                <Box sx={{ mt: 3 }}>
+                    {!canUseCommentsApi ? (
+                        <Alert severity="info">
+                            Sign in with a full account to view and post discussion comments.
+                        </Alert>
+                    ) : (
+                        <>
+                            <TextField
+                                multiline
+                                rows={isCompact ? 2 : 3}
+                                fullWidth
+                                placeholder="Add a comment... (Use @ to mention team members)"
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                sx={{ mb: 1 }}
+                            />
+                            <Stack direction="row" spacing={1} sx={{
+                                justifyContent: "flex-end"
+                            }}>
+                                {canAttach && (
+                                    <Button
+                                        size="small"
+                                        startIcon={<AttachFile />}
+                                        disabled
+                                    >
+                                        Attach File (Coming Soon)
+                                    </Button>
+                                )}
+                                {newComment.trim() && (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={handleAddComment}
+                                        disabled={!newComment.trim()}
+                                        startIcon={<Send />}
+                                    >
+                                        Comment
+                                    </Button>
+                                )}
+                            </Stack>
+                        </>
+                    )}
+                </Box>
+            )}
 
-                {/* Comment Actions Menu */}
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
+            {/* Comment Actions Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+            >
+                <MenuItem
+                    onClick={() => {
+                        const comment = comments?.find((c) => c.id === selectedCommentId);
+                        if (comment) startEdit(comment);
+                    }}
                 >
-                    <MenuItem
-                        onClick={() => {
-                            const comment = comments?.find((c) => c.id === selectedCommentId);
-                            if (comment) startEdit(comment);
-                        }}
-                    >
-                        <Edit fontSize="small" sx={{ mr: 1 }} />
-                        Edit
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => selectedCommentId && handleDeleteComment(selectedCommentId)}
-                        sx={{ color: 'error.main' }}
-                    >
-                        <Delete fontSize="small" sx={{ mr: 1 }} />
-                        Delete
-                    </MenuItem>
-                </Menu>
-            </CardContent>
-        </Card>
+                    <Edit fontSize="small" sx={{ mr: 1 }} />
+                    Edit
+                </MenuItem>
+                <MenuItem
+                    onClick={() => selectedCommentId && handleDeleteComment(selectedCommentId)}
+                    sx={{ color: 'error.main' }}
+                >
+                    <Delete fontSize="small" sx={{ mr: 1 }} />
+                    Delete
+                </MenuItem>
+            </Menu>
+        </Section>
     );
 }
