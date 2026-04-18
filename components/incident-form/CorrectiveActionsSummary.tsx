@@ -12,7 +12,6 @@ import {
     Box,
     Chip,
     LinearProgress,
-    Paper,
     Stack,
     Typography,
     alpha,
@@ -25,6 +24,7 @@ import {
     Warning as WarningIcon,
 } from '@mui/icons-material';
 import { format, isPast, isToday } from 'date-fns';
+import { Section } from '@/components/shared';
 
 interface CorrectiveActionsSummaryProps {
     actions: CorrectiveActionWithUsers[];
@@ -62,25 +62,8 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
     }).length;
 
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: 3,
-                mb: 3,
-                borderRadius: 2,
-                bgcolor: alpha('#6366F1', 0.05),
-                border: '1px solid',
-                borderColor: alpha('#6366F1', 0.2),
-            }}
-        >
-            <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: 2
-                }}>
+        <Section
+            title={
                 <Stack direction="row" spacing={1} sx={{
                     alignItems: "center"
                 }}>
@@ -91,6 +74,8 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                         Corrective Actions
                     </Typography>
                 </Stack>
+            }
+            action={
                 <Stack direction="row" spacing={1}>
                     {overdue > 0 && (
                         <Chip
@@ -107,7 +92,18 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                         size="small"
                     />
                 </Stack>
-            </Stack>
+            }
+            sx={{
+                borderRadius: 2,
+                bgcolor: alpha('#6366F1', 0.05),
+                border: '1px solid',
+                borderColor: alpha('#6366F1', 0.2),
+            }}
+            headerSx={{
+                pb: 0,
+                borderBottom: 'none',
+            }}
+        >
             <LinearProgress
                 variant="determinate"
                 value={progress}
@@ -239,6 +235,6 @@ export function CorrectiveActionsSummary({ actions }: CorrectiveActionsSummaryPr
                     );
                 })}
             </Stack>
-        </Paper>
+        </Section>
     );
 }

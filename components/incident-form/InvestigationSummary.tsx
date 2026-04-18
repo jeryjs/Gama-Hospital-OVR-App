@@ -12,7 +12,6 @@ import {
     Box,
     Button,
     Chip,
-    Paper,
     Stack,
     Typography,
     alpha,
@@ -24,6 +23,7 @@ import {
     Schedule as PendingIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { Section } from '@/components/shared';
 
 interface InvestigationSummaryProps {
     investigation: InvestigationWithUsers;
@@ -41,40 +41,42 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
     const investigators = investigation.investigatorUsers || [];
 
     return (
-        <Paper
-            elevation={0}
+        <Section
+            title={
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                        alignItems: "center",
+                    }}>
+                    {isSubmitted ? (
+                        <CompleteIcon sx={{ color: 'success.main' }} />
+                    ) : (
+                        <PendingIcon sx={{ color: 'warning.main' }} />
+                    )}
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
+                        Investigation {isSubmitted ? 'Summary' : 'In Progress'}
+                    </Typography>
+                    <Chip
+                        label={isSubmitted ? 'Completed' : 'Pending'}
+                        size="small"
+                        color={isSubmitted ? 'success' : 'warning'}
+                    />
+                </Stack>
+            }
             sx={{
-                p: 3,
-                mb: 3,
                 borderRadius: 2,
                 bgcolor: isSubmitted ? alpha('#10B981', 0.05) : alpha('#F59E0B', 0.05),
                 border: '1px solid',
                 borderColor: isSubmitted ? alpha('#10B981', 0.2) : alpha('#F59E0B', 0.2),
             }}
+            headerSx={{
+                pb: 0,
+                borderBottom: 'none',
+            }}
         >
-            <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                    alignItems: "center",
-                    mb: 2
-                }}>
-                {isSubmitted ? (
-                    <CompleteIcon sx={{ color: 'success.main' }} />
-                ) : (
-                    <PendingIcon sx={{ color: 'warning.main' }} />
-                )}
-                <Typography variant="h6" sx={{
-                    fontWeight: 600
-                }}>
-                    Investigation {isSubmitted ? 'Summary' : 'In Progress'}
-                </Typography>
-                <Chip
-                    label={isSubmitted ? 'Completed' : 'Pending'}
-                    size="small"
-                    color={isSubmitted ? 'success' : 'warning'}
-                />
-            </Stack>
             <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
                 {/* Investigators */}
                 <Typography variant="subtitle2" gutterBottom sx={{
@@ -198,6 +200,6 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                     View Full Investigation
                 </Button>
             </Box>
-        </Paper>
+        </Section>
     );
 }
