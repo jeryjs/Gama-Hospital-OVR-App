@@ -17,7 +17,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { getRiskLevel } from '@/lib/constants';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncident, useInvestigation } from '@/lib/hooks';
-import { ArrowBack, Save, Visibility } from '@mui/icons-material';
+import { ArrowBack, EditOutlined, Save, Visibility } from '@mui/icons-material';
 import {
     Alert,
     alpha,
@@ -36,12 +36,35 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { RichTextEditor, getCharacterCount } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+const InvestigationSectionCard = styled(Card)(({ theme }) => ({
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+    boxShadow: 'none',
+}));
+
+const InvestigationSectionHeader = styled(CardHeader)(({ theme }) => ({
+    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+    color: theme.palette.primary.main,
+    borderBottom: `1px solid ${theme.palette.primary.main}`,
+}));
+
+const SectionEditButton = styled(Button)(({ theme }) => ({
+    minWidth: 0,
+    textTransform: 'none',
+    color: theme.palette.text.secondary,
+    borderColor: alpha(theme.palette.text.primary, 0.24),
+    '&:hover': {
+        borderColor: alpha(theme.palette.primary.main, 0.36),
+        color: theme.palette.primary.main,
+    },
+}));
 
 /**
  * Investigation Detail Page
@@ -79,6 +102,8 @@ export default function InvestigationDetailPage() {
     const [causeClassification, setCauseClassification] = useState('');
     const [causeDetails, setCauseDetails] = useState('');
     const [editorSeed, setEditorSeed] = useState(0);
+    const [isEditingFindings, setIsEditingFindings] = useState(false);
+    const [isEditingAnalysis, setIsEditingAnalysis] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
@@ -89,19 +114,26 @@ export default function InvestigationDetailPage() {
             setCauseClassification(investigation.causeClassification || '');
             setCauseDetails(investigation.causeDetails || '');
             setEditorSeed((seed) => seed + 1);
+            setIsEditingFindings(false);
+            setIsEditingAnalysis(false);
         }
     }, [investigation]);
 
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isSubmitted = Boolean(investigation?.submittedAt);
-    const canEdit = !isSubmitted && (isQIUser || accessToken);
+    const canEditActiveInvestigation = !isSubmitted && Boolean(isQIUser || accessToken);
+    const isIncidentClosed = linkedIncident?.status === 'closed';
+    const canQIEditSubmitted = Boolean(isQIUser && isSubmitted && !isIncidentClosed);
+    const canEditFindingsSection = canEditActiveInvestigation || isEditingFindings;
+    const canEditAnalysisSection = canEditActiveInvestigation || isEditingAnalysis;
     const canOpenIncident = Boolean(session?.user);
     const linkedCorrectiveActions = linkedIncident?.correctiveActions || [];
     const findingsCount = getCharacterCount(findings);
     const problemsCount = getCharacterCount(problemsIdentified);
     const causeDetailsCount = getCharacterCount(causeDetails);
     const canSubmitInvestigation =
-        canEdit &&
+        !isSubmitted &&
+        canEditFindingsSection &&
         findingsCount >= 100 &&
         problemsCount >= 50 &&
         causeDetailsCount >= 50 &&
@@ -122,7 +154,7 @@ export default function InvestigationDetailPage() {
     };
 
     const handleSave = async () => {
-        if (!canEdit) return;
+        if (!canEditFindingsSection) return;
 
         try {
             await update({
@@ -131,13 +163,17 @@ export default function InvestigationDetailPage() {
                 causeClassification: causeClassification.trim() || undefined,
                 causeDetails: causeDetails || undefined,
             });
+
+            if (isSubmitted) {
+                setIsEditingFindings(false);
+            }
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
         }
     };
 
     const handleSubmit = async () => {
-        if (!canEdit) return;
+        if (!canEditFindingsSection || isSubmitted) return;
 
         if (!canSubmitInvestigation) {
             alert('To submit: findings must be at least 100 characters, problems at least 50, cause details at least 50, and cause classification is required.');
@@ -271,7 +307,13 @@ export default function InvestigationDetailPage() {
                             {/* Status Alert */}
                             {isSubmitted && (
                                 <Alert severity="success">
-                                    Investigation has been submitted and is now read-only.
+                                    Investigation has been submitted and is currently read-only.
+                                </Alert>
+                            )}
+
+                            {isSubmitted && canQIEditSubmitted && !isEditingFindings && (
+                                <Alert severity="info">
+                                    This is a read-only snapshot. Use the section-level <strong>Edit</strong> button to make a targeted update.
                                 </Alert>
                             )}
 
@@ -282,21 +324,25 @@ export default function InvestigationDetailPage() {
                             )}
 
                             {/* Investigation Findings */}
-                            <Card>
-                                <CardHeader
+                            <InvestigationSectionCard>
+                                <InvestigationSectionHeader
                                     title="Investigation Findings"
-                                    sx={{
-                                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                                        color: 'primary.main',
-                                        borderBottom: 1,
-                                        borderColor: 'primary.main'
-                                    }}
+                                    action={canQIEditSubmitted ? (
+                                        <SectionEditButton
+                                            size="small"
+                                            variant={isEditingFindings ? 'outlined' : 'text'}
+                                            startIcon={<EditOutlined fontSize="small" />}
+                                            onClick={() => setIsEditingFindings((editing) => !editing)}
+                                        >
+                                            {isEditingFindings ? 'Done' : 'Edit'}
+                                        </SectionEditButton>
+                                    ) : undefined}
                                 />
                                 <CardContent>
                                     <Stack spacing={3}>
                                         <Box>
                                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Findings
+                                                Findings{canEditFindingsSection ? ' *' : ''}
                                             </Typography>
                                             <RichTextEditor
                                                 key={`findings-editor-${editorSeed}`}
@@ -304,22 +350,25 @@ export default function InvestigationDetailPage() {
                                                 onChange={setFindings}
                                                 placeholder="Describe what was discovered during the investigation..."
                                                 minHeight={150}
-                                                readOnly={!canEdit}
+                                                readOnly={!canEditFindingsSection}
                                             />
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 0.5,
-                                                    display: 'block'
-                                                }}>
-                                                {findingsCount} / 100 characters minimum to submit
-                                            </Typography>
+                                            {canEditFindingsSection && (
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: "text.secondary",
+                                                        mt: 0.5,
+                                                        display: 'block',
+                                                        textAlign: 'right'
+                                                    }}>
+                                                    {findingsCount} / 100 characters minimum to submit
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         <Box>
                                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Problems Identified *
+                                                Problems Identified{canEditFindingsSection ? ' *' : ''}
                                             </Typography>
                                             <RichTextEditor
                                                 key={`problems-editor-${editorSeed}`}
@@ -327,23 +376,25 @@ export default function InvestigationDetailPage() {
                                                 onChange={setProblemsIdentified}
                                                 placeholder="List the problems that contributed to the incident..."
                                                 minHeight={150}
-                                                readOnly={!canEdit}
+                                                readOnly={!canEditFindingsSection}
                                             />
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 0.5,
-                                                    display: 'block',
-                                                    textAlign: 'right'
-                                                }}>
-                                                {problemsCount} / 50 characters minimum to submit
-                                            </Typography>
+                                            {canEditFindingsSection && (
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: "text.secondary",
+                                                        mt: 0.5,
+                                                        display: 'block',
+                                                        textAlign: 'right'
+                                                    }}>
+                                                    {problemsCount} / 50 characters minimum to submit
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         <Box>
                                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Cause Details
+                                                Cause Details{canEditFindingsSection ? ' *' : ''}
                                             </Typography>
                                             <RichTextEditor
                                                 key={`cause-editor-${editorSeed}`}
@@ -351,18 +402,20 @@ export default function InvestigationDetailPage() {
                                                 onChange={setCauseDetails}
                                                 placeholder="Provide detailed explanation of the root cause..."
                                                 minHeight={120}
-                                                readOnly={!canEdit}
+                                                readOnly={!canEditFindingsSection}
                                             />
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 0.5,
-                                                    display: 'block',
-                                                    textAlign: 'right'
-                                                }}>
-                                                {causeDetailsCount} / 50 characters minimum to submit
-                                            </Typography>
+                                            {canEditFindingsSection && (
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: "text.secondary",
+                                                        mt: 0.5,
+                                                        display: 'block',
+                                                        textAlign: 'right'
+                                                    }}>
+                                                    {causeDetailsCount} / 50 characters minimum to submit
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         <TextField
@@ -373,12 +426,12 @@ export default function InvestigationDetailPage() {
                                             placeholder="e.g., Human Error, System Failure, Process Gap..."
                                             slotProps={{
                                                 htmlInput: {
-                                                    readOnly: !canEdit,
+                                                    readOnly: !canEditFindingsSection,
                                                 },
                                             }}
                                         />
 
-                                        {canEdit && (
+                                        {canEditFindingsSection && (
                                             <Stack direction="row" spacing={2} sx={{
                                                 justifyContent: "flex-end"
                                             }}>
@@ -387,36 +440,60 @@ export default function InvestigationDetailPage() {
                                                     onClick={handleSave}
                                                     startIcon={<Save />}
                                                 >
-                                                    Save Changes
+                                                    {isSubmitted ? 'Save Update' : 'Save Changes'}
                                                 </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    onClick={handleSubmit}
-                                                    disabled={!canSubmitInvestigation}
-                                                >
-                                                    {submitting ? 'Submitting...' : 'Submit Investigation'}
-                                                </Button>
+                                                {!isSubmitted && (
+                                                    <Button
+                                                        variant="contained"
+                                                        onClick={handleSubmit}
+                                                        disabled={!canSubmitInvestigation}
+                                                    >
+                                                        {submitting ? 'Submitting...' : 'Submit Investigation'}
+                                                    </Button>
+                                                )}
                                             </Stack>
                                         )}
                                     </Stack>
                                 </CardContent>
-                            </Card>
+                            </InvestigationSectionCard>
 
                             {/* RCA & Fishbone Analysis - Only for High/Extreme Risk */}
                             {linkedIncident?.riskScore &&
                                 getRiskLevel(linkedIncident.riskScore).level !== 'green' && (
-                                    <RCAFishboneSection
-                                        investigationId={investigation.id}
-                                        initialRCA={investigation.rcaAnalysis}
-                                        initialFishbone={investigation.fishboneAnalysis}
-                                        onSave={async (rca, fishbone) => {
-                                            await update({
-                                                rcaAnalysis: rca || undefined,
-                                                fishboneAnalysis: fishbone || undefined,
-                                            });
-                                        }}
-                                        disabled={!canEdit}
-                                    />
+                                    <Box sx={{ position: 'relative' }}>
+                                        {canQIEditSubmitted && (
+                                            <SectionEditButton
+                                                size="small"
+                                                variant={isEditingAnalysis ? 'outlined' : 'text'}
+                                                startIcon={<EditOutlined fontSize="small" />}
+                                                onClick={() => setIsEditingAnalysis((editing) => !editing)}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 12,
+                                                    right: 12,
+                                                    zIndex: 2,
+                                                }}
+                                            >
+                                                {isEditingAnalysis ? 'Done' : 'Edit'}
+                                            </SectionEditButton>
+                                        )}
+                                        <RCAFishboneSection
+                                            investigationId={investigation.id}
+                                            initialRCA={investigation.rcaAnalysis}
+                                            initialFishbone={investigation.fishboneAnalysis}
+                                            onSave={async (rca, fishbone) => {
+                                                await update({
+                                                    rcaAnalysis: rca || undefined,
+                                                    fishboneAnalysis: fishbone || undefined,
+                                                });
+
+                                                if (isSubmitted) {
+                                                    setIsEditingAnalysis(false);
+                                                }
+                                            }}
+                                            disabled={!canEditAnalysisSection}
+                                        />
+                                    </Box>
                                 )}
                         </Stack>
                     </Grid>

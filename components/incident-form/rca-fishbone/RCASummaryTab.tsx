@@ -98,7 +98,7 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
             {/* Problem Statement */}
             <Box>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                    Problem Statement *
+                    Problem Statement{disabled ? '' : ' *'}
                 </Typography>
                 <TextField
                     fullWidth
@@ -107,7 +107,11 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     value={rca.problemStatement}
                     onChange={(e) => updateProblemStatement(e.target.value)}
                     placeholder="Clearly describe the incident or problem being analyzed..."
-                    disabled={disabled}
+                    slotProps={{
+                        htmlInput: {
+                            readOnly: disabled,
+                        },
+                    }}
                 />
             </Box>
             {/* 5 Whys Chain */}
@@ -122,25 +126,27 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                         The 5 Whys Analysis *
                     </Typography>
-                    <Stack direction="row" spacing={1}>
-                        <IconButton
-                            size="small"
-                            onClick={handleRemoveWhy}
-                            disabled={disabled || rca.fiveWhys.length <= MIN_WHYS}
-                            title="Remove last Why"
-                        >
-                            <Remove fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            onClick={handleAddWhy}
-                            disabled={disabled || rca.fiveWhys.length >= MAX_WHYS}
-                            title="Add another Why"
-                            color="primary"
-                        >
-                            <Add fontSize="small" />
-                        </IconButton>
-                    </Stack>
+                    {!disabled && (
+                        <Stack direction="row" spacing={1}>
+                            <IconButton
+                                size="small"
+                                onClick={handleRemoveWhy}
+                                disabled={rca.fiveWhys.length <= MIN_WHYS}
+                                title="Remove last Why"
+                            >
+                                <Remove fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                size="small"
+                                onClick={handleAddWhy}
+                                disabled={rca.fiveWhys.length >= MAX_WHYS}
+                                title="Add another Why"
+                                color="primary"
+                            >
+                                <Add fontSize="small" />
+                            </IconButton>
+                        </Stack>
+                    )}
                 </Stack>
 
                 <Stack spacing={2}>
@@ -163,7 +169,11 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                                     value={why.question}
                                     onChange={(e) => updateWhy(why.level, 'question', e.target.value)}
                                     placeholder="What question are you asking?"
-                                    disabled={disabled}
+                                    slotProps={{
+                                        htmlInput: {
+                                            readOnly: disabled,
+                                        },
+                                    }}
                                 />
                                 <TextField
                                     fullWidth
@@ -173,7 +183,11 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                                     value={why.answer}
                                     onChange={(e) => updateWhy(why.level, 'answer', e.target.value)}
                                     placeholder="Provide the answer to this why..."
-                                    disabled={disabled}
+                                    slotProps={{
+                                        htmlInput: {
+                                            readOnly: disabled,
+                                        },
+                                    }}
                                 />
                             </Stack>
                             {index < rca.fiveWhys.length - 1 && (
@@ -201,7 +215,11 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                     value={rca.rootCause}
                     onChange={(e) => updateRootCause(e.target.value)}
                     placeholder="Based on the analysis above, what is the fundamental root cause?"
-                    disabled={disabled}
+                    slotProps={{
+                        htmlInput: {
+                            readOnly: disabled,
+                        },
+                    }}
                 />
                 <Typography
                     variant="caption"
@@ -229,25 +247,27 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                 </Typography>
 
                 {/* Quick select common factors */}
-                <Stack
-                    direction="row"
-                    spacing={1}
-                    useFlexGap
-                    sx={{
-                        flexWrap: "wrap",
-                        mb: 2
-                    }}>
-                    {COMMON_FACTORS.map((factor) => (
-                        <Chip
-                            key={factor}
-                            label={factor}
-                            size="small"
-                            onClick={() => !disabled && addFactor(factor)}
-                            disabled={disabled || rca.contributingFactors.some(f => f.label === factor)}
-                            sx={{ cursor: 'pointer' }}
-                        />
-                    ))}
-                </Stack>
+                {!disabled && (
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        sx={{
+                            flexWrap: "wrap",
+                            mb: 2
+                        }}>
+                        {COMMON_FACTORS.map((factor) => (
+                            <Chip
+                                key={factor}
+                                label={factor}
+                                size="small"
+                                onClick={() => addFactor(factor)}
+                                disabled={rca.contributingFactors.some(f => f.label === factor)}
+                                sx={{ cursor: 'pointer' }}
+                            />
+                        ))}
+                    </Stack>
+                )}
 
                 {/* Selected factors */}
                 {rca.contributingFactors.length > 0 && (
@@ -272,29 +292,30 @@ export function RCASummaryTab({ rca, onChange, disabled }: RCASummaryTabProps) {
                 )}
 
                 {/* Custom factor input */}
-                <Stack direction="row" spacing={1}>
-                    <TextField
-                        size="small"
-                        fullWidth
-                        value={newFactorText}
-                        onChange={(e) => setNewFactorText(e.target.value)}
-                        placeholder="Add custom factor..."
-                        disabled={disabled}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addFactor(newFactorText);
-                            }
-                        }}
-                    />
-                    <Button
-                        variant="outlined"
-                        onClick={() => addFactor(newFactorText)}
-                        disabled={disabled || !newFactorText.trim()}
-                    >
-                        Add
-                    </Button>
-                </Stack>
+                {!disabled && (
+                    <Stack direction="row" spacing={1}>
+                        <TextField
+                            size="small"
+                            fullWidth
+                            value={newFactorText}
+                            onChange={(e) => setNewFactorText(e.target.value)}
+                            placeholder="Add custom factor..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addFactor(newFactorText);
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="outlined"
+                            onClick={() => addFactor(newFactorText)}
+                            disabled={!newFactorText.trim()}
+                        >
+                            Add
+                        </Button>
+                    </Stack>
+                )}
             </Box>
             {/* Validation hints */}
             {!rca.problemStatement.trim() && (

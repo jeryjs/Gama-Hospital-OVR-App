@@ -139,7 +139,7 @@ export function RichTextEditor({
                     }
 
                     if (readOnly) {
-                        return alpha(theme.palette.action.hover, 0.18);
+                        return theme.palette.background.paper;
                     }
 
                     return theme.palette.background.paper;

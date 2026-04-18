@@ -150,7 +150,7 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
             {/* Problem Statement */}
             <Box>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                    Problem Statement *
+                    Problem Statement{disabled ? '' : ' *'}
                 </Typography>
                 <TextField
                     fullWidth
@@ -159,7 +159,11 @@ export function FishboneDiagram({ fishbone, onChange, disabled }: FishboneDiagra
                     value={fishbone.problemStatement}
                     onChange={(e) => updateProblemStatement(e.target.value)}
                     placeholder="Clearly describe the problem being analyzed..."
-                    disabled={disabled}
+                    slotProps={{
+                        htmlInput: {
+                            readOnly: disabled,
+                        },
+                    }}
                 />
             </Box>
             {/* Diagram Controls */}

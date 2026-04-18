@@ -126,6 +126,12 @@ export function RCAFishboneSection({
             />
             <CardContent>
                 <Stack spacing={3}>
+                    {disabled && (
+                        <Alert severity="info">
+                            Advanced analysis is in read-only mode.
+                        </Alert>
+                    )}
+
                     {saveError && (
                         <Alert severity="error" onClose={() => setSaveError(null)}>
                             {saveError}
