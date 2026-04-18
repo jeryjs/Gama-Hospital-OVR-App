@@ -38,6 +38,8 @@
     "framer-motion": "^12.38.0",
     "next": "16.2.3",
     "next-auth": "^4.24.13",
+    "nodemailer": "^7.0.13",
+    "nodemailer-direct-transport": "^3.3.2",
     "platejs": "^52.3.21",
     "react": "19.2.5",
     "react-dom": "19.2.5",

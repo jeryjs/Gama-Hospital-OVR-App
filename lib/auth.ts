@@ -11,7 +11,7 @@ const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamaho
   .filter(Boolean);
 const ALLOW_ALL_EMAIL_DOMAINS = ALLOWED_DOMAIN.includes('*');
 const AZURE_AD_AUTH_TENANT_ID = process.env.AZURE_AD_AUTH_TENANT_ID || process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
-const MAIL_SCOPE = 'openid profile email User.Read Mail.Send offline_access';
+const MAIL_SCOPE = 'openid profile email User.Read offline_access';
 const AVATAR_ROUTE = '/api/me/avatar';
 // const IS_DEV = process.env.NODE_ENV === 'development';
 

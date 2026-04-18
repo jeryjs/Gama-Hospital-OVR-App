@@ -3,6 +3,7 @@ import { ovrComments } from '@/db/schema';
 import { handleApiError, requireAuth, validateBody } from '@/lib/api/middleware';
 import { createCommentSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -66,6 +67,11 @@ export async function POST(
         comment: body.comment.trim(),
       })
       .returning();
+
+    await sendWorkflowMailSafely(req, session.user, 'incident_commented', {
+      incidentId: id,
+      commentPreview: body.comment.trim(),
+    });
 
     // Fetch the comment with user details
     const commentWithUser = await db.query.ovrComments.findFirst({

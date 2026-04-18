@@ -1,26 +1,18 @@
 import { db } from '@/db';
-import { ovrMailOutbox, ovrReports, users } from '@/db/schema';
+import { ovrCorrectiveActions, ovrInvestigations, ovrMailOutbox, ovrReports, users } from '@/db/schema';
 import { APP_ROLES, type AppRole } from '@/lib/constants';
 import { and, asc, eq, inArray, lte } from 'drizzle-orm';
+import nodemailer, { type Transporter } from 'nodemailer';
+import directTransport from 'nodemailer-direct-transport';
 import type { Session } from 'next-auth';
-import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
-const GRAPH_SEND_MAIL_URL = 'https://graph.microsoft.com/v1.0/me/sendMail';
-const GRAPH_SCOPE = 'https://graph.microsoft.com/.default';
 const MAIL_SUBJECT_PREFIX = process.env.MAIL_SUBJECT_PREFIX || '[OVR]';
 const MAIL_ENABLED = process.env.MAIL_NOTIFICATIONS_ENABLED !== 'false';
 const MAIL_OUTBOX_MAX_ATTEMPTS = Number(process.env.MAIL_OUTBOX_MAX_ATTEMPTS || 5);
 const MAIL_OUTBOX_BASE_RETRY_MINUTES = Number(process.env.MAIL_OUTBOX_BASE_RETRY_MINUTES || 5);
 const MAIL_OUTBOX_DEFAULT_BATCH = Number(process.env.MAIL_OUTBOX_RETRY_BATCH || 10);
-const MAIL_GRAPH_APP_ONLY = process.env.MAIL_GRAPH_APP_ONLY === 'true';
-const MAIL_GRAPH_APP_FALLBACK = process.env.MAIL_GRAPH_APP_FALLBACK !== 'false';
-const MAIL_GRAPH_SENDER = (
-    process.env.MAIL_GRAPH_SENDER ||
-    process.env.MAIL_FROM_ADDRESS ||
-    process.env.MAIL_SENDER_ADDRESS ||
-    ''
-).trim();
+const MAIL_DIRECT_HOSTNAME = (process.env.MAIL_DIRECT_HOSTNAME || 'localhost').trim();
 const MAIL_OUTBOX_PROCESS_INLINE = process.env.MAIL_OUTBOX_PROCESS_INLINE
     ? process.env.MAIL_OUTBOX_PROCESS_INLINE === 'true'
     : process.env.NODE_ENV === 'production';
@@ -42,7 +34,8 @@ export type WorkflowMailEvent =
     | 'investigation_submitted'
     | 'corrective_action_created'
     | 'corrective_action_closed'
-    | 'incident_closed';
+    | 'incident_closed'
+    | 'incident_commented';
 
 interface WorkflowMailPayloadMap {
     incident_submitted: {
@@ -88,6 +81,10 @@ interface WorkflowMailPayloadMap {
         incidentId: string;
         reporterEmail?: string | null;
     };
+    incident_commented: {
+        incidentId: string;
+        commentPreview?: string | null;
+    };
 }
 
 interface MailEnvelope {
@@ -97,12 +94,6 @@ interface MailEnvelope {
     text: string;
 }
 
-interface ActorTokenContext {
-    accessToken: string;
-    tokenError?: string;
-    mailScopeGranted?: boolean;
-}
-
 export interface MailOutboxProcessingResult {
     processed: number;
     sent: number;
@@ -110,18 +101,14 @@ export interface MailOutboxProcessingResult {
     pending: number;
 }
 
-class GraphMailError extends Error {
-    readonly status: number;
-
-    constructor(status: number, statusText: string, raw: string) {
-        const details = raw || statusText || 'No response body';
-        super(`Microsoft Graph sendMail failed (${status} ${statusText}): ${details}`);
-        this.name = 'GraphMailError';
-        this.status = status;
+class NonRetryableMailError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'NonRetryableMailError';
     }
 }
 
-let graphAppTokenCache: { accessToken: string; expiresAt: number } | null = null;
+let directTransportCache: Transporter | null = null;
 
 function normalizeEmail(email: string | null | undefined): string | null {
     if (!email) return null;
@@ -161,6 +148,7 @@ function isWorkflowMailEvent(value: string): value is WorkflowMailEvent {
         'corrective_action_created',
         'corrective_action_closed',
         'incident_closed',
+        'incident_commented',
     ].includes(value);
 }
 
@@ -171,7 +159,7 @@ function computeNextRetryAt(attempts: number): Date {
 }
 
 function isRetryableMailError(error: unknown): boolean {
-    if (error instanceof GraphMailError && [400, 401, 403, 404].includes(error.status)) {
+    if (error instanceof NonRetryableMailError) {
         return false;
     }
 
@@ -179,91 +167,36 @@ function isRetryableMailError(error: unknown): boolean {
         return true;
     }
 
-    const message = error.message || '';
+    const code = typeof (error as { code?: unknown }).code === 'string'
+        ? (error as { code?: string }).code
+        : null;
 
-    if (
-        message.includes('No delegated access token available for workflow mail') ||
-        message.includes('Delegated token unavailable') ||
-        message.includes('MAIL_GRAPH_SENDER is required') ||
-        message.includes('Missing Azure credentials for Graph app fallback') ||
-        message.includes('Microsoft Graph app token fetch failed') ||
-        message.includes('Microsoft Graph sendMail failed (401') ||
-        message.includes('Microsoft Graph sendMail failed (403')
-    ) {
+    if (code === 'EAUTH' || code === 'EENVELOPE') {
+        return false;
+    }
+
+    const rawResponseCode = (error as { responseCode?: unknown }).responseCode;
+    const responseCode: number | null = typeof rawResponseCode === 'number'
+        ? rawResponseCode
+        : null;
+
+    if (responseCode !== null && responseCode >= 500 && responseCode < 600) {
         return false;
     }
 
     return true;
 }
 
-function graphUsersSendMailUrl(sender: string): string {
-    return `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`;
-}
-
-function shouldFallbackToAppSender(error: unknown): boolean {
-    if (!MAIL_GRAPH_APP_FALLBACK || !MAIL_GRAPH_SENDER) {
-        return false;
+function getDirectTransport(): Transporter {
+    if (directTransportCache) {
+        return directTransportCache;
     }
 
-    if (!(error instanceof GraphMailError)) {
-        return false;
-    }
+    directTransportCache = nodemailer.createTransport(directTransport({
+        name: MAIL_DIRECT_HOSTNAME,
+    }));
 
-    return error.status === 401 || error.status === 403;
-}
-
-async function getGraphAppAccessToken(): Promise<string> {
-    const now = Date.now();
-    if (graphAppTokenCache && now < graphAppTokenCache.expiresAt - 60_000) {
-        return graphAppTokenCache.accessToken;
-    }
-
-    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
-    const clientId = process.env.AZURE_AD_CLIENT_ID;
-    const clientSecret = process.env.AZURE_AD_CLIENT_SECRET;
-
-    if (!tenantId || !clientId || !clientSecret) {
-        throw new Error('Missing Azure credentials for Graph app fallback');
-    }
-
-    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-    const response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            grant_type: 'client_credentials',
-            scope: GRAPH_SCOPE,
-        }),
-    });
-
-    const raw = await response.text();
-    if (!response.ok) {
-        throw new Error(`Microsoft Graph app token fetch failed (${response.status} ${response.statusText}): ${raw || 'No response body'}`);
-    }
-
-    let parsed: any;
-    try {
-        parsed = JSON.parse(raw);
-    } catch {
-        throw new Error('Microsoft Graph app token fetch returned non-JSON payload');
-    }
-
-    const accessToken = typeof parsed?.access_token === 'string' ? parsed.access_token : null;
-    if (!accessToken) {
-        throw new Error('Microsoft Graph app token response missing access_token');
-    }
-
-    const expiresInSeconds = Number(parsed?.expires_in || 3600);
-    graphAppTokenCache = {
-        accessToken,
-        expiresAt: Date.now() + Math.max(60, expiresInSeconds) * 1000,
-    };
-
-    return accessToken;
+    return directTransportCache;
 }
 
 function appUrl(path: string): string {
@@ -347,6 +280,64 @@ async function getReporterEmail(incidentId: string): Promise<string | null> {
     return normalizeEmail(reporter?.email);
 }
 
+async function getIncidentParticipantEmails(incidentId: string, excludeEmail?: string): Promise<string[]> {
+    const [report, investigations, actions, qiEmails] = await Promise.all([
+        db
+            .select({ reporterId: ovrReports.reporterId })
+            .from(ovrReports)
+            .where(eq(ovrReports.id, incidentId))
+            .limit(1)
+            .then((rows) => rows[0]),
+        db
+            .select({ investigators: ovrInvestigations.investigators })
+            .from(ovrInvestigations)
+            .where(eq(ovrInvestigations.ovrReportId, incidentId)),
+        db
+            .select({ assignees: ovrCorrectiveActions.assignedTo })
+            .from(ovrCorrectiveActions)
+            .where(eq(ovrCorrectiveActions.ovrReportId, incidentId)),
+        getQIEmails(excludeEmail),
+    ]);
+
+    const participantIds = new Set<number>();
+
+    if (report?.reporterId) {
+        participantIds.add(report.reporterId);
+    }
+
+    for (const investigation of investigations) {
+        for (const investigatorId of investigation.investigators || []) {
+            if (Number.isInteger(investigatorId) && investigatorId > 0) {
+                participantIds.add(investigatorId);
+            }
+        }
+    }
+
+    for (const action of actions) {
+        for (const assigneeId of action.assignees || []) {
+            if (Number.isInteger(assigneeId) && assigneeId > 0) {
+                participantIds.add(assigneeId);
+            }
+        }
+    }
+
+    const participantEmails = participantIds.size
+        ? await db
+            .select({ email: users.email, isActive: users.isActive })
+            .from(users)
+            .where(inArray(users.id, [...participantIds]))
+        : [];
+
+    const excluded = normalizeEmail(excludeEmail);
+
+    return dedupeEmails([
+        ...qiEmails,
+        ...participantEmails
+            .filter((user) => user.isActive)
+            .map((user) => user.email),
+    ]).filter((email) => email !== excluded);
+}
+
 function buildMessage(
     title: string,
     intro: string,
@@ -375,6 +366,23 @@ function buildMessage(
     const text = `${title}\n\n${intro}\n\n${detailsText}Triggered by: ${actorLabel}\n${linkLabel}: ${linkUrl}\n\nAutomated notification from OVR App`;
 
     return { html, text };
+}
+
+function getCommentPreview(commentPreview: string | null | undefined): string | null {
+    if (!commentPreview) {
+        return null;
+    }
+
+    const normalized = commentPreview.trim();
+    if (!normalized) {
+        return null;
+    }
+
+    if (normalized.length <= 240) {
+        return normalized;
+    }
+
+    return `${normalized.slice(0, 237)}...`;
 }
 
 async function buildEnvelope<T extends WorkflowMailEvent>(
@@ -603,81 +611,62 @@ async function buildEnvelope<T extends WorkflowMailEvent>(
             };
         }
 
+        case 'incident_commented': {
+            const { incidentId, commentPreview } = payload as WorkflowMailPayloadMap['incident_commented'];
+            const recipients = await getIncidentParticipantEmails(incidentId, actor.email);
+
+            if (!recipients.length) {
+                return null;
+            }
+
+            const preview = getCommentPreview(commentPreview);
+
+            const { html, text } = buildMessage(
+                'New incident comment',
+                `A new comment was added on incident ${incidentId}.`,
+                actor,
+                'Open Incident',
+                incidentUrl(incidentId),
+                preview ? `Comment: ${preview}` : undefined
+            );
+
+            return {
+                to: recipients,
+                subject: `${MAIL_SUBJECT_PREFIX} New comment on incident ${incidentId}`,
+                html,
+                text,
+            };
+        }
+
         default:
             return null;
     }
 }
 
-async function sendMailWithGraphEndpoint(
-    sendUrl: string,
-    accessToken: string,
-    envelope: MailEnvelope
-): Promise<void> {
-    const response = await fetch(sendUrl, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: {
-                subject: envelope.subject,
-                body: {
-                    contentType: 'HTML',
-                    content: envelope.html,
-                },
-                toRecipients: envelope.to.map((address) => ({
-                    emailAddress: { address },
-                })),
-            },
-            saveToSentItems: true,
-        }),
-    });
+async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<void> {
+    const sender = normalizeEmail(actor.email);
 
-    if (!response.ok) {
-        const raw = await response.text();
-        throw new GraphMailError(response.status, response.statusText, raw);
+    if (!sender) {
+        throw new NonRetryableMailError('A valid actor email is required to send workflow mail');
     }
+
+    const transport = getDirectTransport();
+
+    await transport.sendMail({
+        from: sender,
+        sender,
+        replyTo: sender,
+        to: envelope.to,
+        subject: envelope.subject,
+        html: envelope.html,
+        text: envelope.text,
+    });
 }
 
-async function sendMailWithGraph(accessToken: string, envelope: MailEnvelope): Promise<void> {
-    if (MAIL_GRAPH_APP_ONLY) {
-        if (!MAIL_GRAPH_SENDER) {
-            throw new Error('MAIL_GRAPH_SENDER is required when MAIL_GRAPH_APP_ONLY=true');
-        }
-
-        const appToken = await getGraphAppAccessToken();
-        await sendMailWithGraphEndpoint(graphUsersSendMailUrl(MAIL_GRAPH_SENDER), appToken, envelope);
-        return;
-    }
-
-    try {
-        await sendMailWithGraphEndpoint(GRAPH_SEND_MAIL_URL, accessToken, envelope);
-    } catch (error) {
-        if (!shouldFallbackToAppSender(error)) {
-            throw error;
-        }
-
-        const appToken = await getGraphAppAccessToken();
-        await sendMailWithGraphEndpoint(graphUsersSendMailUrl(MAIL_GRAPH_SENDER), appToken, envelope);
-    }
-}
-
-async function resolveActorToken(request: NextRequest): Promise<ActorTokenContext> {
-    const token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const accessToken = typeof token?.accessToken === 'string' ? token.accessToken : null;
-    if (!accessToken) {
-        throw new Error('No delegated access token available for workflow mail');
-    }
-
+function withActorEmail(actor: Actor, actorEmail: string): Actor {
     return {
-        accessToken,
-        tokenError: typeof token?.tokenError === 'string' ? token.tokenError : undefined,
-        mailScopeGranted: token?.mailScopeGranted === true,
+        ...actor,
+        email: actorEmail,
     };
 }
 
@@ -710,9 +699,8 @@ async function enqueueMailOutbox<T extends WorkflowMailEvent>(
     });
 }
 
-async function processOutboxBatchWithToken(
+async function processOutboxBatchForActor(
     actor: Actor,
-    accessToken: string,
     limit = MAIL_OUTBOX_DEFAULT_BATCH
 ): Promise<MailOutboxProcessingResult> {
     const actorUserId = toActorUserId(actor);
@@ -745,7 +733,7 @@ async function processOutboxBatchWithToken(
 
         try {
             if (!isWorkflowMailEvent(row.event)) {
-                throw new Error(`Unsupported outbox event: ${row.event}`);
+                throw new NonRetryableMailError(`Unsupported outbox event: ${row.event}`);
             }
 
             const parsedPayload = JSON.parse(row.payload || '{}') as WorkflowMailPayloadMap[typeof row.event];
@@ -768,7 +756,7 @@ async function processOutboxBatchWithToken(
                 continue;
             }
 
-            await sendMailWithGraph(accessToken, envelope);
+            await dispatchEnvelope(withActorEmail(actor, row.actorEmail), envelope);
 
             await db
                 .update(ovrMailOutbox)
@@ -816,33 +804,14 @@ export async function sendWorkflowMail<T extends WorkflowMailEvent>(
     event: T,
     payload: WorkflowMailPayloadMap[T]
 ): Promise<void> {
+    void request;
+
     if (!MAIL_ENABLED) {
         return;
     }
 
-    const token = await resolveActorToken(request);
-    const hasAppFallback = MAIL_GRAPH_APP_FALLBACK && Boolean(MAIL_GRAPH_SENDER);
-    const delegatedHealthy = !token.tokenError && token.mailScopeGranted !== false;
-
-    if (!delegatedHealthy && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
-        if (token.tokenError) {
-            throw new Error(`Delegated token unavailable: ${token.tokenError}`);
-        }
-
-        throw new Error('Delegated token unavailable: Mail.Send scope not granted');
-    }
-
-    if (token.tokenError && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
-        throw new Error(`Delegated token unavailable: ${token.tokenError}`);
-    }
-
-    if (token.mailScopeGranted === false && !MAIL_GRAPH_APP_ONLY && !hasAppFallback) {
-        throw new Error('Delegated token unavailable: Mail.Send scope not granted');
-    }
-
-    // Opportunistically process pending retries for this actor before new sends
-    if (MAIL_OUTBOX_PROCESS_INLINE && delegatedHealthy) {
-        await processOutboxBatchWithToken(actor, token.accessToken, MAIL_OUTBOX_DEFAULT_BATCH);
+    if (MAIL_OUTBOX_PROCESS_INLINE) {
+        await processOutboxBatchForActor(actor, MAIL_OUTBOX_DEFAULT_BATCH);
     }
 
     const envelope = await buildEnvelope(event, payload, actor);
@@ -850,7 +819,7 @@ export async function sendWorkflowMail<T extends WorkflowMailEvent>(
         return;
     }
 
-    await sendMailWithGraph(token.accessToken, envelope);
+    await dispatchEnvelope(actor, envelope);
 }
 
 export async function sendWorkflowMailSafely<T extends WorkflowMailEvent>(
@@ -892,6 +861,8 @@ export async function processMailOutboxForActor(
     actor: Actor,
     limit = MAIL_OUTBOX_DEFAULT_BATCH
 ): Promise<MailOutboxProcessingResult> {
+    void request;
+
     if (!MAIL_ENABLED) {
         return {
             processed: 0,
@@ -901,11 +872,5 @@ export async function processMailOutboxForActor(
         };
     }
 
-    const token = await resolveActorToken(request);
-
-    if (token.tokenError) {
-        throw new Error(`Delegated token unavailable: ${token.tokenError}`);
-    }
-
-    return processOutboxBatchWithToken(actor, token.accessToken, limit);
+    return processOutboxBatchForActor(actor, limit);
 }
