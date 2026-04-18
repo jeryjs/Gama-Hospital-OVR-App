@@ -78,6 +78,7 @@ export default function InvestigationDetailPage() {
     const [problemsIdentified, setProblemsIdentified] = useState('');
     const [causeClassification, setCauseClassification] = useState('');
     const [causeDetails, setCauseDetails] = useState('');
+    const [editorSeed, setEditorSeed] = useState(0);
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
@@ -87,6 +88,7 @@ export default function InvestigationDetailPage() {
             setProblemsIdentified(investigation.problemsIdentified || '');
             setCauseClassification(investigation.causeClassification || '');
             setCauseDetails(investigation.causeDetails || '');
+            setEditorSeed((seed) => seed + 1);
         }
     }, [investigation]);
 
@@ -294,9 +296,10 @@ export default function InvestigationDetailPage() {
                                     <Stack spacing={3}>
                                         <Box>
                                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Findings *
+                                                Findings
                                             </Typography>
                                             <RichTextEditor
+                                                key={`findings-editor-${editorSeed}`}
                                                 value={findings}
                                                 onChange={setFindings}
                                                 placeholder="Describe what was discovered during the investigation..."
@@ -319,6 +322,7 @@ export default function InvestigationDetailPage() {
                                                 Problems Identified *
                                             </Typography>
                                             <RichTextEditor
+                                                key={`problems-editor-${editorSeed}`}
                                                 value={problemsIdentified}
                                                 onChange={setProblemsIdentified}
                                                 placeholder="List the problems that contributed to the incident..."
@@ -342,6 +346,7 @@ export default function InvestigationDetailPage() {
                                                 Cause Details
                                             </Typography>
                                             <RichTextEditor
+                                                key={`cause-editor-${editorSeed}`}
                                                 value={causeDetails}
                                                 onChange={setCauseDetails}
                                                 placeholder="Provide detailed explanation of the root cause..."
