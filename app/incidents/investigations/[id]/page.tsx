@@ -304,7 +304,7 @@ export default function InvestigationDetailPage() {
                                                 onChange={setFindings}
                                                 placeholder="Describe what was discovered during the investigation..."
                                                 minHeight={150}
-                                                disabled={!canEdit}
+                                                readOnly={!canEdit}
                                             />
                                             <Typography
                                                 variant="caption"
@@ -327,7 +327,7 @@ export default function InvestigationDetailPage() {
                                                 onChange={setProblemsIdentified}
                                                 placeholder="List the problems that contributed to the incident..."
                                                 minHeight={150}
-                                                disabled={!canEdit}
+                                                readOnly={!canEdit}
                                             />
                                             <Typography
                                                 variant="caption"
@@ -351,7 +351,7 @@ export default function InvestigationDetailPage() {
                                                 onChange={setCauseDetails}
                                                 placeholder="Provide detailed explanation of the root cause..."
                                                 minHeight={120}
-                                                disabled={!canEdit}
+                                                readOnly={!canEdit}
                                             />
                                             <Typography
                                                 variant="caption"
@@ -371,7 +371,11 @@ export default function InvestigationDetailPage() {
                                             value={causeClassification}
                                             onChange={(e) => setCauseClassification(e.target.value)}
                                             placeholder="e.g., Human Error, System Failure, Process Gap..."
-                                            disabled={!canEdit}
+                                            slotProps={{
+                                                htmlInput: {
+                                                    readOnly: !canEdit,
+                                                },
+                                            }}
                                         />
 
                                         {canEdit && (

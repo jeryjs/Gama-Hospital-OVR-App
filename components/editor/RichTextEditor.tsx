@@ -126,19 +126,28 @@ export function RichTextEditor({
             sx={{
                 position: 'relative',
                 border: '1px solid',
-                borderColor: isFocused
-                    ? 'primary.main'
-                    : disabled
-                        ? 'ActiveBorder'
+                borderStyle: readOnly ? 'dashed' : 'solid',
+                borderColor: disabled
+                    ? 'ActiveBorder'
+                    : isFocused && !readOnly
+                        ? 'primary.main'
                         : 'divider',
                 borderRadius: 2,
-                backgroundColor: (theme) => disabled
-                    ? alpha(theme.palette.action.disabledBackground, 0.02)
-                    : theme.palette.background.paper,
+                backgroundColor: (theme) => {
+                    if (disabled) {
+                        return alpha(theme.palette.action.disabledBackground, 0.08);
+                    }
+
+                    if (readOnly) {
+                        return alpha(theme.palette.action.hover, 0.18);
+                    }
+
+                    return theme.palette.background.paper;
+                },
                 transition: 'all 0.2s ease',
                 overflow: 'hidden',
                 cursor: isInPreviewMode ? 'pointer' : 'text',
-                '&:hover': !disabled && !isFocused
+                '&:hover': !disabled && !readOnly && !isFocused
                     ? {
                         borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
                     }
