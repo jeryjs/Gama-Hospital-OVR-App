@@ -190,88 +190,88 @@ export function SharedAccessManager({
                     </Tooltip>
                 }
             >
-                    {/* Success message */}
-                    {copiedUrl && (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <LinkIcon />
-                                <Typography variant="body2">
-                                    Invitation email sent automatically. Access link was also copied to clipboard as backup.
-                                </Typography>
-                            </Box>
-                        </Alert>
-                    )}
+                {/* Success message */}
+                {copiedUrl && (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LinkIcon />
+                            <Typography variant="body2">
+                                Invitation email sent automatically. Access link was also copied to clipboard as backup.
+                            </Typography>
+                        </Box>
+                    </Alert>
+                )}
 
-                    {/* Invitations List */}
-                    {invitations.length === 0 ? (
-                        <Alert severity="info">
-                            No {roleLabel.toLowerCase()}s invited yet. Click "Invite {roleLabel}" to begin.
-                        </Alert>
-                    ) : (
-                        <List sx={{ p: 0 }}>
-                            {invitations.map((invitation) => (
-                                <ListItem
-                                    key={invitation.id}
-                                    sx={{
-                                        px: 0,
-                                        py: 1.5,
-                                        borderBottom: '1px solid',
-                                        borderColor: 'divider',
-                                        '&:last-child': {
-                                            borderBottom: 'none',
-                                        },
-                                    }}
-                                    secondaryAction={
-                                        <Stack direction="row" spacing={1}>
-                                            {invitation.status !== 'revoked' && invitation.accessToken && (
-                                                <>
-                                                    <Tooltip title="Copy Access Link">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleCopyLink(invitation.accessToken)}
-                                                        >
-                                                            <ContentCopy fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Revoke Access">
-                                                        <IconButton
-                                                            size="small"
-                                                            color="error"
-                                                            onClick={() => handleRevoke(invitation.id)}
-                                                        >
-                                                            <Delete fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </>
-                                            )}
-                                        </Stack>
+                {/* Invitations List */}
+                {invitations.length === 0 ? (
+                    <Alert severity="info">
+                        No {roleLabel.toLowerCase()}s invited yet. Click "Invite {roleLabel}" to begin.
+                    </Alert>
+                ) : (
+                    <List sx={{ p: 0 }}>
+                        {invitations.map((invitation) => (
+                            <ListItem
+                                key={invitation.id}
+                                sx={{
+                                    px: 0,
+                                    py: 1.5,
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider',
+                                    '&:last-child': {
+                                        borderBottom: 'none',
+                                    },
+                                }}
+                                secondaryAction={
+                                    <Stack direction="row" spacing={1}>
+                                        {invitation.status !== 'revoked' && invitation.accessToken && (
+                                            <>
+                                                <Tooltip title="Copy Access Link">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleCopyLink(invitation.accessToken)}
+                                                    >
+                                                        <ContentCopy fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Revoke Access">
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleRevoke(invitation.id)}
+                                                    >
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </>
+                                        )}
+                                    </Stack>
+                                }
+                            >
+                                <ListItemText
+                                    primary={
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Email fontSize="small" color="action" />
+                                            <Typography variant="body1">{invitation.email}</Typography>
+                                            <Chip
+                                                label={invitation.status}
+                                                size="small"
+                                                color={getStatusColor(invitation.status) as any}
+                                            />
+                                        </Box>
                                     }
-                                >
-                                    <ListItemText
-                                        primary={
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Email fontSize="small" color="action" />
-                                                <Typography variant="body1">{invitation.email}</Typography>
-                                                <Chip
-                                                    label={invitation.status}
-                                                    size="small"
-                                                    color={getStatusColor(invitation.status) as any}
-                                                />
-                                            </Box>
-                                        }
-                                        secondary={
-                                            <Box component="span" sx={{ fontSize: '0.75rem' }}>
-                                                Invited: {new Date(invitation.invitedAt).toLocaleString()}
-                                                {invitation.lastAccessedAt && (
-                                                    <><br />Last accessed: {new Date(invitation.lastAccessedAt).toLocaleString()}</>
-                                                )}
-                                            </Box>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    )}
+                                    secondary={
+                                        <Box component="span" sx={{ fontSize: '0.75rem' }}>
+                                            Invited: {new Date(invitation.invitedAt).toLocaleString()}
+                                            {invitation.lastAccessedAt && (
+                                                <><br />Last accessed: {new Date(invitation.lastAccessedAt).toLocaleString()}</>
+                                            )}
+                                        </Box>
+                                    }
+                                />
+                            </ListItem>
+                        ))}
+                    </List>
+                )}
             </Section>
 
             {/* Invite Dialog */}

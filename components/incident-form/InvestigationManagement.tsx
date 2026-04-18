@@ -13,9 +13,6 @@ import {
     Avatar,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     Dialog,
     DialogActions,
@@ -45,6 +42,7 @@ import { useErrorDialog } from '@/components/ErrorDialog';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { Section } from '@/components/shared';
 
 interface InvestigationManagementProps {
     incidentId: string;
@@ -186,15 +184,13 @@ export function InvestigationManagement({
     // If no investigation yet, show create button
     if (!investigationId && canManage) {
         return (
-            <Card elevation={2}>
-                <CardHeader
+            <>
+                <Section
+                    container="card"
                     title="Investigation"
-                    subheader="Create investigation to begin assigning investigators"
-                    sx={{
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                    }}
-                />
-                <CardContent>
+                    subtitle="Create investigation to begin assigning investigators"
+                    tone="primary"
+                >
                     <Alert severity="info" sx={{ mb: 2 }}>
                         No investigation has been created for this incident yet.
                     </Alert>
@@ -207,17 +203,19 @@ export function InvestigationManagement({
                     >
                         Create Investigation
                     </Button>
-                </CardContent>
+                </Section>
                 {ErrorDialogComponent}
-            </Card>
+            </>
         );
     }
 
     return (
-        <Card elevation={2}>
-            <CardHeader
+        <>
+            <Section
+                container="card"
                 title="Investigation Management"
-                subheader="Manage investigators and their access"
+                subtitle="Manage investigators and their access"
+                tone="primary"
                 action={
                     <Button
                         variant="contained"
@@ -228,11 +226,7 @@ export function InvestigationManagement({
                         Invite Investigator
                     </Button>
                 }
-                sx={{
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                }}
-            />
-            <CardContent>
+            >
                 {/* Investigation Info & Link */}
                 <Box sx={{ mb: 2, p: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), borderRadius: 1 }}>
                     <Stack
@@ -336,7 +330,7 @@ export function InvestigationManagement({
                         </Box>
                     </Alert>
                 )}
-            </CardContent>
+            </Section>
             {/* Invite Dialog */}
             <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Invite Investigator</DialogTitle>
@@ -367,6 +361,6 @@ export function InvestigationManagement({
                 </DialogActions>
             </Dialog>
             {ErrorDialogComponent}
-        </Card>
+        </>
     );
 }

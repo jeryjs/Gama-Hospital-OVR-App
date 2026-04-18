@@ -9,17 +9,14 @@ import {
     Alert,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Stack,
     Tab,
     Tabs,
-    alpha,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { RCASummaryTab } from './RCASummaryTab';
 import { FishboneDiagram } from './FishboneDiagram';
+import { Section } from '@/components/shared';
 import type { RCAAnalysis, FishboneAnalysis } from './types';
 import {
     parseRCAAnalysis,
@@ -100,31 +97,25 @@ export function RCAFishboneSection({
     };
 
     return (
-        <Card>
-            <CardHeader
-                title="Advanced Analysis"
-                subheader="Root Cause Analysis and Fishbone Diagram"
-                sx={{
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                    color: 'primary.main',
-                    borderBottom: 1,
-                    borderColor: 'primary.main',
-                }}
-                action={
-                    hasChanges && !disabled && (
-                        <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<Save />}
-                            onClick={handleSave}
-                            disabled={saving}
-                        >
-                            {saving ? 'Saving...' : 'Save Analysis'}
-                        </Button>
-                    )
-                }
-            />
-            <CardContent>
+        <Section
+            container="card"
+            title="Advanced Analysis"
+            subtitle="Root Cause Analysis and Fishbone Diagram"
+            tone="primary"
+            action={
+                hasChanges && !disabled ? (
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Save />}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? 'Saving...' : 'Save Analysis'}
+                    </Button>
+                ) : undefined
+            }
+        >
                 <Stack spacing={3}>
                     {disabled && (
                         <Alert severity="info">
@@ -163,7 +154,6 @@ export function RCAFishboneSection({
                         />
                     )}
                 </Stack>
-            </CardContent>
-        </Card>
+        </Section>
     );
 }

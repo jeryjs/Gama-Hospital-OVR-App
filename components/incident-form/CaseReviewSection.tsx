@@ -12,9 +12,6 @@ import {
     alpha,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Typography,
 } from '@mui/material';
 import { RichTextEditor, getCharacterCount } from '@/components/editor';
@@ -28,6 +25,7 @@ import type { CloseIncidentInput } from '@/lib/api/schemas';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
+import { Section } from '@/components/shared';
 
 interface CaseReviewSectionProps {
     incidentId: string;
@@ -93,16 +91,18 @@ export function CaseReviewSection({
     }
 
     return (
-        <Card elevation={2}>
-            <CardHeader
+        <>
+            <Section
+                container="card"
                 title="Case Review & Closure"
-                subheader="Final case review and incident closure"
-                sx={{
-                    bgcolor: (theme) => allActionsClosed ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.warning.main, 0.1),
-                    color: allActionsClosed ? 'success.main' : 'warning.main',
+                subtitle="Final case review and incident closure"
+                tone={allActionsClosed ? 'success' : 'warning'}
+                headerSx={{
+                    bgcolor: (theme) => allActionsClosed
+                        ? alpha(theme.palette.success.main, 0.1)
+                        : alpha(theme.palette.warning.main, 0.1),
                 }}
-            />
-            <CardContent>
+            >
                 {/* Warning if actions not closed */}
                 {!allActionsClosed && (
                     <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
@@ -197,8 +197,8 @@ export function CaseReviewSection({
                     }}>
                     Once closed, this incident will be marked as resolved and archived.
                 </Typography>
-            </CardContent>
+            </Section>
             {ErrorDialogComponent}
-        </Card>
+        </>
     );
 }

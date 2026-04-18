@@ -14,9 +14,6 @@ import {
     Avatar,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     Dialog,
     DialogActions,
@@ -52,6 +49,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Section } from '@/components/shared';
 
 interface CorrectiveActionsManagementProps {
     incidentId: string;
@@ -198,26 +196,23 @@ export function CorrectiveActionsManagement({
     }
 
     return (
-        <Card elevation={2}>
-            <CardHeader
-                title="Corrective Actions"
-                subheader="Create and manage action items"
-                action={
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<AddIcon />}
-                    >
-                        Create Action
-                    </Button>
-                }
-                sx={{
-                    bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1),
-                    color: 'secondary.main',
-                }}
-            />
-            <CardContent>
+        <>
+            <Section
+            container="card"
+            title="Corrective Actions"
+            subtitle="Create and manage action items"
+            tone="secondary"
+            action={
+                <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => setCreateDialogOpen(true)}
+                    startIcon={<AddIcon />}
+                >
+                    Create Action
+                </Button>
+            }
+        >
                 {actionIds.length === 0 ? (
                     <Alert severity="info">
                         No corrective actions created yet. Click "Create Action" to begin.
@@ -243,7 +238,7 @@ export function CorrectiveActionsManagement({
                         Invitation email sent automatically. Access link was also copied to clipboard as backup.
                     </Alert>
                 )}
-            </CardContent>
+            </Section>
             {/* Create Action Dialog */}
             <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Create Corrective Action</DialogTitle>
@@ -366,7 +361,7 @@ export function CorrectiveActionsManagement({
                 </DialogActions>
             </Dialog>
             {ErrorDialogComponent}
-        </Card>
+        </>
     );
 }
 
