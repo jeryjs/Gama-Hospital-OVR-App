@@ -1,6 +1,0 @@
-{
-    "editor.codeActionsOnSave": {
-        "source.organizeimports": "always"
-    },
-    "editor.formatOnSave": true
-}

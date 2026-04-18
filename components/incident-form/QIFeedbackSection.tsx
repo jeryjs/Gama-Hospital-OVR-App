@@ -16,7 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { RichTextEditor, RichTextPreview, type EditorValue, getCharacterCount } from '@/components/editor';
+import { RichTextEditor, RichTextPreview, getCharacterCount } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
@@ -30,14 +30,7 @@ interface Props {
 
 export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const { data: session } = useSession();
-  // Initialize feedback from existing value (parse JSON if string)
-  const [feedback, setFeedback] = useState<EditorValue | undefined>(() => {
-    if (!incident.qiFeedback) return undefined;
-    if (typeof incident.qiFeedback === 'string') {
-      try { return JSON.parse(incident.qiFeedback); } catch { return undefined; }
-    }
-    return incident.qiFeedback as EditorValue;
-  });
+  const [feedback, setFeedback] = useState(incident.qiFeedback || '');
   const [formComplete, setFormComplete] = useState(incident.qiFormComplete || false);
   const [causeIdentified, setCauseIdentified] = useState(incident.qiProperCauseIdentified || false);
   const [timeframe, setTimeframe] = useState(incident.qiProperTimeframe || false);
@@ -51,14 +44,14 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const isClosed = incident.status === 'closed';
 
   const handleSubmit = async () => {
-    const feedbackLength = feedback ? getCharacterCount(feedback) : 0;
+    const feedbackLength = getCharacterCount(feedback);
     if (feedbackLength < 10 || !severityLevel) {
       alert('Please provide feedback and select severity level');
       return;
     }
 
     const result = await performAction('close-incident', {
-      feedback: feedback ? JSON.stringify(feedback) : '',
+      feedback,
       formComplete,
       causeIdentified,
       timeframe,
@@ -187,7 +180,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
                 }}
               >
                 <RichTextPreview
-                  value={typeof incident.qiFeedback === 'string' ? (() => { try { return JSON.parse(incident.qiFeedback); } catch { return undefined; } })() : incident.qiFeedback}
+                  value={incident.qiFeedback || undefined}
                   emptyText="No feedback provided"
                 />
               </Box>

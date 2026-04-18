@@ -1,6 +1,7 @@
 import type { EditorValue, TElement, TText } from '../plate-types';
 import { unified } from 'unified';
 import remarkStringify from 'remark-stringify';
+import { deserializeFromMarkdown } from './deserialize';
 
 /**
  * Serialize Plate editor value to plain text
@@ -77,8 +78,12 @@ export function serializeToPlainText(
  * @param value - The Plate editor value
  * @returns Character count (excluding whitespace-only)
  */
-export function getCharacterCount(value: EditorValue | undefined | null): number {
-    const text = serializeToPlainText(value, ' ');
+export function getCharacterCount(value: EditorValue | string | undefined | null): number {
+    const editorValue = typeof value === 'string'
+        ? deserializeFromMarkdown(value)
+        : value;
+
+    const text = serializeToPlainText(editorValue, ' ');
     return text.replace(/\s+/g, ' ').trim().length;
 }
 
@@ -87,8 +92,12 @@ export function getCharacterCount(value: EditorValue | undefined | null): number
  * @param value - The Plate editor value
  * @returns Word count
  */
-export function getWordCount(value: EditorValue | undefined | null): number {
-    const text = serializeToPlainText(value, ' ');
+export function getWordCount(value: EditorValue | string | undefined | null): number {
+    const editorValue = typeof value === 'string'
+        ? deserializeFromMarkdown(value)
+        : value;
+
+    const text = serializeToPlainText(editorValue, ' ');
     const words = text.trim().split(/\s+/).filter(Boolean);
     return words.length;
 }
@@ -101,11 +110,15 @@ export function getWordCount(value: EditorValue | undefined | null): number {
  * @returns Truncated plain text string
  */
 export function truncateToPlainText(
-    value: EditorValue | undefined | null,
+    value: EditorValue | string | undefined | null,
     maxLength: number,
     suffix: string = '...'
 ): string {
-    const text = serializeToPlainText(value, ' ');
+    const editorValue = typeof value === 'string'
+        ? deserializeFromMarkdown(value)
+        : value;
+
+    const text = serializeToPlainText(editorValue, ' ');
 
     if (text.length <= maxLength) {
         return text;

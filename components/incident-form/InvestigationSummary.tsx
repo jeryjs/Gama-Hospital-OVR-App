@@ -17,7 +17,7 @@ import {
     Typography,
     alpha,
 } from '@mui/material';
-import { RichTextPreview, deserializeFromMarkdown, type EditorValue } from '@/components/editor';
+import { RichTextPreview } from '@/components/editor';
 import {
     CheckCircle as CompleteIcon,
     OpenInNew as OpenIcon,
@@ -28,24 +28,6 @@ import Link from 'next/link';
 interface InvestigationSummaryProps {
     investigation: InvestigationWithUsers;
     incidentId: string;
-}
-
-/**
- * Helper to parse rich text value from string or EditorValue
- */
-function parseRichTextValue(value: unknown): EditorValue | undefined {
-    if (!value) return undefined;
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) return parsed as EditorValue;
-        } catch {
-            return deserializeFromMarkdown(value);
-        }
-
-        return deserializeFromMarkdown(value);
-    }
-    return value as EditorValue;
 }
 
 /**
@@ -154,7 +136,7 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                             }}
                         >
                             <RichTextPreview
-                                value={parseRichTextValue(investigation.findings)}
+                                value={investigation.findings}
                                 emptyText="No findings"
                             />
                         </Box>
@@ -181,7 +163,7 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
                             }}
                         >
                             <RichTextPreview
-                                value={parseRichTextValue(investigation.problemsIdentified)}
+                                value={investigation.problemsIdentified}
                                 emptyText="No problems identified"
                             />
                         </Box>

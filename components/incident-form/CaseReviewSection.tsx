@@ -17,7 +17,7 @@ import {
     CardHeader,
     Typography,
 } from '@mui/material';
-import { RichTextEditor, type EditorValue, getCharacterCount } from '@/components/editor';
+import { RichTextEditor, getCharacterCount } from '@/components/editor';
 import {
     CheckCircle as CompleteIcon,
     Warning as WarningIcon,
@@ -47,16 +47,16 @@ export function CaseReviewSection({
     const { data: session } = useSession();
     const canCloseCase = ACCESS_CONTROL.ui.incidentForm.canCloseCaseWithReview(session?.user?.roles || []);
 
-    const [caseReview, setCaseReview] = useState<EditorValue | undefined>();
-    const [reporterFeedback, setReporterFeedback] = useState<EditorValue | undefined>();
+    const [caseReview, setCaseReview] = useState('');
+    const [reporterFeedback, setReporterFeedback] = useState('');
 
     const { performAction, submitting } = useIncidentActions(incidentId, onSuccess);
     const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const handleSubmit = async () => {
         const payload: CloseIncidentInput = {
-            caseReview: caseReview ? JSON.stringify(caseReview) : '',
-            reporterFeedback: reporterFeedback ? JSON.stringify(reporterFeedback) : '',
+            caseReview,
+            reporterFeedback,
         };
 
         try {
@@ -71,8 +71,8 @@ export function CaseReviewSection({
     };
 
     // Smart validation using getCharacterCount for rich text
-    const caseReviewLength = caseReview ? getCharacterCount(caseReview) : 0;
-    const feedbackLength = reporterFeedback ? getCharacterCount(reporterFeedback) : 0;
+    const caseReviewLength = getCharacterCount(caseReview);
+    const feedbackLength = getCharacterCount(reporterFeedback);
     const isCaseReviewValid = caseReviewLength >= 100;
     const isFeedbackValid = feedbackLength >= 50;
     const canSubmit = allActionsClosed && isCaseReviewValid && isFeedbackValid && !submitting;

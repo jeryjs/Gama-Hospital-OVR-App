@@ -36,35 +36,12 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { RichTextEditor, type EditorValue, getCharacterCount, deserializeFromMarkdown, serializeToMarkdown } from '@/components/editor';
+import { RichTextEditor, getCharacterCount } from '@/components/editor';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-function parseEditorValue(value: unknown): EditorValue | undefined {
-    if (!value) return undefined;
-
-    if (Array.isArray(value)) {
-        return value as EditorValue;
-    }
-
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) {
-                return parsed as EditorValue;
-            }
-        } catch {
-            return deserializeFromMarkdown(value);
-        }
-
-        return deserializeFromMarkdown(value);
-    }
-
-    return undefined;
-}
 
 /**
  * Investigation Detail Page
@@ -96,21 +73,20 @@ export default function InvestigationDetailPage() {
         error: linkedIncidentError,
     } = useIncident(linkedIncidentId);
 
-    // Form state - using EditorValue for rich text fields
-    const [findings, setFindings] = useState<EditorValue | undefined>();
-    const [problemsIdentified, setProblemsIdentified] = useState<EditorValue | undefined>();
+    // Form state - markdown strings
+    const [findings, setFindings] = useState('');
+    const [problemsIdentified, setProblemsIdentified] = useState('');
     const [causeClassification, setCauseClassification] = useState('');
-    const [causeDetails, setCauseDetails] = useState<EditorValue | undefined>();
+    const [causeDetails, setCauseDetails] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
     useEffect(() => {
         if (investigation) {
-            // Rich text fields may be JSON or Markdown; parse safely
-            setFindings(parseEditorValue(investigation.findings));
-            setProblemsIdentified(parseEditorValue(investigation.problemsIdentified));
+            setFindings(investigation.findings || '');
+            setProblemsIdentified(investigation.problemsIdentified || '');
             setCauseClassification(investigation.causeClassification || '');
-            setCauseDetails(parseEditorValue(investigation.causeDetails));
+            setCauseDetails(investigation.causeDetails || '');
         }
     }, [investigation]);
 
@@ -119,9 +95,9 @@ export default function InvestigationDetailPage() {
     const canEdit = !isSubmitted && (isQIUser || accessToken);
     const canOpenIncident = Boolean(session?.user);
     const linkedCorrectiveActions = linkedIncident?.correctiveActions || [];
-    const findingsCount = findings ? getCharacterCount(findings) : 0;
-    const problemsCount = problemsIdentified ? getCharacterCount(problemsIdentified) : 0;
-    const causeDetailsCount = causeDetails ? getCharacterCount(causeDetails) : 0;
+    const findingsCount = getCharacterCount(findings);
+    const problemsCount = getCharacterCount(problemsIdentified);
+    const causeDetailsCount = getCharacterCount(causeDetails);
     const canSubmitInvestigation =
         canEdit &&
         findingsCount >= 100 &&
@@ -148,10 +124,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await update({
-                findings: findings ? serializeToMarkdown(findings) : undefined,
-                problemsIdentified: problemsIdentified ? serializeToMarkdown(problemsIdentified) : undefined,
+                findings: findings || undefined,
+                problemsIdentified: problemsIdentified || undefined,
                 causeClassification: causeClassification.trim() || undefined,
-                causeDetails: causeDetails ? serializeToMarkdown(causeDetails) : undefined,
+                causeDetails: causeDetails || undefined,
             });
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to save');
@@ -172,10 +148,10 @@ export default function InvestigationDetailPage() {
 
         try {
             await submit({
-                findings: findings ? serializeToMarkdown(findings) : '',
-                problemsIdentified: problemsIdentified ? serializeToMarkdown(problemsIdentified) : '',
+                findings,
+                problemsIdentified,
                 causeClassification: causeClassification.trim(),
-                causeDetails: causeDetails ? serializeToMarkdown(causeDetails) : '',
+                causeDetails,
             });
 
             alert('Investigation submitted successfully!');

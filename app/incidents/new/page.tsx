@@ -6,10 +6,7 @@ import { ReporterPreview } from '@/components/incident-form/ReporterPreview';
 import { PeoplePicker } from '@/components/shared';
 import {
   RichTextEditor,
-  type EditorValue,
   getCharacterCount,
-  serializeToMarkdown,
-  deserializeFromMarkdown,
 } from '@/components/editor';
 import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
 import { useDepartmentsWithLocations } from '@/lib/hooks';
@@ -82,7 +79,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 type FormData = Omit<CreateIncidentInput, 'description'> & {
   occurrenceDate: Dayjs | undefined;
   occurrenceTime: Dayjs | undefined;
-  description: EditorValue | undefined;
+  description: string;
 };
 
 type IncidentStatusValue = 'draft' | 'submitted' | 'qi_review' | 'investigating' | 'qi_final_actions' | 'closed';
@@ -104,7 +101,7 @@ function getEmptyFormData(): FormData {
     if (/locationId$/i.test(k)) return undefined;
     if (/Id$/i.test(k)) return ''; // many "Id" fields are strings in the schema
     if (k === 'personInvolved') return 'patient';
-    if (k === 'description') return undefined; // EditorValue - starts as undefined
+    if (k === 'description') return '';
     return '';
   };
 
@@ -151,16 +148,6 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
     ...draftFields
   } = draft as LocalDraft & Record<string, unknown>;
 
-  // Parse description from JSON (legacy) or Markdown (current)
-  let description: EditorValue | undefined = undefined;
-  if (draftFields.description) {
-    if (typeof draftFields.description === 'string') {
-      description = deserializeFromMarkdown(draftFields.description);
-    } else {
-      description = draftFields.description as EditorValue;
-    }
-  }
-
   const parsedTime = draftFields.occurrenceTime
     ? dayjs(draftFields.occurrenceTime as string, 'HH:mm:ss')
     : undefined;
@@ -170,7 +157,7 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
     ...draftFields,
     occurrenceDate: draftFields.occurrenceDate ? dayjs(draftFields.occurrenceDate as string) : undefined,
     occurrenceTime: parsedTime?.isValid() ? parsedTime : undefined,
-    description,
+    description: (draftFields.description as string) || '',
   } as unknown as FormData;
 }
 
@@ -195,8 +182,6 @@ function prepareIncidentPayload(formData: FormData, status: IncidentStatusValue)
     ...cleanFormData,
     occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
-    // Serialize rich text description to Markdown string
-    description: serializeToMarkdown(formData.description),
     status,
   };
 }
@@ -227,8 +212,6 @@ function prepareLocalDraft(
     reporterEmail: email,
     occurrenceDate: formData.occurrenceDate?.format('YYYY-MM-DD'),
     occurrenceTime: formData.occurrenceTime?.format('HH:mm:ss'),
-    // Serialize rich text description to Markdown string for localStorage
-    description: serializeToMarkdown(formData.description),
     createdAt: existingCreatedAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } as LocalDraft;
@@ -633,7 +616,7 @@ function ClassificationSection({
   editorSeed: number;
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
-  const descriptionLength = formData.description ? getCharacterCount(formData.description) : 0;
+  const descriptionLength = getCharacterCount(formData.description);
   return (
     <Box sx={{ mb: 4 }}>
       <Typography

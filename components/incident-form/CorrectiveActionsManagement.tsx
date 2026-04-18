@@ -30,7 +30,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import { RichTextEditor, RichTextPreview, type EditorValue, getCharacterCount } from '@/components/editor';
+import { RichTextEditor, RichTextPreview, getCharacterCount } from '@/components/editor';
 import {
     Add as AddIcon,
     CheckCircle as CloseIcon,
@@ -79,7 +79,7 @@ export function CorrectiveActionsManagement({
 
     // Form state for creating action
     const [title, setTitle] = useState('');
-    const [description, setDescription] = useState<EditorValue | undefined>();
+    const [description, setDescription] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [checklistItems, setChecklistItems] = useState<string[]>([]);
 
@@ -116,7 +116,7 @@ export function CorrectiveActionsManagement({
             const payload: CreateCorrectiveActionInput = {
                 ovrReportId: incidentId,
                 title: title.trim(),
-                description: description ? JSON.stringify(description) : '',
+                description,
                 dueDate: new Date(dueDate).toISOString(),
                 checklist: JSON.stringify(checklist),
             };
@@ -136,7 +136,7 @@ export function CorrectiveActionsManagement({
 
             // Reset form
             setTitle('');
-            setDescription(undefined);
+            setDescription('');
             setDueDate('');
             setChecklistItems([]);
             setCreateDialogOpen(false);
@@ -174,7 +174,7 @@ export function CorrectiveActionsManagement({
     };
 
     // Validation using getCharacterCount for rich text
-    const descriptionLength = description ? getCharacterCount(description) : 0;
+    const descriptionLength = getCharacterCount(description);
     const normalizedChecklistForValidation = normalizeChecklistItems(checklistItems);
     const isFormValid =
         title.trim().length >= 5 &&
@@ -461,7 +461,7 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                         }}
                     >
                         <RichTextPreview
-                            value={action.description ? (typeof action.description === 'string' ? (() => { try { return JSON.parse(action.description); } catch { return action.description; } })() : action.description) : undefined}
+                            value={action.description || undefined}
                             emptyText="No description"
                         />
                     </Box>

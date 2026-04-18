@@ -2,11 +2,10 @@
 
 import { Box, Typography, Link, alpha } from '@mui/material';
 import type { EditorValue, TElement, TText } from './plate-types';
-import { isEmptyValue } from './plate-types';
 import { deserializeFromMarkdown } from './utils';
 
 interface RichTextPreviewProps {
-    value?: EditorValue | string | TElement | null;
+    value?: string | null;
     emptyText?: string;
 }
 
@@ -245,46 +244,17 @@ function renderNode(node: unknown, index: number): React.ReactNode {
 }
 
 /**
- * Helper to normalize input to an array of nodes.
- * Accepts:
- * - EditorValue (array)
- * - JSON string (which parses to array or single node)
- * - single element node object
- * - fallback: wrap plain string into a paragraph text node
+ * Helper to normalize markdown string into editor nodes.
  */
-function normalizeValueToNodes(value: EditorValue | string | TElement | null | undefined): unknown[] {
-    if (!value) return [];
-
-    // If it's already an array of nodes (EditorValue)
-    if (Array.isArray(value)) return value;
-
-    // If it's a string, attempt JSON parse for serialized node(s)
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) return parsed;
-            if (isElementNode(parsed)) return [parsed];
-            return deserializeFromMarkdown(String(parsed));
-        } catch {
-            return deserializeFromMarkdown(value);
-        }
-    }
-
-    // If it's a single element node, wrap it into an array
-    if (isElementNode(value)) {
-        return [value];
-    }
-
-    // Unknown shape: return empty
-    return [];
+function normalizeValueToNodes(value: string | null | undefined): EditorValue {
+    return deserializeFromMarkdown(value);
 }
 
 export function RichTextPreview({
     value,
     emptyText = 'No content',
 }: RichTextPreviewProps) {
-    // If it's a Plate Editor value (array) and empty, show emptyText.
-    if (Array.isArray(value) && isEmptyValue(value as EditorValue)) {
+    if (!value || value.trim() === '') {
         return (
             <Typography
                 variant="body2"
@@ -300,7 +270,7 @@ export function RichTextPreview({
 
     const nodes = normalizeValueToNodes(value);
 
-    if (!nodes || nodes.length === 0) {
+    if (!nodes.length) {
         return (
             <Typography
                 variant="body2"

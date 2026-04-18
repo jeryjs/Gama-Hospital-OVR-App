@@ -19,11 +19,11 @@ import {
     LinkElement,
 } from './elements';
 import type { EditorValue } from './plate-types';
-import { createEmptyValue, isEmptyValue } from './plate-types';
+import { deserializeFromMarkdown, serializeToMarkdown } from './utils';
 
 export interface RichTextEditorProps {
-    value?: EditorValue;
-    onChange?: (value: EditorValue) => void;
+    value?: string;
+    onChange?: (value: string) => void;
     placeholder?: string;
     readOnly?: boolean;
     minHeight?: number | string;
@@ -74,23 +74,18 @@ export function RichTextEditor({
     }, []);
 
     // Initialize with provided value or empty
-    const initialValue = useMemo(() => {
-        if (value && !isEmptyValue(value)) {
-            return value;
-        }
-        return createEmptyValue();
-    }, [value]);
+    const initialValue = useMemo(() => deserializeFromMarkdown(value), [value]);
 
     // Create editor with plugins and components
     const editor = usePlateEditor({
         plugins: editorPlugins,
-        value: value || initialValue,
+        value: initialValue,
         components: editorComponents,
     });
 
     const handleChange = useCallback(
         ({ value: newValue }: { value: EditorValue }) => {
-            onChange?.(newValue);
+            onChange?.(serializeToMarkdown(newValue));
         },
         [onChange]
     );
@@ -184,7 +179,7 @@ export function RichTextEditor({
             </Plate>
 
             {/* Click to edit hint */}
-            {isInPreviewMode && isEmptyValue(value) && (
+            {isInPreviewMode && !value?.trim() && (
                 <Box
                     sx={{
                         position: 'absolute',
