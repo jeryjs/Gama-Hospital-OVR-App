@@ -23,9 +23,6 @@ import {
     alpha,
     Box,
     Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     Divider,
     Grid,
@@ -38,22 +35,12 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { RichTextEditor, getCharacterCount } from '@/components/editor';
+import { Section, SectionEditControls } from '@/components/shared';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-const InvestigationSectionCard = styled(Card)(({ theme }) => ({
-    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-    boxShadow: 'none',
-}));
-
-const InvestigationSectionHeader = styled(CardHeader)(({ theme }) => ({
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-    color: theme.palette.primary.main,
-    borderBottom: `1px solid ${theme.palette.primary.main}`,
-}));
 
 const SectionEditButton = styled(Button)(({ theme }) => ({
     minWidth: 0,
@@ -149,6 +136,11 @@ export default function InvestigationDetailPage() {
     const findingsCount = getCharacterCount(findings);
     const problemsCount = getCharacterCount(problemsIdentified);
     const causeDetailsCount = getCharacterCount(causeDetails);
+    const hasFindingsChanges =
+        findings.trim() !== (investigation?.findings || '').trim() ||
+        problemsIdentified.trim() !== (investigation?.problemsIdentified || '').trim() ||
+        causeDetails.trim() !== (investigation?.causeDetails || '').trim() ||
+        causeClassification.trim() !== (investigation?.causeClassification || '').trim();
     const canSubmitInvestigation =
         !isSubmitted &&
         canEditFindingsSection &&
@@ -342,147 +334,136 @@ export default function InvestigationDetailPage() {
                             )}
 
                             {/* Investigation Findings */}
-                            <InvestigationSectionCard>
-                                <InvestigationSectionHeader
-                                    title="Investigation Findings"
-                                    action={canQIEditSubmitted ? (
-                                        <SectionEditButton
-                                            size="small"
-                                            variant={isEditingFindings ? 'outlined' : 'text'}
-                                            startIcon={isEditingFindings
-                                                ? <CloseRounded fontSize="small" />
-                                                : <EditOutlined fontSize="small" />}
-                                            onClick={() => {
-                                                if (isEditingFindings) {
-                                                    cancelFindingsEditing();
-                                                    return;
-                                                }
-
-                                                setIsEditingFindings(true);
-                                            }}
-                                        >
-                                            {isEditingFindings ? 'Cancel' : 'Edit'}
-                                        </SectionEditButton>
-                                    ) : undefined}
-                                />
-                                <CardContent>
-                                    <Stack spacing={3}>
-                                        <Box>
-                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Findings{canEditFindingsSection ? ' *' : ''}
-                                            </Typography>
-                                            <RichTextEditor
-                                                key={`findings-editor-${editorSeed}`}
-                                                value={findings}
-                                                onChange={setFindings}
-                                                placeholder="Describe what was discovered during the investigation..."
-                                                minHeight={150}
-                                                readOnly={!canEditFindingsSection}
-                                            />
-                                            {canEditFindingsSection && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: "text.secondary",
-                                                        mt: 0.5,
-                                                        display: 'block',
-                                                        textAlign: 'right'
-                                                    }}>
-                                                    {findingsCount} / 100 characters minimum to submit
-                                                </Typography>
-                                            )}
-                                        </Box>
-
-                                        <Box>
-                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Problems Identified{canEditFindingsSection ? ' *' : ''}
-                                            </Typography>
-                                            <RichTextEditor
-                                                key={`problems-editor-${editorSeed}`}
-                                                value={problemsIdentified}
-                                                onChange={setProblemsIdentified}
-                                                placeholder="List the problems that contributed to the incident..."
-                                                minHeight={150}
-                                                readOnly={!canEditFindingsSection}
-                                            />
-                                            {canEditFindingsSection && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: "text.secondary",
-                                                        mt: 0.5,
-                                                        display: 'block',
-                                                        textAlign: 'right'
-                                                    }}>
-                                                    {problemsCount} / 50 characters minimum to submit
-                                                </Typography>
-                                            )}
-                                        </Box>
-
-                                        <Box>
-                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                                Cause Details{canEditFindingsSection ? ' *' : ''}
-                                            </Typography>
-                                            <RichTextEditor
-                                                key={`cause-editor-${editorSeed}`}
-                                                value={causeDetails}
-                                                onChange={setCauseDetails}
-                                                placeholder="Provide detailed explanation of the root cause..."
-                                                minHeight={120}
-                                                readOnly={!canEditFindingsSection}
-                                            />
-                                            {canEditFindingsSection && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: "text.secondary",
-                                                        mt: 0.5,
-                                                        display: 'block',
-                                                        textAlign: 'right'
-                                                    }}>
-                                                    {causeDetailsCount} / 50 characters minimum to submit
-                                                </Typography>
-                                            )}
-                                        </Box>
-
-                                        <TextField
-                                            label="Cause Classification"
-                                            fullWidth
-                                            value={causeClassification}
-                                            onChange={(e) => setCauseClassification(e.target.value)}
-                                            placeholder="e.g., Human Error, System Failure, Process Gap..."
-                                            slotProps={{
-                                                htmlInput: {
-                                                    readOnly: !canEditFindingsSection,
-                                                },
-                                            }}
+                            <Section
+                                container="card"
+                                tone="primary"
+                                title="Investigation Findings"
+                                action={canQIEditSubmitted ? (
+                                    <SectionEditControls
+                                        canEdit={canQIEditSubmitted}
+                                        isEditing={isEditingFindings}
+                                        hasChanges={hasFindingsChanges}
+                                        onStartEdit={() => setIsEditingFindings(true)}
+                                        onSave={handleSave}
+                                        onCancel={cancelFindingsEditing}
+                                        saveLabel="Save Update"
+                                    />
+                                ) : undefined}
+                            >
+                                <Stack spacing={3}>
+                                    <Box>
+                                        <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                            Findings{canEditFindingsSection ? ' *' : ''}
+                                        </Typography>
+                                        <RichTextEditor
+                                            key={`findings-editor-${editorSeed}`}
+                                            value={findings}
+                                            onChange={setFindings}
+                                            placeholder="Describe what was discovered during the investigation..."
+                                            minHeight={150}
+                                            readOnly={!canEditFindingsSection}
                                         />
-
                                         {canEditFindingsSection && (
-                                            <Stack direction="row" spacing={2} sx={{
-                                                justifyContent: "flex-end"
-                                            }}>
-                                                <Button
-                                                    variant="outlined"
-                                                    onClick={handleSave}
-                                                    startIcon={<Save />}
-                                                >
-                                                    {isSubmitted ? 'Save Update' : 'Save Changes'}
-                                                </Button>
-                                                {!isSubmitted && (
-                                                    <Button
-                                                        variant="contained"
-                                                        onClick={handleSubmit}
-                                                        disabled={!canSubmitInvestigation}
-                                                    >
-                                                        {submitting ? 'Submitting...' : 'Submit Investigation'}
-                                                    </Button>
-                                                )}
-                                            </Stack>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block',
+                                                    textAlign: 'right'
+                                                }}>
+                                                {findingsCount} / 100 characters minimum to submit
+                                            </Typography>
                                         )}
-                                    </Stack>
-                                </CardContent>
-                            </InvestigationSectionCard>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                            Problems Identified{canEditFindingsSection ? ' *' : ''}
+                                        </Typography>
+                                        <RichTextEditor
+                                            key={`problems-editor-${editorSeed}`}
+                                            value={problemsIdentified}
+                                            onChange={setProblemsIdentified}
+                                            placeholder="List the problems that contributed to the incident..."
+                                            minHeight={150}
+                                            readOnly={!canEditFindingsSection}
+                                        />
+                                        {canEditFindingsSection && (
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block',
+                                                    textAlign: 'right'
+                                                }}>
+                                                {problemsCount} / 50 characters minimum to submit
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                                            Cause Details{canEditFindingsSection ? ' *' : ''}
+                                        </Typography>
+                                        <RichTextEditor
+                                            key={`cause-editor-${editorSeed}`}
+                                            value={causeDetails}
+                                            onChange={setCauseDetails}
+                                            placeholder="Provide detailed explanation of the root cause..."
+                                            minHeight={120}
+                                            readOnly={!canEditFindingsSection}
+                                        />
+                                        {canEditFindingsSection && (
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 0.5,
+                                                    display: 'block',
+                                                    textAlign: 'right'
+                                                }}>
+                                                {causeDetailsCount} / 50 characters minimum to submit
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    <TextField
+                                        label="Cause Classification"
+                                        fullWidth
+                                        value={causeClassification}
+                                        onChange={(e) => setCauseClassification(e.target.value)}
+                                        placeholder="e.g., Human Error, System Failure, Process Gap..."
+                                        slotProps={{
+                                            htmlInput: {
+                                                readOnly: !canEditFindingsSection,
+                                            },
+                                        }}
+                                    />
+
+                                    {!isSubmitted && canEditFindingsSection && (
+                                        <Stack direction="row" spacing={2} sx={{
+                                            justifyContent: "flex-end"
+                                        }}>
+                                            <Button
+                                                variant="outlined"
+                                                onClick={handleSave}
+                                                startIcon={<Save />}
+                                            >
+                                                Save Changes
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                onClick={handleSubmit}
+                                                disabled={!canSubmitInvestigation}
+                                            >
+                                                {submitting ? 'Submitting...' : 'Submit Investigation'}
+                                            </Button>
+                                        </Stack>
+                                    )}
+                                </Stack>
+                            </Section>
 
                             {/* RCA & Fishbone Analysis - Only for High/Extreme Risk */}
                             {linkedIncident?.riskScore &&
@@ -552,13 +533,11 @@ export default function InvestigationDetailPage() {
                             )}
 
                             {/* Investigation Metadata */}
-                            <Card>
-                                <CardHeader
-                                    title="Investigation Info"
-                                    sx={{ bgcolor: 'background.default' }}
-                                />
-                                <CardContent>
-                                    <Stack spacing={2} divider={<Divider />}>
+                            <Section
+                                container="card"
+                                title="Investigation Info"
+                            >
+                                <Stack spacing={2} divider={<Divider />}>
                                         <Box>
                                             <Typography variant="caption" sx={{
                                                 color: "text.secondary"
@@ -630,102 +609,94 @@ export default function InvestigationDetailPage() {
                                                 {format(new Date(investigation.updatedAt), 'PPP')}
                                             </Typography>
                                         </Box>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
+                                </Stack>
+                            </Section>
 
 
                             {/* Linked Corrective Actions */}
-                            <Card>
-                                <CardHeader
-                                    title="Linked Corrective Actions"
-                                    subheader="Actions created for this incident"
-                                    sx={{
-                                        bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
-                                        color: 'warning.main',
-                                        borderBottom: 1,
-                                        borderColor: 'warning.main'
-                                    }}
-                                />
-                                <CardContent>
-                                    {!session?.user && accessToken ? (
-                                        <Alert severity="info">
-                                            Corrective action listing is available for authenticated users.
-                                        </Alert>
-                                    ) : isLoadingLinkedIncident ? (
-                                        <LinearProgress sx={{ my: 1 }} />
-                                    ) : linkedIncidentError ? (
-                                        <Alert severity="warning">
-                                            Unable to load linked corrective actions right now.
-                                        </Alert>
-                                    ) : linkedCorrectiveActions.length === 0 ? (
-                                        <Alert severity="info">
-                                            No corrective actions linked to this incident yet.
-                                        </Alert>
-                                    ) : (
-                                        <Stack spacing={1.5}>
-                                            {linkedCorrectiveActions.map((action) => {
-                                                const checklistProgress = getChecklistProgress(action.checklist);
-                                                const isOverdue =
-                                                    action.status !== 'closed' &&
-                                                    action.dueDate &&
-                                                    new Date(action.dueDate) < new Date();
+                            <Section
+                                container="card"
+                                title="Linked Corrective Actions"
+                                subtitle="Actions created for this incident"
+                                tone="warning"
+                            >
+                                {!session?.user && accessToken ? (
+                                    <Alert severity="info">
+                                        Corrective action listing is available for authenticated users.
+                                    </Alert>
+                                ) : isLoadingLinkedIncident ? (
+                                    <LinearProgress sx={{ my: 1 }} />
+                                ) : linkedIncidentError ? (
+                                    <Alert severity="warning">
+                                        Unable to load linked corrective actions right now.
+                                    </Alert>
+                                ) : linkedCorrectiveActions.length === 0 ? (
+                                    <Alert severity="info">
+                                        No corrective actions linked to this incident yet.
+                                    </Alert>
+                                ) : (
+                                    <Stack spacing={1.5}>
+                                        {linkedCorrectiveActions.map((action) => {
+                                            const checklistProgress = getChecklistProgress(action.checklist);
+                                            const isOverdue =
+                                                action.status !== 'closed' &&
+                                                action.dueDate &&
+                                                new Date(action.dueDate) < new Date();
 
-                                                return (
-                                                    <Paper key={action.id} variant="outlined" sx={{ p: 1.5 }}>
-                                                        <Stack
-                                                            direction="row"
-                                                            spacing={2}
-                                                            sx={{
-                                                                justifyContent: "space-between",
-                                                                alignItems: "center"
-                                                            }}>
-                                                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                                                                <Stack
-                                                                    direction="row"
-                                                                    spacing={1}
-                                                                    useFlexGap
-                                                                    sx={{
-                                                                        alignItems: "center",
-                                                                        flexWrap: "wrap"
-                                                                    }}>
-                                                                    <Typography variant="subtitle2" sx={{
-                                                                        fontWeight: 600
-                                                                    }}>
-                                                                        {action.title}
-                                                                    </Typography>
-                                                                    <Chip
-                                                                        size="small"
-                                                                        label={action.status === 'closed' ? 'Closed' : 'Open'}
-                                                                        color={action.status === 'closed' ? 'success' : 'warning'}
-                                                                    />
-                                                                    {isOverdue && (
-                                                                        <Chip size="small" label="Overdue" color="error" />
-                                                                    )}
-                                                                </Stack>
-                                                                <Typography variant="caption" sx={{
-                                                                    color: "text.secondary"
+                                            return (
+                                                <Paper key={action.id} variant="outlined" sx={{ p: 1.5 }}>
+                                                    <Stack
+                                                        direction="row"
+                                                        spacing={2}
+                                                        sx={{
+                                                            justifyContent: "space-between",
+                                                            alignItems: "center"
+                                                        }}>
+                                                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                                                            <Stack
+                                                                direction="row"
+                                                                spacing={1}
+                                                                useFlexGap
+                                                                sx={{
+                                                                    alignItems: "center",
+                                                                    flexWrap: "wrap"
                                                                 }}>
-                                                                    Due: {format(new Date(action.dueDate), 'MMM dd, yyyy')} • Checklist: {checklistProgress}%
+                                                                <Typography variant="subtitle2" sx={{
+                                                                    fontWeight: 600
+                                                                }}>
+                                                                    {action.title}
                                                                 </Typography>
-                                                            </Box>
+                                                                <Chip
+                                                                    size="small"
+                                                                    label={action.status === 'closed' ? 'Closed' : 'Open'}
+                                                                    color={action.status === 'closed' ? 'success' : 'warning'}
+                                                                />
+                                                                {isOverdue && (
+                                                                    <Chip size="small" label="Overdue" color="error" />
+                                                                )}
+                                                            </Stack>
+                                                            <Typography variant="caption" sx={{
+                                                                color: "text.secondary"
+                                                            }}>
+                                                                Due: {format(new Date(action.dueDate), 'MMM dd, yyyy')} • Checklist: {checklistProgress}%
+                                                            </Typography>
+                                                        </Box>
 
-                                                            <Button
-                                                                component={Link}
-                                                                href={`/incidents/corrective-actions/${action.id}`}
-                                                                size="small"
-                                                                startIcon={<Visibility />}
-                                                            >
-                                                                View
-                                                            </Button>
-                                                        </Stack>
-                                                    </Paper>
-                                                );
-                                            })}
-                                        </Stack>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                                        <Button
+                                                            component={Link}
+                                                            href={`/incidents/corrective-actions/${action.id}`}
+                                                            size="small"
+                                                            startIcon={<Visibility />}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                    </Stack>
+                                                </Paper>
+                                            );
+                                        })}
+                                    </Stack>
+                                )}
+                            </Section>
 
                             {/* Collaboration Panel */}
                             <CollaborationPanel
