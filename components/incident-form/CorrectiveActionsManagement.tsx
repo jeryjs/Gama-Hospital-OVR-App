@@ -198,21 +198,21 @@ export function CorrectiveActionsManagement({
     return (
         <>
             <Section
-            container="card"
-            title="Corrective Actions"
-            subtitle="Create and manage action items"
-            tone="secondary"
-            action={
-                <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => setCreateDialogOpen(true)}
-                    startIcon={<AddIcon />}
-                >
-                    Create Action
-                </Button>
-            }
-        >
+                container="card"
+                title="Corrective Actions"
+                subtitle="Create and manage action items"
+                tone="secondary"
+                action={
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => setCreateDialogOpen(true)}
+                        startIcon={<AddIcon />}
+                    >
+                        Create Action
+                    </Button>
+                }
+            >
                 {actionIds.length === 0 ? (
                     <Alert severity="info">
                         No corrective actions created yet. Click "Create Action" to begin.

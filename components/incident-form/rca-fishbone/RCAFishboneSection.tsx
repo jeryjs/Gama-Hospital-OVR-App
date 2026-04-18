@@ -116,44 +116,44 @@ export function RCAFishboneSection({
                 ) : undefined
             }
         >
-                <Stack spacing={3}>
-                    {disabled && (
-                        <Alert severity="info">
-                            Advanced analysis is in read-only mode.
-                        </Alert>
-                    )}
+            <Stack spacing={3}>
+                {disabled && (
+                    <Alert severity="info">
+                        Advanced analysis is in read-only mode.
+                    </Alert>
+                )}
 
-                    {saveError && (
-                        <Alert severity="error" onClose={() => setSaveError(null)}>
-                            {saveError}
-                        </Alert>
-                    )}
+                {saveError && (
+                    <Alert severity="error" onClose={() => setSaveError(null)}>
+                        {saveError}
+                    </Alert>
+                )}
 
-                    {/* Tab Navigation */}
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-                            <Tab label="• RCA Summary" />
-                            <Tab label="• Fishbone Diagram" />
-                        </Tabs>
-                    </Box>
+                {/* Tab Navigation */}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+                        <Tab label="• RCA Summary" />
+                        <Tab label="• Fishbone Diagram" />
+                    </Tabs>
+                </Box>
 
-                    {/* Tab Content */}
-                    {activeTab === 0 && (
-                        <RCASummaryTab
-                            rca={rca}
-                            onChange={setRca}
-                            disabled={disabled}
-                        />
-                    )}
+                {/* Tab Content */}
+                {activeTab === 0 && (
+                    <RCASummaryTab
+                        rca={rca}
+                        onChange={setRca}
+                        disabled={disabled}
+                    />
+                )}
 
-                    {activeTab === 1 && (
-                        <FishboneDiagram
-                            fishbone={fishbone}
-                            onChange={setFishbone}
-                            disabled={disabled}
-                        />
-                    )}
-                </Stack>
+                {activeTab === 1 && (
+                    <FishboneDiagram
+                        fishbone={fishbone}
+                        onChange={setFishbone}
+                        disabled={disabled}
+                    />
+                )}
+            </Stack>
         </Section>
     );
 }
