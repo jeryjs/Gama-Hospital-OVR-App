@@ -17,7 +17,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { getRiskLevel } from '@/lib/constants';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncident, useInvestigation } from '@/lib/hooks';
-import { ArrowBack, EditOutlined, Save, Visibility } from '@mui/icons-material';
+import { ArrowBack, CloseRounded, EditOutlined, Save, Visibility } from '@mui/icons-material';
 import {
     Alert,
     alpha,
@@ -102,6 +102,7 @@ export default function InvestigationDetailPage() {
     const [causeClassification, setCauseClassification] = useState('');
     const [causeDetails, setCauseDetails] = useState('');
     const [editorSeed, setEditorSeed] = useState(0);
+    const [analysisSeed, setAnalysisSeed] = useState(0);
     const [isEditingFindings, setIsEditingFindings] = useState(false);
     const [isEditingAnalysis, setIsEditingAnalysis] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -114,10 +115,27 @@ export default function InvestigationDetailPage() {
             setCauseClassification(investigation.causeClassification || '');
             setCauseDetails(investigation.causeDetails || '');
             setEditorSeed((seed) => seed + 1);
+            setAnalysisSeed((seed) => seed + 1);
             setIsEditingFindings(false);
             setIsEditingAnalysis(false);
         }
     }, [investigation]);
+
+    const cancelFindingsEditing = () => {
+        if (!investigation) return;
+
+        setFindings(investigation.findings || '');
+        setProblemsIdentified(investigation.problemsIdentified || '');
+        setCauseClassification(investigation.causeClassification || '');
+        setCauseDetails(investigation.causeDetails || '');
+        setEditorSeed((seed) => seed + 1);
+        setIsEditingFindings(false);
+    };
+
+    const cancelAnalysisEditing = () => {
+        setIsEditingAnalysis(false);
+        setAnalysisSeed((seed) => seed + 1);
+    };
 
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isSubmitted = Boolean(investigation?.submittedAt);
@@ -331,10 +349,19 @@ export default function InvestigationDetailPage() {
                                         <SectionEditButton
                                             size="small"
                                             variant={isEditingFindings ? 'outlined' : 'text'}
-                                            startIcon={<EditOutlined fontSize="small" />}
-                                            onClick={() => setIsEditingFindings((editing) => !editing)}
+                                            startIcon={isEditingFindings
+                                                ? <CloseRounded fontSize="small" />
+                                                : <EditOutlined fontSize="small" />}
+                                            onClick={() => {
+                                                if (isEditingFindings) {
+                                                    cancelFindingsEditing();
+                                                    return;
+                                                }
+
+                                                setIsEditingFindings(true);
+                                            }}
                                         >
-                                            {isEditingFindings ? 'Done' : 'Edit'}
+                                            {isEditingFindings ? 'Cancel' : 'Edit'}
                                         </SectionEditButton>
                                     ) : undefined}
                                 />
@@ -465,8 +492,17 @@ export default function InvestigationDetailPage() {
                                             <SectionEditButton
                                                 size="small"
                                                 variant={isEditingAnalysis ? 'outlined' : 'text'}
-                                                startIcon={<EditOutlined fontSize="small" />}
-                                                onClick={() => setIsEditingAnalysis((editing) => !editing)}
+                                                startIcon={isEditingAnalysis
+                                                    ? <CloseRounded fontSize="small" />
+                                                    : <EditOutlined fontSize="small" />}
+                                                onClick={() => {
+                                                    if (isEditingAnalysis) {
+                                                        cancelAnalysisEditing();
+                                                        return;
+                                                    }
+
+                                                    setIsEditingAnalysis(true);
+                                                }}
                                                 sx={{
                                                     position: 'absolute',
                                                     top: 12,
@@ -474,10 +510,11 @@ export default function InvestigationDetailPage() {
                                                     zIndex: 2,
                                                 }}
                                             >
-                                                {isEditingAnalysis ? 'Done' : 'Edit'}
+                                                {isEditingAnalysis ? 'Cancel' : 'Edit'}
                                             </SectionEditButton>
                                         )}
                                         <RCAFishboneSection
+                                            key={`analysis-editor-${analysisSeed}`}
                                             investigationId={investigation.id}
                                             initialRCA={investigation.rcaAnalysis}
                                             initialFishbone={investigation.fishboneAnalysis}
