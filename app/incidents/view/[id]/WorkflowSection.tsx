@@ -92,7 +92,7 @@ export function WorkflowSection({
 
     /**
      * STATUS: investigating
-     * Investigation is active; QI can monitor access/assignments
+     * Investigation is active; QI can run investigation and corrective actions in parallel
      */
     if (incident.status === 'investigating') {
         return (
@@ -114,6 +114,17 @@ export function WorkflowSection({
                         onUpdate();
                     }}
                 />
+
+                {incident.investigation && (
+                    <CorrectiveActionsManagement
+                        incidentId={incident.id}
+                        actionIds={actionIds}
+                        onActionCreated={(id) => {
+                            setActionIds([...actionIds, id]);
+                            onUpdate();
+                        }}
+                    />
+                )}
             </Box>
         );
     }

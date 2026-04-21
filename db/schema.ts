@@ -44,8 +44,8 @@ export const ovrStatusEnum = pgEnum('ovr_status', [
   'draft',                    // Step 0: Being filled by reporter
   'submitted',                // Step 1: Submitted, waiting for QI review
   'qi_review',                // Step 2: QI reviews and approves/rejects
-  'investigating',            // Step 3: Investigation phase - QI assigns investigators and collects findings
-  'qi_final_actions',         // Step 4: QI creates action items and tracks completion
+  'investigating',            // Step 3: Investigation phase - QI assigns investigators, collects findings, and may start corrective actions
+  'qi_final_actions',         // Step 4: Investigation submitted; finalize/track corrective actions before closure
   'closed'                    // Step 5: Case closed with feedback
 ]);
 
