@@ -16,6 +16,7 @@ import {
 import { useEffect, useState } from 'react';
 import type { OVRReportWithRelations } from '../../app/incidents/_shared/types';
 import { Section, SectionEditControls } from '@/components/shared';
+import { useErrorDialog } from '@/components/ErrorDialog';
 
 interface Props {
     incident: OVRReportWithRelations;
@@ -27,10 +28,7 @@ interface Props {
  */
 export function SupervisorSection({ incident, onUpdate }: Props) {
     const canEditSection = incident.status !== 'closed' && Boolean(onUpdate);
-
-    if (!incident.supervisorNotified && !incident.supervisorId && !incident.supervisorAction && !canEditSection) {
-        return null;
-    }
+    const shouldHide = !incident.supervisorNotified && !incident.supervisorId && !incident.supervisorAction && !canEditSection;
 
     const supervisorName = incident.supervisor
         ? `${incident.supervisor.firstName || ''} ${incident.supervisor.lastName || ''}`.trim()
@@ -40,6 +38,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
     const [isSaving, setIsSaving] = useState(false);
     const [supervisorNotified, setSupervisorNotified] = useState(Boolean(incident.supervisorNotified));
     const [supervisorAction, setSupervisorAction] = useState(incident.supervisorAction || '');
+    const { showError, ErrorDialogComponent } = useErrorDialog();
     const hasChanges =
         supervisorNotified !== Boolean(incident.supervisorNotified) ||
         supervisorAction.trim() !== (incident.supervisorAction || '').trim();
@@ -50,6 +49,10 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
         setIsEditing(false);
         setIsSaving(false);
     }, [incident]);
+
+    if (shouldHide) {
+        return null;
+    }
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -73,7 +76,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
             setIsEditing(false);
             onUpdate?.();
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to save supervisor section');
+            await showError(error);
         } finally {
             setIsSaving(false);
         }
@@ -87,6 +90,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
     };
 
     return (
+        <>
         <Section
             title="Supervisor Action"
             icon={<SupervisorAccount />}
@@ -204,5 +208,7 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
                 </>
             )}
         </Section>
+        {ErrorDialogComponent}
+        </>
     );
 }

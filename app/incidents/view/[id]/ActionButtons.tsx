@@ -1,5 +1,6 @@
 'use client';
 
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Delete, Edit } from '@mui/icons-material';
 import { Box, Button, Stack } from '@mui/material';
@@ -16,6 +17,7 @@ interface Props {
 export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { showError, ErrorDialogComponent } = useErrorDialog();
   const roles = session?.user.roles || [];
 
   const isOwner = session?.user?.id === incident.reporterId.toString();
@@ -48,11 +50,11 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
       if (res.ok) {
         router.replace('/incidents');
       } else {
-        alert('Failed to delete report');
+        await showError(res);
       }
     } catch (error) {
       console.error('Error deleting report:', error);
-      alert('An error occurred');
+      await showError(error);
     }
   };
 
@@ -61,6 +63,7 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
   }
 
   return (
+    <>
     <Box sx={{ position: 'sticky', bottom: 16, zIndex: 10 }}>
       <Stack
         direction="row"
@@ -84,5 +87,7 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
         )}
       </Stack>
     </Box>
+    {ErrorDialogComponent}
+    </>
   );
 }

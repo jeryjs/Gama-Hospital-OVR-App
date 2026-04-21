@@ -18,6 +18,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { Section, SectionEditControls } from '@/components/shared';
+import { useErrorDialog } from '@/components/ErrorDialog';
 
 interface Props {
     incident: OVRReport;
@@ -41,6 +42,7 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 
 export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
     const canEditSection = incident.status !== 'closed' && Boolean(onUpdate);
+    const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -75,19 +77,16 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
         incident.treatmentProvided
     );
 
+    const injuryOutcomeLabel = INJURY_OUTCOMES.find((i) => i.value === incident.injuryOutcome)?.label;
+
+    const treatmentLabels =
+        incident.treatmentTypes?.map(
+            (type) => TREATMENT_TYPES.find((t) => t.value === type)?.label || type
+        ) || [];
+
     if (!hasMedicalData && !canEditSection) {
         return null;
     }
-
-    const injuryOutcomeLabel = INJURY_OUTCOMES.find((i) => i.value === incident.injuryOutcome)?.label;
-
-    const treatmentLabels = useMemo(
-        () =>
-            incident.treatmentTypes?.map(
-                (type) => TREATMENT_TYPES.find((t) => t.value === type)?.label || type
-            ) || [],
-        [incident.treatmentTypes]
-    );
 
     const includeHospitalizedDetails =
         treatmentTypes.includes('hospitalized') || treatmentTypes.includes('transferred');
@@ -135,7 +134,7 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
             setIsEditing(false);
             onUpdate?.();
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to save medical assessment section');
+            await showError(error);
         } finally {
             setIsSaving(false);
         }
@@ -154,6 +153,7 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
     };
 
     return (
+        <>
         <Section
             title="Physician Follow-up"
             icon={<LocalHospital />}
@@ -403,5 +403,7 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
                 </>
             )}
         </Section>
+        {ErrorDialogComponent}
+        </>
     );
 }

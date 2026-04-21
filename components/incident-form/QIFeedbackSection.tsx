@@ -22,6 +22,7 @@ import { useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Section } from '@/components/shared';
+import { useErrorDialog } from '@/components/ErrorDialog';
 
 interface Props {
   incident: OVRReport;
@@ -39,6 +40,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const [severityLevel, setSeverityLevel] = useState(incident.severityLevel || '');
 
   const { performAction, submitting } = useIncidentActions(incident.id, onUpdate);
+  const { showError, ErrorDialogComponent } = useErrorDialog();
 
   const canSubmit = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []) && incident.status === 'qi_final_actions';
   const isClosed = incident.status === 'closed';
@@ -46,7 +48,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
   const handleSubmit = async () => {
     const feedbackLength = getCharacterCount(feedback);
     if (feedbackLength < 10 || !severityLevel) {
-      alert('Please provide feedback and select severity level');
+      await showError(new Error('Please provide feedback and select severity level'));
       return;
     }
 
@@ -61,11 +63,12 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
     });
 
     if (!result.success) {
-      alert(result.error || 'Failed to submit feedback');
+      await showError(new Error(result.error || 'Failed to submit feedback'));
     }
   };
 
   return (
+    <>
     <Section title="Quality Improvement Department Feedback" icon={<Assessment />}>
       {isClosed && incident.closedAt && (
         <Alert severity="success" icon={<CheckCircle />} sx={{ mt: 2 }}>
@@ -195,5 +198,7 @@ export function QIFeedbackSection({ incident, onUpdate }: Props) {
         )}
       </Box>
     </Section>
+    {ErrorDialogComponent}
+    </>
   );
 }

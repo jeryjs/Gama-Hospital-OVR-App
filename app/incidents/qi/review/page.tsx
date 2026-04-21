@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useIncidents } from '@/lib/hooks';
@@ -58,6 +59,7 @@ const CATEGORY_OPTIONS = [
 export default function QIReviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { showError, ErrorDialogComponent } = useErrorDialog();
   const [filters, setFilters] = useState<IncidentFilters>({
     search: '',
     status: '', // Always 'submitted' for this page
@@ -102,7 +104,7 @@ export default function QIReviewPage() {
   const handleSubmitReview = async () => {
     if (!selectedIncident || !reviewDecision) return;
     if (reviewDecision === 'reject' && rejectionReason.trim().length < 20) {
-      alert('Rejection reason must be at least 20 characters');
+      await showError(new Error('Rejection reason must be at least 20 characters'));
       return;
     }
 
@@ -125,7 +127,7 @@ export default function QIReviewPage() {
       mutate();
       handleCloseReviewDialog();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to submit review');
+      await showError(error);
     } finally {
       setSubmitting(false);
     }
@@ -328,6 +330,7 @@ export default function QIReviewPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        {ErrorDialogComponent}
       </Box>
     </AppLayout>
   );

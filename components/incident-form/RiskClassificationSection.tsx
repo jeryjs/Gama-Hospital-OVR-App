@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { theme } from '@/lib/theme';
 import { Section, SectionEditControls } from '@/components/shared';
+import { useErrorDialog } from '@/components/ErrorDialog';
 
 interface Props {
     incident: OVRReport;
@@ -21,6 +22,7 @@ interface Props {
 
 export function RiskClassificationSection({ incident, onUpdate }: Props) {
     const canEditSection = incident.status !== 'closed' && Boolean(onUpdate);
+    const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +53,7 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
 
     const handleSave = async () => {
         if (!riskImpact || !riskLikelihood) {
-            alert('Please select both impact and likelihood before saving.');
+            await showError(new Error('Please select both impact and likelihood before saving.'));
             return;
         }
 
@@ -77,13 +79,14 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
             setIsEditing(false);
             onUpdate?.();
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to save risk classification section');
+            await showError(error);
         } finally {
             setIsSaving(false);
         }
     };
 
     return (
+        <>
         <Section
             title="Risk Classification & Rating"
             icon={<Assessment />}
@@ -265,5 +268,7 @@ export function RiskClassificationSection({ incident, onUpdate }: Props) {
                 </Typography>
             )}
         </Section>
+        {ErrorDialogComponent}
+        </>
     );
 }
