@@ -34,6 +34,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
 import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
@@ -79,6 +80,7 @@ export function SharedAccessManager({
     const [inviteEmail, setInviteEmail] = useState('');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const { createInvitation, revokeAccess } = useSharedAccess(resourceType, resourceId);
 
@@ -117,7 +119,7 @@ export function SharedAccessManager({
             setTimeout(() => setCopiedUrl(null), 3000);
         } catch (error) {
             console.error('Failed to create invitation:', error);
-            alert(error instanceof Error ? error.message : 'Failed to create invitation');
+            await showError(error);
         } finally {
             setSubmitting(false);
         }
@@ -133,7 +135,7 @@ export function SharedAccessManager({
             }
         } catch (error) {
             console.error('Failed to revoke access:', error);
-            alert('Failed to revoke access');
+            await showError(error);
         }
     };
 
@@ -321,6 +323,7 @@ export function SharedAccessManager({
                     </Button>
                 </DialogActions>
             </Dialog>
+            {ErrorDialogComponent}
         </>
     );
 }

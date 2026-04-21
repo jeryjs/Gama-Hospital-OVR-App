@@ -13,6 +13,7 @@
 import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
 import { RCAFishboneSection } from '@/components/incident-form/rca-fishbone';
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { getRiskLevel } from '@/lib/constants';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
@@ -63,6 +64,7 @@ export default function InvestigationDetailPage() {
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { data: session } = useSession();
     const router = useRouter();
+    const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const investigationId = Number(params.id);
     // Read token from URL on client without useSearchParams
@@ -179,7 +181,7 @@ export default function InvestigationDetailPage() {
                 setIsEditingFindings(false);
             }
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to save');
+            await showError(error);
         }
     };
 
@@ -187,7 +189,7 @@ export default function InvestigationDetailPage() {
         if (!canEditFindingsSection || isSubmitted) return;
 
         if (!canSubmitInvestigation) {
-            alert('To submit: findings must be at least 100 characters, problems at least 50, cause details at least 50, and cause classification is required.');
+            await showError(new Error('To submit: findings must be at least 100 characters, problems at least 50, cause details at least 50, and cause classification is required.'));
             return;
         }
 
@@ -203,12 +205,11 @@ export default function InvestigationDetailPage() {
                 causeDetails,
             });
 
-            alert('Investigation submitted successfully!');
             if (isQIUser) {
                 router.push('/incidents/investigations');
             }
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to submit investigation');
+            await showError(error);
         } finally {
             setSubmitting(false);
         }
@@ -717,6 +718,7 @@ export default function InvestigationDetailPage() {
                     </Grid>
                 </Grid>
             </Box>
+            {ErrorDialogComponent}
         </AppLayout>
     );
 }

@@ -12,6 +12,7 @@
 
 import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, Section, SharedAccessManager } from '@/components/shared';
+import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
@@ -60,6 +61,7 @@ export default function CorrectiveActionDetailPage() {
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { data: session } = useSession();
     const router = useRouter();
+    const { showError, ErrorDialogComponent } = useErrorDialog();
 
     const actionId = Number(params.id);
     // Read token from URL on client without using useSearchParams (avoids prerender bailouts)
@@ -158,7 +160,7 @@ export default function CorrectiveActionDetailPage() {
             });
             setChecklistDirty(false);
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to update checklist');
+            await showError(error);
         } finally {
             setSavingChecklist(false);
         }
@@ -176,7 +178,7 @@ export default function CorrectiveActionDetailPage() {
             setChecklistDirty(false);
             setIsEditDialogOpen(false);
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to save');
+            await showError(error);
         }
     };
 
@@ -204,12 +206,12 @@ export default function CorrectiveActionDetailPage() {
         if (!canEdit || !isQIUser) return;
 
         if (!checklistComplete) {
-            alert('All checklist items must be completed before closing');
+            await showError(new Error('All checklist items must be completed before closing'));
             return;
         }
 
         if (!hasCompletionInput) {
-            alert('Please provide action details or at least one attachment before closing.');
+            await showError(new Error('Please provide action details or at least one attachment before closing.'));
             return;
         }
 
@@ -225,10 +227,9 @@ export default function CorrectiveActionDetailPage() {
             });
 
             setIsEditDialogOpen(false);
-            alert('Action closed successfully!');
             router.push('/incidents/corrective-actions');
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to close action');
+            await showError(error);
         } finally {
             setSubmitting(false);
         }
@@ -740,6 +741,7 @@ export default function CorrectiveActionDetailPage() {
                     )}
                 </DialogActions>
             </Dialog>
+            {ErrorDialogComponent}
         </AppLayout>
     );
 }
