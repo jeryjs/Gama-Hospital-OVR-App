@@ -278,18 +278,28 @@ export function deserializeFromMarkdown(markdown: string | undefined | null): Ed
             }
 
             case 'list':
-                return (node.children || []).map((item: any) => {
+                return (node.children || []).flatMap((item: any, index: number, items: any[]) => {
                     const firstParagraph = (item.children || []).find((c: any) => c.type === 'paragraph');
                     const listChildren = firstParagraph
                         ? inlineFromMd(firstParagraph.children || [])
                         : [{ text: '' }];
 
-                    return {
+                    const output: any[] = [{
                         type: 'p',
                         listStyleType: node.ordered ? 'decimal' : 'disc',
                         indent: 1,
                         children: listChildren.length ? listChildren : [{ text: '' }],
-                    };
+                    }];
+
+                    const nextItem = items[index + 1];
+                    const currentEndLine = item?.position?.end?.line;
+                    const nextStartLine = nextItem?.position?.start?.line;
+
+                    if (typeof currentEndLine === 'number' && typeof nextStartLine === 'number' && nextStartLine - currentEndLine > 1) {
+                        output.push({ type: 'p', children: [{ text: '' }] });
+                    }
+
+                    return output;
                 });
 
             case 'thematicBreak':
@@ -300,7 +310,15 @@ export function deserializeFromMarkdown(markdown: string | undefined | null): Ed
         }
     };
 
-    const plateNodes = (ast.children || []).flatMap((node: any) => blockFromMd(node));
+    const plateNodes = (ast.children || []).flatMap((node: any, index: number, nodes: any[]) => {
+        const blockNodes = blockFromMd(node);
+
+        if (node?.type === 'list' && index < nodes.length - 1) {
+            return [...blockNodes, { type: 'p', children: [{ text: '' }] }];
+        }
+
+        return blockNodes;
+    });
 
     return plateNodes.length
         ? (plateNodes as EditorValue)

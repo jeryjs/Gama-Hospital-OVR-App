@@ -7,29 +7,29 @@ export const WORD_LINE_HEIGHT = 1.5;
 export const WORD_HEADING_SX = {
     h1: {
         fontFamily: WORD_FONT_FAMILY,
-        fontSize: '16pt',
+        fontSize: '20pt',
         fontWeight: 700,
-        mt: 1.75,
-        mb: 0.75,
-        lineHeight: 1.3,
+        mt: 1.9,
+        mb: 0.8,
+        lineHeight: 1.25,
         color: 'text.primary',
     },
     h2: {
         fontFamily: WORD_FONT_FAMILY,
-        fontSize: '13pt',
+        fontSize: '16pt',
         fontWeight: 700,
-        mt: 1.5,
-        mb: 0.6,
-        lineHeight: 1.35,
+        mt: 1.6,
+        mb: 0.7,
+        lineHeight: 1.3,
         color: 'text.primary',
     },
     h3: {
         fontFamily: WORD_FONT_FAMILY,
-        fontSize: '12pt',
+        fontSize: '13.5pt',
         fontWeight: 700,
-        mt: 1.25,
-        mb: 0.5,
-        lineHeight: 1.35,
+        mt: 1.35,
+        mb: 0.55,
+        lineHeight: 1.3,
         color: 'text.primary',
     },
 } as const;
@@ -79,7 +79,7 @@ export const WORD_LIST_ITEM_CONTENT_SX = {
     color: 'text.primary',
 } as const;
 
-export function getWordListParagraphSx(listStyleType: string, indent = 1) {
+export function getWordListParagraphSx(listStyleType: string, indent = 1, restart = false) {
     return {
         ...WORD_PARAGRAPH_SX,
         display: 'list-item',
@@ -87,6 +87,7 @@ export function getWordListParagraphSx(listStyleType: string, indent = 1) {
         listStylePosition: 'outside',
         ml: `${Math.max(indent - 1, 0) * 1.5}em`,
         pl: 0,
+        counterReset: restart && listStyleType === 'decimal' ? 'list-item' : undefined,
         '&::marker': {
             color: 'text.primary',
             fontWeight: listStyleType === 'decimal' ? 600 : 400,

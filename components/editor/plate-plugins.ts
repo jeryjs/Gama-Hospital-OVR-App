@@ -9,6 +9,7 @@ import {
     ItalicPlugin,
     UnderlinePlugin,
     BlockquotePlugin,
+    HeadingPlugin,
 } from '@platejs/basic-nodes/react';
 import { ListPlugin } from '@platejs/list/react';
 import { toggleList } from '@platejs/list';
@@ -85,6 +86,7 @@ export const editorPlugins = [
     ItalicPlugin,
     UnderlinePlugin,
     BlockquotePlugin,
+    HeadingPlugin,
 
     // Lists
     ListPlugin,

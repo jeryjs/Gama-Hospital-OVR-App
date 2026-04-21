@@ -50,7 +50,7 @@ function renderText(node: TText, index: number): React.ReactNode {
 }
 
 // Render a node recursively
-function renderNode(node: unknown, index: number): React.ReactNode {
+function renderNode(node: unknown, index: number, previousNode?: unknown): React.ReactNode {
     if (isTextNode(node)) {
         return renderText(node, index);
     }
@@ -211,13 +211,18 @@ function renderNode(node: unknown, index: number): React.ReactNode {
         default:
             if (node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string') {
                 const listNode = node as TElement & { listStyleType: string; indent?: number };
+                const previousListNode = previousNode as TElement & { listStyleType?: string; indent?: number } | undefined;
+                const isListRestart = !previousListNode ||
+                    previousListNode.type !== 'p' ||
+                    previousListNode.listStyleType !== listNode.listStyleType ||
+                    (previousListNode.indent ?? 1) !== (listNode.indent ?? 1);
 
                 return (
                     <Typography
                         key={index}
                         variant="body1"
                         component="p"
-                        sx={getWordListParagraphSx(listNode.listStyleType, listNode.indent ?? 1)}
+                        sx={getWordListParagraphSx(listNode.listStyleType, listNode.indent ?? 1, isListRestart)}
                     >
                         {children}
                     </Typography>
@@ -292,7 +297,7 @@ export function RichTextPreview({
                 },
             }}
         >
-            {nodes.map((node, index) => renderNode(node, index))}
+            {nodes.map((node, index) => renderNode(node, index, nodes[index - 1]))}
         </Box>
     );
 }

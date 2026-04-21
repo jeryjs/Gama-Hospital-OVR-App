@@ -21,6 +21,7 @@ import {
 import type { EditorValue } from './plate-types';
 import { deserializeFromMarkdown, serializeToMarkdown } from './utils';
 import { WORD_BASE_FONT_SIZE, WORD_FONT_FAMILY, WORD_LINE_HEIGHT } from './word-styles';
+import { RichTextPreview } from './RichTextPreview';
 
 export interface RichTextEditorProps {
     value?: string;
@@ -119,7 +120,7 @@ export function RichTextEditor({
 
     const isInPreviewMode = !isEditing && !readOnly && !disabled;
     const showToolbar = isEditing && !readOnly && !disabled;
-
+    // return <RichTextPreview value={value} emptyText={placeholder} />;
     return (
         <Box
             ref={rootRef}
