@@ -54,7 +54,7 @@ function IncidentDetails() {
 
         {/* Show timeline only after submission */}
         {incident.status !== 'draft' && (
-          <StatusTimeline status={incident.status} submittedAt={incident.submittedAt} />
+          <StatusTimeline status={incident.status} submittedAt={incident.submittedAt} qiRejectionReason={incident.qiRejectionReason} />
         )}
 
         {/* ========== STATIC INFORMATION SECTIONS ========== */}

@@ -439,6 +439,11 @@ export const ovrReportsRelations = relations(ovrReports, ({ one, many }) => ({
     references: [users.id],
     relationName: 'qi_assigner',
   }),
+  qiReviewedByPerson: one(users, {
+    fields: [ovrReports.qiReviewedBy],
+    references: [users.id],
+    relationName: 'qi_reviewed_by',
+  }),
   location: one(locations, {
     fields: [ovrReports.locationId],
     references: [locations.id],

@@ -182,6 +182,13 @@ export const incidentRelations = {
       lastName: true,
     },
   },
+  qiReviewedByPerson: {
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
   involvedPerson: {
     columns: {
       id: true,
@@ -242,6 +249,7 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   location: locationMinimalSchema.optional(),
   supervisor: userMinimalSchema.optional(),
   involvedPerson: userPublicSchema.optional(),
+  qiReviewedByPerson: userMinimalSchema.optional(),
   investigation: investigationWithUsersSchema.nullable().optional(),
   correctiveActions: z.array(correctiveActionWithUsersSchema).optional(),
   sharedAccess: z.array(z.object({

@@ -16,6 +16,7 @@ import { InvestigationManagement } from '@/components/incident-form/Investigatio
 import { InvestigationSummary } from '@/components/incident-form/InvestigationSummary';
 import { QIFeedbackSection } from '@/components/incident-form/QIFeedbackSection';
 import { QIReviewSection } from '@/components/incident-form/QIReviewSection';
+import { RejectionReasonSection } from '@/components/incident-form/RejectionReasonSection';
 import type { OVRReportWithRelations } from '@/lib/api/schemas';
 import { useState } from 'react';
 
@@ -53,6 +54,23 @@ export function WorkflowSection({
         actionIds.length > 0 &&
         incident.correctiveActions?.every((action) => action.status === 'closed')
     );
+
+    /**
+     * STATUS: REJECTED
+     * Show rejection reason and prevent further workflow
+     */
+    if (incident.qiRejectionReason) {
+        return (
+            <Box sx={{ my: 3 }}>
+                <Divider sx={{ my: 3 }} />
+                <RejectionReasonSection
+                    rejectionReason={incident.qiRejectionReason}
+                    qiReviewedByPerson={incident.qiReviewedByPerson}
+                    qiReviewedAt={incident.qiReviewedAt}
+                />
+            </Box>
+        );
+    }
 
     /**
      * STATUS: SUBMITTED

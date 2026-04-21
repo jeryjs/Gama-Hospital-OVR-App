@@ -5,18 +5,26 @@ import { format } from 'date-fns';
 interface Props {
   status: string;
   submittedAt: Date | null;
+  qiRejectionReason?: string | null;
 }
 
 /**
  * New QI-led Workflow Timeline
  * - Submitted → QI Review → Investigation → Final Actions → Closed
+ * - Rejected: Submitted → QI Review → Rejected
  */
-const steps = [
+const normalSteps = [
   { key: 'submitted', label: 'Submitted', description: { current: 'Waiting for QI review', final: 'Submitted to QI department' } },
   { key: 'qi_review', label: 'QI Review', description: { current: 'QI reviewing incident', final: 'Reviewed by QI' } },
   { key: 'investigating', label: 'Investigation', description: { current: 'Investigators collecting findings', final: 'Investigation completed' } },
   { key: 'qi_final_actions', label: 'Corrective Actions', description: { current: 'Implementing action items', final: 'All actions completed' } },
   { key: 'closed', label: 'Closed', description: { current: 'Closing case and archiving', final: 'Case closed and archived' } },
+];
+
+const rejectedSteps = [
+  { key: 'submitted', label: 'Submitted', description: { current: 'Waiting for QI review', final: 'Submitted to QI department' } },
+  { key: 'qi_review', label: 'QI Review', description: { current: 'QI reviewing incident', final: 'Reviewed by QI' } },
+  { key: 'rejected', label: 'Rejected', description: { current: 'Rejected by QI', final: 'Rejected by QI' } },
 ];
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
@@ -79,8 +87,10 @@ function ColorlibStepIcon(props: {
   );
 }
 
-export function StatusTimeline({ status, submittedAt }: Props) {
-  const activeStep = steps.findIndex(step => step.key === status) + 1;
+export function StatusTimeline({ status, submittedAt, qiRejectionReason }: Props) {
+  const isRejected = !!qiRejectionReason;
+  const steps = isRejected ? rejectedSteps : normalSteps;
+  const activeStep = isRejected ? 2 : steps.findIndex(step => step.key === status) + 1;
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
