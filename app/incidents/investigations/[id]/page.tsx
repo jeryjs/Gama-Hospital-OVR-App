@@ -31,6 +31,7 @@ import {
     Paper,
     Stack,
     TextField,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -363,7 +364,7 @@ export default function InvestigationDetailPage() {
                                             minHeight={150}
                                             readOnly={!canEditFindingsSection}
                                         />
-                                        {canEditFindingsSection && (
+                                        {(canEditFindingsSection && findingsCount < 100) && (
                                             <Typography
                                                 variant="caption"
                                                 sx={{
@@ -389,7 +390,7 @@ export default function InvestigationDetailPage() {
                                             minHeight={150}
                                             readOnly={!canEditFindingsSection}
                                         />
-                                        {canEditFindingsSection && (
+                                        {(canEditFindingsSection && problemsCount < 50) && (
                                             <Typography
                                                 variant="caption"
                                                 sx={{
@@ -415,7 +416,7 @@ export default function InvestigationDetailPage() {
                                             minHeight={120}
                                             readOnly={!canEditFindingsSection}
                                         />
-                                        {canEditFindingsSection && (
+                                        {(canEditFindingsSection && causeDetailsCount < 50) && (
                                             <Typography
                                                 variant="caption"
                                                 sx={{
@@ -453,13 +454,19 @@ export default function InvestigationDetailPage() {
                                             >
                                                 Save Changes
                                             </Button>
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleSubmit}
-                                                disabled={!canSubmitInvestigation}
+                                            <Tooltip
+                                                title={canSubmitInvestigation
+                                                    ? "Submitting will close and finalize the investigation.\nOnly do this when you are completely finished and ready to share findings with QI Department."
+                                                    : "Cannot submit yet. Ensure all required fields are complete and meet character minimums."}
                                             >
-                                                {submitting ? 'Submitting...' : 'Submit Investigation'}
-                                            </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={handleSubmit}
+                                                    disabled={!canSubmitInvestigation}
+                                                >
+                                                    {submitting ? 'Submitting...' : 'Submit Investigation'}
+                                                </Button>
+                                            </Tooltip>
                                         </Stack>
                                     )}
                                 </Stack>
