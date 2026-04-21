@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             email: session.user.email,
         });
 
-        if (incident.status !== 'qi_final_actions') {
+        if (!['qi_final_actions', 'investigating'].includes(incident.status)) {
             throw new AuthorizationError(
                 `Cannot create corrective action for incident in status: ${incident.status}`
             );
