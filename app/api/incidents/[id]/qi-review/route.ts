@@ -14,6 +14,7 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
+    validateCsrfAndIdempotency,
     validateBody,
 } from '@/lib/api/middleware';
 import { qiReviewSchema } from '@/lib/api/schemas';
@@ -27,7 +28,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
+        const session = await validateCsrfAndIdempotency(request);
         const { id } = await params;
 
         // Check permissions - only QI can review

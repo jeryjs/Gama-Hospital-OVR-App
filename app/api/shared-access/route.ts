@@ -14,6 +14,7 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
+    validateCsrfAndIdempotency,
     validateBody,
 } from '@/lib/api/middleware';
 import {
@@ -31,7 +32,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
     try {
-        const session = await requireAuth(request);
+        const session = await validateCsrfAndIdempotency(request);
 
         if (!ACCESS_CONTROL.api.sharedAccess.canCreate(session.user.roles)) {
             throw new AuthorizationError('Only QI staff can manage shared access');

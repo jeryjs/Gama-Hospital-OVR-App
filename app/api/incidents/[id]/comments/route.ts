@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
-import { handleApiError, requireAuth, validateBody } from '@/lib/api/middleware';
+import { handleApiError, requireAuth, validateCsrfAndIdempotency, validateBody } from '@/lib/api/middleware';
 import { createCommentSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
@@ -47,7 +47,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth(req);
+    const session = await validateCsrfAndIdempotency(req);
     const { id } = await params;
 
     await getIncidentSecure(id, {

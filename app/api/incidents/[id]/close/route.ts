@@ -13,6 +13,7 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
+    validateCsrfAndIdempotency,
     validateBody,
 } from '@/lib/api/middleware';
 import { closeIncidentSchema } from '@/lib/api/schemas';
@@ -26,7 +27,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await requireAuth(request);
+        const session = await validateCsrfAndIdempotency(request);
         const { id } = await params;
 
         // Get incident with security check

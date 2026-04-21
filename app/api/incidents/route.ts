@@ -5,6 +5,7 @@ import {
   handleApiError,
   parseFields,
   requireAuth,
+  validateCsrfAndIdempotency,
   validateBody,
 } from '@/lib/api/middleware';
 import {
@@ -160,7 +161,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth(request);
+    const session = await validateCsrfAndIdempotency(request);
 
     // Validate request body
     const body = await validateBody(request, createIncidentSchema);

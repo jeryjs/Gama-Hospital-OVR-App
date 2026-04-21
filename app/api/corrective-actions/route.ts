@@ -14,6 +14,7 @@ import {
     AuthorizationError,
     handleApiError,
     requireAuth,
+    validateCsrfAndIdempotency,
     validateBody,
 } from '@/lib/api/middleware';
 import {
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        const session = await requireAuth(request);
+        const session = await validateCsrfAndIdempotency(request);
 
         // Check permissions - only QI can create actions
         if (!ACCESS_CONTROL.api.correctiveActions.canCreate(session.user.roles)) {
