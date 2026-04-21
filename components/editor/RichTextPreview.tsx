@@ -8,11 +8,7 @@ import {
     WORD_FONT_FAMILY,
     WORD_HEADING_SX,
     WORD_LINE_HEIGHT,
-    WORD_LIST_BASE_SX,
-    WORD_LIST_ITEM_CONTENT_SX,
-    WORD_LIST_ITEM_SX,
     WORD_PARAGRAPH_SX,
-    getWordListParagraphSx,
 } from './word-styles';
 
 interface RichTextPreviewProps {
@@ -28,6 +24,16 @@ function isTextNode(node: unknown): node is TText {
 // Type guard for element nodes
 function isElementNode(node: unknown): node is TElement {
     return typeof node === 'object' && node !== null && 'type' in node && 'children' in node;
+}
+
+function isFlatListNode(node: unknown): node is TElement & { listStyleType: string; indent?: number } {
+    return isElementNode(node) && node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string';
+}
+
+function isBlankParagraph(node: unknown): boolean {
+    return isElementNode(node)
+        && node.type === 'p'
+        && (!node.children || node.children.length === 0 || node.children.every((child) => isTextNode(child) && (!child.text || child.text === '')));
 }
 
 // Render text with marks
@@ -50,7 +56,7 @@ function renderText(node: TText, index: number): React.ReactNode {
 }
 
 // Render a node recursively
-function renderNode(node: unknown, index: number, previousNode?: unknown): React.ReactNode {
+function renderNode(node: unknown, index: number): React.ReactNode {
     if (isTextNode(node)) {
         return renderText(node, index);
     }
@@ -130,31 +136,21 @@ function renderNode(node: unknown, index: number, previousNode?: unknown): React
             );
 
         case 'ul':
-            return (
-                <Box
-                    key={index}
-                    component="ul"
-                    sx={{
-                        ...WORD_LIST_BASE_SX,
-                        listStyleType: 'disc',
-                        '& > *::marker': {
-                            color: 'text.primary',
-                        },
-                    }}
-                >
-                    {children}
-                </Box>
-            );
-
         case 'ol':
             return (
                 <Box
                     key={index}
-                    component="ol"
+                    component={node.type}
                     sx={{
-                        ...WORD_LIST_BASE_SX,
-                        listStyleType: 'decimal',
-                        '& > *::marker': {
+                        fontFamily: WORD_FONT_FAMILY,
+                        fontSize: WORD_BASE_FONT_SIZE,
+                        lineHeight: WORD_LINE_HEIGHT,
+                        my: 0.75,
+                        pl: 4,
+                        listStyleType: node.type === 'ol' ? 'decimal' : 'disc',
+                        '& > li': {
+                            py: 0.25,
+                            lineHeight: WORD_LINE_HEIGHT,
                             color: 'text.primary',
                         },
                     }}
@@ -165,22 +161,14 @@ function renderNode(node: unknown, index: number, previousNode?: unknown): React
 
         case 'li':
             return (
-                <Box
-                    key={index}
-                    component="li"
-                    sx={WORD_LIST_ITEM_SX}
-                >
+                <Box key={index} component="li" sx={{ py: 0.25, lineHeight: WORD_LINE_HEIGHT, color: 'text.primary' }}>
                     {children}
                 </Box>
             );
 
         case 'lic':
             return (
-                <Box
-                    key={index}
-                    component="span"
-                    sx={WORD_LIST_ITEM_CONTENT_SX}
-                >
+                <Box key={index} component="span" sx={{ display: 'inline', lineHeight: WORD_LINE_HEIGHT, color: 'text.primary' }}>
                     {children}
                 </Box>
             );
@@ -209,26 +197,6 @@ function renderNode(node: unknown, index: number, previousNode?: unknown): React
 
         case 'p':
         default:
-            if (node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string') {
-                const listNode = node as TElement & { listStyleType: string; indent?: number };
-                const previousListNode = previousNode as TElement & { listStyleType?: string; indent?: number } | undefined;
-                const isListRestart = !previousListNode ||
-                    previousListNode.type !== 'p' ||
-                    previousListNode.listStyleType !== listNode.listStyleType ||
-                    (previousListNode.indent ?? 1) !== (listNode.indent ?? 1);
-
-                return (
-                    <Typography
-                        key={index}
-                        variant="body1"
-                        component="p"
-                        sx={getWordListParagraphSx(listNode.listStyleType, listNode.indent ?? 1, isListRestart)}
-                    >
-                        {children}
-                    </Typography>
-                );
-            }
-
             return (
                 <Typography
                     key={index}
@@ -283,6 +251,64 @@ export function RichTextPreview({
         );
     }
 
+    const rendered: React.ReactNode[] = [];
+
+    for (let i = 0; i < nodes.length;) {
+        const node = nodes[i];
+
+        if (isFlatListNode(node)) {
+            const listStyleType = node.listStyleType;
+            const ordered = listStyleType === 'decimal';
+            const indent = node.indent ?? 1;
+            const listItems: TElement[] = [];
+
+            while (i < nodes.length) {
+                const current = nodes[i];
+                if (!isFlatListNode(current)) break;
+                if (current.listStyleType !== listStyleType || (current.indent ?? 1) !== indent) break;
+                listItems.push(current);
+                i += 1;
+            }
+
+            rendered.push(
+                <Box
+                    key={`list-${rendered.length}`}
+                    component={ordered ? 'ol' : 'ul'}
+                    sx={{
+                        fontFamily: WORD_FONT_FAMILY,
+                        fontSize: WORD_BASE_FONT_SIZE,
+                        lineHeight: WORD_LINE_HEIGHT,
+                        my: 0.75,
+                        pl: 4,
+                        listStyleType,
+                        '& > li': {
+                            py: 0.25,
+                            lineHeight: WORD_LINE_HEIGHT,
+                            color: 'text.primary',
+                        },
+                    }}
+                >
+                    {listItems.map((listNode, listIndex) => (
+                        <Box key={`li-${i}-${listIndex}`} component="li">
+                            {listNode.children?.map((child, childIndex) => renderNode(child, childIndex))}
+                        </Box>
+                    ))}
+                </Box>
+            );
+
+            continue;
+        }
+
+        if (isBlankParagraph(node)) {
+            rendered.push(renderNode(node, i));
+            i += 1;
+            continue;
+        }
+
+        rendered.push(renderNode(node, i));
+        i += 1;
+    }
+
     return (
         <Box
             sx={{
@@ -297,7 +323,7 @@ export function RichTextPreview({
                 },
             }}
         >
-            {nodes.map((node, index) => renderNode(node, index, nodes[index - 1]))}
+            {rendered}
         </Box>
     );
 }
