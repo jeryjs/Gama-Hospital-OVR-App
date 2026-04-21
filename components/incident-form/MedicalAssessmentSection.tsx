@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
 import { Section, SectionEditControls } from '@/components/shared';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { apiCall } from '@/lib/client/error-handler';
 
 interface Props {
     incident: OVRReport;
@@ -110,7 +111,7 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
         const normalizedTreatmentTypes = normalizedSawPatient ? treatmentTypes : [];
 
         try {
-            const response = await fetch(`/api/incidents/${incident.id}`, {
+            const { error } = await apiCall(`/api/incidents/${incident.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -126,9 +127,9 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
                 }),
             });
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => null);
-                throw new Error(errorBody?.error || 'Failed to save medical assessment section');
+            if (error) {
+                await showError(error);
+                return;
             }
 
             setIsEditing(false);

@@ -50,6 +50,7 @@ import { CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Section } from '@/components/shared';
+import { apiCall } from '@/lib/client/error-handler';
 
 interface CorrectiveActionsManagementProps {
     incidentId: string;
@@ -128,17 +129,22 @@ export function CorrectiveActionsManagement({
                 checklist: JSON.stringify(checklist),
             };
 
-            const response = await fetch('/api/corrective-actions', {
+            const { data, error } = await apiCall<{ action: { id: number } }>('/api/corrective-actions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to create corrective action');
+            if (error) {
+                await showError(error);
+                return;
             }
 
-            const data = await response.json();
+            if (!data?.action?.id) {
+                await showError(new Error('Corrective action was created but the response was incomplete.'));
+                return confirm('Reload the page to see the new action.') ? location.reload() : null; // Fallback to reload to show the new action
+            }
+
             onActionCreated?.(data.action.id);
 
             // Reset form

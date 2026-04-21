@@ -40,6 +40,7 @@ import {
   MetricsCards,
   type IncidentFilters,
 } from '../../_shared';
+import { apiCall } from '@/lib/client/error-handler';
 
 // Category options for filtering
 const CATEGORY_OPTIONS = [
@@ -111,7 +112,7 @@ export default function QIReviewPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`/api/incidents/${selectedIncident}/qi-review`, {
+      const { error } = await apiCall(`/api/incidents/${selectedIncident}/qi-review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -120,8 +121,9 @@ export default function QIReviewPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit review');
+      if (error) {
+        await showError(error);
+        return;
       }
 
       mutate();
