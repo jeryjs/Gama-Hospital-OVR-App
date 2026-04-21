@@ -538,9 +538,9 @@ function ActionItem({ actionId, onInvite }: { actionId: number; onInvite: () => 
                 </Box>
 
                 <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-                    <Button size="small" onClick={onInvite} startIcon={<PersonAddIcon />}>
+                    {/* <Button size="small" onClick={onInvite} startIcon={<PersonAddIcon />}>
                         Invite
-                    </Button>
+                    </Button> */}
                     {/* {action.status !== 'closed' && (
                         <Button size="small" color="success" onClick={handleClose} startIcon={<CloseIcon />}>
                             Close
