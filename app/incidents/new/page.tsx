@@ -59,6 +59,7 @@ import {
   Paper,
   Radio,
   RadioGroup,
+  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -1435,6 +1436,7 @@ export default function NewIncidentPage() {
   const { showError, ErrorDialogComponent } = useErrorDialog();
 
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [hasDraftSnapshot, setHasDraftSnapshot] = useState(false);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>();
@@ -1675,9 +1677,9 @@ export default function NewIncidentPage() {
           setDraftUpdatedAt(updated.updatedAt || new Date().toISOString());
           if (requiresEditComment) {
             setEditComment('');
-            alert('Report updated successfully!');
+            setSuccessMessage('Report updated successfully!');
           } else {
-            alert('Draft updated successfully!');
+            setSuccessMessage('Draft updated successfully!');
           }
         } catch (error) {
           void showError(error);
@@ -1713,7 +1715,7 @@ export default function NewIncidentPage() {
 
     setHasDraftSnapshot(true);
     setDraftUpdatedAt(draft.updatedAt);
-    alert('Draft saved successfully!');
+    setSuccessMessage('Draft saved successfully!');
     router.push('/incidents/me')
   }, [editComment, existingDraftCreatedAt, formData, draftId, requiresEditComment, router, serverDraftIncidentId, serverIncidentStatus, session?.user, showError]);
 
@@ -1908,6 +1910,16 @@ export default function NewIncidentPage() {
         </Box>
       </LocalizationProvider>
       {ErrorDialogComponent}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </AppLayout>
   );
 }
