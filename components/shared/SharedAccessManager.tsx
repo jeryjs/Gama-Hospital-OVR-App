@@ -266,6 +266,7 @@ export function SharedAccessManager({
                       <Typography variant="body1">{invitation.email}</Typography>
                     </Box>
                   }
+                  slotProps={{ secondary: { component: 'span' } }}
                   secondary={
                     <Box component="span" sx={{ fontSize: '0.75rem' }}>
                       Invited: {new Date(invitation.invitedAt).toLocaleDateString()}
