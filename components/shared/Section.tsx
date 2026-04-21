@@ -77,7 +77,7 @@ export function Section({
 
     if (container === 'card') {
         return (
-            <Card elevation={elevation ?? 2} sx={sx}>
+            <Card component={'section'} id={getTextContent(title).replaceAll(' ', '-')} elevation={elevation ?? 2} sx={sx}>
                 <CardHeader
                     title={title}
                     subheader={subtitle}

@@ -249,19 +249,13 @@ export default function InvestigationDetailPage() {
                     <Stack direction="row" spacing={2} sx={{
                         alignItems: "center"
                     }}>
-                        {canOpenIncident ? (
-                            <IconButton
-                                component={Link}
-                                href={investigation ? `/incidents/view/${investigation.ovrReportId}` : '/incidents'}
-                                size="small"
-                            >
-                                <ArrowBack />
-                            </IconButton>
-                        ) : (
-                            <IconButton onClick={() => router.back()} size="small">
-                                <ArrowBack />
-                            </IconButton>
-                        )}
+                        <IconButton
+                            component={Link}
+                            href={`/incidents/view/${investigation.ovrReportId}#Investigation-Summary`}
+                            size="small"
+                        >
+                            <ArrowBack />
+                        </IconButton>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h5" sx={{
                                 fontWeight: 700

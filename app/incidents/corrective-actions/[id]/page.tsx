@@ -266,7 +266,7 @@ export default function CorrectiveActionDetailPage() {
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
                         {isQIUser && (
-                            <IconButton component={Link} href="/incidents/corrective-actions" size="small">
+                            <IconButton component={Link} href={`/incidents/view/${action.ovrReportId}#Corrective-Actions`} size="small">
                                 <ArrowBack />
                             </IconButton>
                         )}
