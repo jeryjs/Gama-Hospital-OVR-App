@@ -90,7 +90,7 @@ function ColorlibStepIcon(props: {
 export function StatusTimeline({ status, submittedAt, qiRejectionReason }: Props) {
   const isRejected = !!qiRejectionReason;
   const steps = isRejected ? rejectedSteps : normalSteps;
-  const activeStep = isRejected ? 2 : steps.findIndex(step => step.key === status) + 1;
+  const activeStep = isRejected ? 2 : steps.findIndex(step => step.key === status);
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
