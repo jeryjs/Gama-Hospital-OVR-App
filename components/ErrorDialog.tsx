@@ -203,8 +203,8 @@ export function ErrorDialog({ open, onClose, error }: ErrorDialogProps) {
                                         <ErrorIcon color="error" fontSize="small" />
                                     </ListItemIcon>
                                     <ListItemText
-                                        primary={formatDetailPath(detail.path)}
-                                        secondary={detail.message}
+                                        primary={detail.message}
+                                        secondary={formatDetailPath(detail.path)}
                                         slotProps={{
                                             primary: { variant: 'body2' },
                                             secondary: { variant: 'caption' }
