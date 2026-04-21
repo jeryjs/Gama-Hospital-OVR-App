@@ -43,7 +43,7 @@ import { useState } from 'react';
 import { useCorrectiveAction, useSharedAccess } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import type { CreateCorrectiveActionInput } from '@/lib/api/schemas';
-import { format, isPast, isToday } from 'date-fns';
+import { addDays, format, isPast, isToday } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { CORRECTIVE_ACTION_CHECKLIST_SUGGESTIONS } from '@/lib/constants';
@@ -78,7 +78,8 @@ export function CorrectiveActionsManagement({
     // Form state for creating action
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [dueDate, setDueDate] = useState('');
+    const getDefaultDueDate = () => format(addDays(new Date(), 7), 'yyyy-MM-dd');
+    const [dueDate, setDueDate] = useState(getDefaultDueDate);
     const [checklistItems, setChecklistItems] = useState<string[]>([]);
 
     const { showError, ErrorDialogComponent } = useErrorDialog();
@@ -96,6 +97,14 @@ export function CorrectiveActionsManagement({
                 seen.add(key);
                 return true;
             });
+    };
+
+    const handleOpenCreateDialog = () => {
+        setTitle('');
+        setDescription('');
+        setDueDate(getDefaultDueDate());
+        setChecklistItems([]);
+        setCreateDialogOpen(true);
     };
 
     // Create action
@@ -135,7 +144,7 @@ export function CorrectiveActionsManagement({
             // Reset form
             setTitle('');
             setDescription('');
-            setDueDate('');
+            setDueDate(getDefaultDueDate());
             setChecklistItems([]);
             setCreateDialogOpen(false);
         } catch (error) {
@@ -206,7 +215,7 @@ export function CorrectiveActionsManagement({
                     <Button
                         variant="contained"
                         size="small"
-                        onClick={() => setCreateDialogOpen(true)}
+                        onClick={handleOpenCreateDialog}
                         startIcon={<AddIcon />}
                     >
                         Create Action
