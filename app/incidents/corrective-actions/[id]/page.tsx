@@ -502,15 +502,6 @@ export default function CorrectiveActionDetailPage() {
                                     </Stack>
                                 )}
                             </Section>
-
-                            {/* Collaboration Panel */}
-                            <CollaborationPanel
-                                resourceType="corrective_action"
-                                resourceId={action.id}
-                                ovrReportId={action.ovrReportId}
-                                canComment={Boolean(session?.user)}
-                                canAttach={false}
-                            />
                         </Stack>
                     </Grid>
 
@@ -621,6 +612,15 @@ export default function CorrectiveActionDetailPage() {
                                     )}
                                 </Stack>
                             </Section>
+
+                            {/* Collaboration Panel */}
+                            <CollaborationPanel
+                                resourceType="corrective_action"
+                                resourceId={action.id}
+                                ovrReportId={action.ovrReportId}
+                                canComment={Boolean(session?.user)}
+                                canAttach={false}
+                            />
                         </Stack>
                     </Grid>
                 </Grid>

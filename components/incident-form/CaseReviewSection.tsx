@@ -90,6 +90,22 @@ export function CaseReviewSection({
         );
     }
 
+    /* Warning if actions not closed */
+    if (!allActionsClosed) {
+        return (
+            <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
+                <Typography variant="body2" gutterBottom sx={{
+                    fontWeight: 500
+                }}>
+                    Cannot close incident yet
+                </Typography>
+                <Typography variant="body2">
+                    All corrective actions must be closed before the incident can be finalized.
+                </Typography>
+            </Alert>
+        )
+    }
+
     return (
         <>
             <Section
@@ -103,20 +119,6 @@ export function CaseReviewSection({
                         : alpha(theme.palette.warning.main, 0.1),
                 }}
             >
-                {/* Warning if actions not closed */}
-                {!allActionsClosed && (
-                    <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
-                        <Typography variant="body2" gutterBottom sx={{
-                            fontWeight: 500
-                        }}>
-                            Cannot close incident yet
-                        </Typography>
-                        <Typography variant="body2">
-                            All corrective actions must be closed before the incident can be finalized.
-                        </Typography>
-                    </Alert>
-                )}
-
                 {/* Success indicator */}
                 {allActionsClosed && (
                     <Alert severity="success" icon={<CompleteIcon />} sx={{ mb: 3 }}>

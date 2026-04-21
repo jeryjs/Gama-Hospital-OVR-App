@@ -473,7 +473,7 @@ export default function InvestigationDetailPage() {
                             </Section>
 
                             {/* RCA & Fishbone Analysis - Only for High/Extreme Risk */}
-                            {linkedIncident?.riskScore &&
+                            {isSubmitted && linkedIncident?.riskScore &&
                                 getRiskLevel(linkedIncident.riskScore).level !== 'green' && (
                                     <Box sx={{ position: 'relative' }}>
                                         {canQIEditSubmitted && (
