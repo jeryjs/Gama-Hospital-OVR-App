@@ -205,9 +205,7 @@ export default function InvestigationDetailPage() {
                 causeDetails,
             });
 
-            if (isQIUser) {
-                router.push('/incidents/investigations');
-            }
+            router.push('/incidents/view/' + investigation?.ovrReportId + '#Investigation-Summary');
         } catch (error) {
             await showError(error);
         } finally {

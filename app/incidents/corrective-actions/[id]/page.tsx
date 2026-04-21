@@ -16,20 +16,14 @@ import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
-import { RichTextPreview } from '@/components/editor';
 import { ArrowBack, CheckCircle, DeleteOutlined, Edit, Save, UploadFile } from '@mui/icons-material';
 import {
     Alert,
-    alpha,
     Box,
     Button,
     Checkbox,
     Chip,
     Divider,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     FormControlLabel,
     Grid,
     IconButton,
@@ -44,6 +38,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { type ChangeEvent, useEffect, useState } from 'react';
+import { RichTextEditor, RichTextPreview } from '@/components/editor';
 
 interface EvidenceFileMeta {
     name: string;
@@ -81,7 +76,7 @@ export default function CorrectiveActionDetailPage() {
     const [actionTaken, setActionTaken] = useState('');
     const [checklist, setChecklist] = useState<any[]>([]);
     const [evidenceFiles, setEvidenceFiles] = useState<EvidenceFileMeta[]>([]);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [savingChecklist, setSavingChecklist] = useState(false);
     const [checklistDirty, setChecklistDirty] = useState(false);
@@ -169,16 +164,17 @@ export default function CorrectiveActionDetailPage() {
     const handleSave = async () => {
         if (!canEdit) return;
 
+        setSubmitting(true);
         try {
             await update({
                 actionTaken: actionTaken.trim() || undefined,
-                checklist: JSON.stringify(checklist),
                 evidenceFiles: evidenceFiles.length > 0 ? JSON.stringify(evidenceFiles) : undefined,
             });
-            setChecklistDirty(false);
-            setIsEditDialogOpen(false);
+            setIsEditing(false);
         } catch (error) {
             await showError(error);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -211,23 +207,19 @@ export default function CorrectiveActionDetailPage() {
         }
 
         if (!hasCompletionInput) {
-            await showError(new Error('Please provide action details or at least one attachment before closing.'));
+            await showError(new Error('Please provide action details or at least one attachment before closing'));
             return;
         }
 
         if (!confirm('Close this action? This cannot be undone.')) return;
 
         setSubmitting(true);
-
         try {
             await close({
                 actionTaken: actionTaken.trim(),
-                checklist: JSON.stringify(checklist),
                 evidenceFiles: evidenceFiles.length > 0 ? JSON.stringify(evidenceFiles) : undefined,
             });
-
-            setIsEditDialogOpen(false);
-            router.push('/incidents/corrective-actions');
+            router.push('/incidents/view/' + action?.ovrReportId + '#Corrective-Actions');
         } catch (error) {
             await showError(error);
         } finally {
@@ -272,54 +264,40 @@ export default function CorrectiveActionDetailPage() {
             <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
                 {/* Header */}
                 <Paper sx={{ p: 3, mb: 3 }}>
-                    <Stack direction="row" spacing={2} sx={{
-                        alignItems: "center"
-                    }}>
+                    <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
                         {isQIUser && (
                             <IconButton component={Link} href="/incidents/corrective-actions" size="small">
                                 <ArrowBack />
                             </IconButton>
                         )}
                         <Box sx={{ flex: 1 }}>
-                            <Typography variant="h5" sx={{
-                                fontWeight: 700
-                            }}>
+                            <Typography variant="h5" sx={{ fontWeight: 700 }}>
                                 {action.title}
                             </Typography>
                             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
-                                <Typography variant="body2" sx={{
-                                    color: "text.secondary"
-                                }}>
+                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
                                     Action ID: ACT-{action.id}
                                 </Typography>
-                                <Typography variant="body2" sx={{
-                                    color: "text.secondary"
-                                }}>
-                                    Incident:{' '}
-                                    {canOpenIncident ? (
+                                {canOpenIncident && (
+                                    <>
+                                        <Typography variant="body2" sx={{ color: "text.secondary" }}>•</Typography>
                                         <Button
                                             component={Link}
                                             href={`/incidents/view/${action.ovrReportId}`}
                                             size="small"
-                                            sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                                            sx={{ p: 0, minWidth: 0, textTransform: 'none' }}
                                         >
                                             {action.ovrReportId}
                                         </Button>
-                                    ) : (
-                                        <Typography component="span" variant="body2" sx={{
-                                            fontWeight: 600
-                                        }}>
-                                            {action.ovrReportId}
-                                        </Typography>
-                                    )}
-                                </Typography>
+                                    </>
+                                )}
                                 <Chip
                                     label={isClosed ? 'Closed' : 'Open'}
                                     size="small"
                                     color={isClosed ? 'success' : 'warning'}
                                 />
-                                {isOverdue && (
-                                    <Chip label="OVERDUE" size="small" color="error" />
+                                {isOverdue && !isClosed && (
+                                    <Chip label="Overdue" size="small" color="error" />
                                 )}
                             </Stack>
                         </Box>
@@ -345,24 +323,17 @@ export default function CorrectiveActionDetailPage() {
 
                             {!isQIUser && accessToken && !isClosed && (
                                 <Alert severity="info">
-                                    You are viewing this action via a shared access link. Use <strong>Update Checklist</strong> and <strong>Update</strong> to save changes.
+                                    You are viewing this action via a shared access link.
                                 </Alert>
                             )}
 
                             {/* Action Description */}
-                            <Section
-                                container="card"
-                                title="Action Description"
-                                tone="primary"
-                            >
-                                <RichTextPreview
-                                    value={action.description || undefined}
-                                    emptyText="No description provided"
-                                />
+                            <Section container="card" title="Action Description" tone="primary">
+                                <Box sx={{ mb: 2 }}>
+                                    {action.description || 'No description provided'}
+                                </Box>
                                 <Divider sx={{ my: 2 }} />
-                                <Typography variant="body2" sx={{
-                                    color: "text.secondary"
-                                }}>
+                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
                                     <strong>Due Date:</strong> {format(new Date(action.dueDate), 'PPP')}
                                 </Typography>
                             </Section>
@@ -380,11 +351,7 @@ export default function CorrectiveActionDetailPage() {
                                         <LinearProgress
                                             variant="determinate"
                                             value={progress}
-                                            sx={{
-                                                height: 8,
-                                                borderRadius: 4,
-                                                mb: 2,
-                                            }}
+                                            sx={{ height: 8, borderRadius: 4, mb: 2 }}
                                         />
                                         {checklist.map((item) => (
                                             <FormControlLabel
@@ -405,12 +372,7 @@ export default function CorrectiveActionDetailPage() {
                                         ))}
 
                                         {canEdit && (
-                                            <Stack
-                                                direction="row"
-                                                sx={{
-                                                    justifyContent: "flex-end",
-                                                    mt: 1
-                                                }}>
+                                            <Stack direction="row" sx={{ justifyContent: "flex-end", mt: 1 }}>
                                                 <Button
                                                     variant="outlined"
                                                     startIcon={<Save />}
@@ -428,78 +390,126 @@ export default function CorrectiveActionDetailPage() {
                             {/* Action Taken */}
                             <Section
                                 container="card"
-                                title="Action Taken"
+                                title="Action Report"
                                 tone="success"
+                                action={canEdit && !isEditing && (
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => setIsEditing(true)}
+                                        startIcon={<Edit />}
+                                        size="small"
+                                    >
+                                        Edit
+                                    </Button>
+                                )}
                             >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: "text.secondary",
-                                        mb: 1
-                                    }}>
-                                    Report / Details
-                                </Typography>
-                                <Paper variant="outlined" sx={{ p: 2, minHeight: 120 }}>
-                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                                        {actionTaken || 'No action report added yet.'}
-                                    </Typography>
-                                </Paper>
+                                {!checklistComplete && (
+                                    <Alert severity="warning" sx={{ mb: 2 }}>
+                                        Complete all checklist items before filling this report.
+                                    </Alert>
+                                )}
 
-                                <Box sx={{ mt: 2 }}>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            mb: 1
-                                        }}>
-                                        Attached Documents ({evidenceFiles.length})
-                                    </Typography>
+                                {isEditing ? (
+                                    <Stack spacing={2}>
+                                        <RichTextEditor
+                                            label="Action Details"
+                                            value={actionTaken}
+                                            onChange={(value) => setActionTaken(value)}
+                                            placeholder="Describe what was done to resolve this action..."
+                                            helperText={`${actionTaken.replace(/<[^>]+>/g, '').length} characters`}
+                                        />
 
-                                    {evidenceFiles.length === 0 ? (
-                                        <Alert severity="info">No attachments added yet.</Alert>
-                                    ) : (
-                                        <Stack spacing={1}>
-                                            {evidenceFiles.map((file, index) => (
-                                                <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
-                                                    <Stack
-                                                        direction="row"
-                                                        spacing={1}
-                                                        sx={{
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center"
-                                                        }}>
-                                                        <Box>
-                                                            <Typography variant="body2" sx={{
-                                                                fontWeight: 600
-                                                            }}>{file.name}</Typography>
-                                                            <Typography variant="caption" sx={{
-                                                                color: "text.secondary"
-                                                            }}>
-                                                                {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Stack>
-                                                </Paper>
-                                            ))}
+                                        <Box>
+                                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                    Attached Documents ({evidenceFiles.length})
+                                                </Typography>
+                                                <Button component="label" size="small" startIcon={<UploadFile />}>
+                                                    Add File
+                                                    <input type="file" hidden multiple onChange={handleEvidenceSelect} />
+                                                </Button>
+                                            </Stack>
+
+                                            {evidenceFiles.length === 0 ? (
+                                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                                                    No files attached
+                                                </Typography>
+                                            ) : (
+                                                <Stack spacing={1}>
+                                                    {evidenceFiles.map((file, index) => (
+                                                        <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
+                                                            <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                                                                <Box>
+                                                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{file.name}</Typography>
+                                                                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                                                        {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
+                                                                    </Typography>
+                                                                </Box>
+                                                                <IconButton size="small" onClick={() => handleRemoveEvidence(index)} color="error">
+                                                                    <DeleteOutlined fontSize="small" />
+                                                                </IconButton>
+                                                            </Stack>
+                                                        </Paper>
+                                                    ))}
+                                                </Stack>
+                                            )}
+                                        </Box>
+
+                                        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                                            <Button onClick={() => setIsEditing(false)} disabled={submitting}>
+                                                Cancel
+                                            </Button>
+                                            <Button variant="outlined" onClick={handleSave} startIcon={<Save />} disabled={submitting}>
+                                                {submitting ? 'Saving...' : 'Save'}
+                                            </Button>
+                                            {isQIUser && (
+                                                <Button
+                                                    variant="contained"
+                                                    color="success"
+                                                    onClick={handleClose}
+                                                    disabled={!checklistComplete || !hasCompletionInput || submitting}
+                                                    startIcon={<CheckCircle />}
+                                                >
+                                                    {submitting ? 'Closing...' : 'Close Action'}
+                                                </Button>
+                                            )}
                                         </Stack>
-                                    )}
-                                </Box>
+                                    </Stack>
+                                ) : (
+                                    <Stack spacing={2}>
+                                        <Box>
+                                            <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                                                Action Details
+                                            </Typography>
+                                            <Paper variant="outlined" sx={{ p: 2, minHeight: 100 }}>
+                                                {/* <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                    {actionTaken || 'No action details provided yet.'}
+                                                </Typography> */}
+                                                <RichTextPreview value={actionTaken} emptyText="No action details provided yet." />
+                                            </Paper>
+                                        </Box>
 
-                                {canEdit && (
-                                    <Stack
-                                        direction="row"
-                                        spacing={2}
-                                        sx={{
-                                            justifyContent: "flex-end",
-                                            mt: 2
-                                        }}>
-                                        <Button
-                                            variant="contained"
-                                            onClick={() => setIsEditDialogOpen(true)}
-                                            startIcon={<Edit />}
-                                        >
-                                            Edit
-                                        </Button>
+                                        <Box>
+                                            <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                                                Attached Documents ({evidenceFiles.length})
+                                            </Typography>
+                                            {evidenceFiles.length === 0 ? (
+                                                <Alert severity="info">No files attached.</Alert>
+                                            ) : (
+                                                <Stack spacing={1}>
+                                                    {evidenceFiles.map((file, index) => (
+                                                        <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
+                                                            <Box>
+                                                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{file.name}</Typography>
+                                                                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                                                    {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Paper>
+                                                    ))}
+                                                </Stack>
+                                            )}
+                                        </Box>
                                     </Stack>
                                 )}
                             </Section>
@@ -523,27 +533,18 @@ export default function CorrectiveActionDetailPage() {
                             )}
 
                             {/* Action Metadata */}
-                            <Section
-                                container="card"
-                                title="Action Info"
-                            >
+                            <Section container="card" title="Action Info">
                                 <Stack spacing={2} divider={<Divider />}>
                                     <Box>
-                                        <Typography variant="caption" sx={{
-                                            color: "text.secondary"
-                                        }}>
+                                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                             Action ID
                                         </Typography>
-                                        <Typography variant="body2" sx={{
-                                            fontWeight: 600
-                                        }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                             ACT-{action.id}
                                         </Typography>
                                     </Box>
                                     <Box>
-                                        <Typography variant="caption" sx={{
-                                            color: "text.secondary"
-                                        }}>
+                                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                             Incident Reference
                                         </Typography>
                                         <Typography variant="body2">
@@ -557,18 +558,14 @@ export default function CorrectiveActionDetailPage() {
                                                     {action.ovrReportId}
                                                 </Button>
                                             ) : (
-                                                <Typography component="span" variant="body2" sx={{
-                                                    fontWeight: 600
-                                                }}>
+                                                <Typography component="span" variant="body2" sx={{ fontWeight: 600 }}>
                                                     {action.ovrReportId}
                                                 </Typography>
                                             )}
                                         </Typography>
                                     </Box>
                                     <Box>
-                                        <Typography variant="caption" sx={{
-                                            color: "text.secondary"
-                                        }}>
+                                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                             Status
                                         </Typography>
                                         <Chip
@@ -578,9 +575,7 @@ export default function CorrectiveActionDetailPage() {
                                         />
                                     </Box>
                                     <Box>
-                                        <Typography variant="caption" sx={{
-                                            color: "text.secondary"
-                                        }}>
+                                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                             Due Date
                                         </Typography>
                                         <Typography variant="body2" color={isOverdue ? 'error.main' : 'text.primary'}>
@@ -588,9 +583,7 @@ export default function CorrectiveActionDetailPage() {
                                         </Typography>
                                     </Box>
                                     <Box>
-                                        <Typography variant="caption" sx={{
-                                            color: "text.secondary"
-                                        }}>
+                                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                             Created
                                         </Typography>
                                         <Typography variant="body2">
@@ -599,14 +592,10 @@ export default function CorrectiveActionDetailPage() {
                                     </Box>
                                     {action.completedAt && (
                                         <Box>
-                                            <Typography variant="caption" sx={{
-                                                color: "text.secondary"
-                                            }}>
+                                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
                                                 Completed
                                             </Typography>
-                                            <Typography variant="body2" sx={{
-                                                color: "success.main"
-                                            }}>
+                                            <Typography variant="body2" sx={{ color: "success.main" }}>
                                                 {format(new Date(action.completedAt), 'PPP')}
                                             </Typography>
                                         </Box>
@@ -626,121 +615,6 @@ export default function CorrectiveActionDetailPage() {
                     </Grid>
                 </Grid>
             </Box>
-            <Dialog
-                open={isEditDialogOpen}
-                onClose={submitting ? undefined : () => setIsEditDialogOpen(false)}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>Edit Corrective Action</DialogTitle>
-                <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <Alert severity="info">
-                            Add details/report and/or document attachments. Use <strong>Update</strong> to save progress, or <strong>Close</strong> to finalize the action.
-                        </Alert>
-
-                        <TextField
-                            label="Action Details / Report"
-                            multiline
-                            rows={6}
-                            fullWidth
-                            value={actionTaken}
-                            onChange={(e) => setActionTaken(e.target.value)}
-                            placeholder="Describe what was done to resolve this action..."
-                            helperText={`${actionTaken.length} characters`}
-                        />
-
-                        <Box>
-                            <Stack
-                                direction="row"
-                                spacing={1}
-                                sx={{
-                                    alignItems: "center",
-                                    mb: 1
-                                }}>
-                                <Button component="label" variant="outlined" startIcon={<UploadFile />}>
-                                    Attach Documents
-                                    <input hidden multiple type="file" onChange={handleEvidenceSelect} />
-                                </Button>
-                                <Typography variant="caption" sx={{
-                                    color: "text.secondary"
-                                }}>
-                                    Files are stored as attachment metadata in this phase.
-                                </Typography>
-                            </Stack>
-
-                            {evidenceFiles.length === 0 ? (
-                                <Alert severity="info">No attachments selected.</Alert>
-                            ) : (
-                                <Stack spacing={1}>
-                                    {evidenceFiles.map((file, index) => (
-                                        <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.25 }}>
-                                            <Stack
-                                                direction="row"
-                                                spacing={1}
-                                                sx={{
-                                                    justifyContent: "space-between",
-                                                    alignItems: "center"
-                                                }}>
-                                                <Box>
-                                                    <Typography variant="body2" sx={{
-                                                        fontWeight: 600
-                                                    }}>{file.name}</Typography>
-                                                    <Typography variant="caption" sx={{
-                                                        color: "text.secondary"
-                                                    }}>
-                                                        {file.size > 0 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Size N/A'} • {file.type}
-                                                    </Typography>
-                                                </Box>
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleRemoveEvidence(index)}
-                                                >
-                                                    <DeleteOutlined fontSize="small" />
-                                                </IconButton>
-                                            </Stack>
-                                        </Paper>
-                                    ))}
-                                </Stack>
-                            )}
-                        </Box>
-
-                        {!checklistComplete && (
-                            <Alert severity="warning">
-                                All checklist items must be completed before closing this action.
-                            </Alert>
-                        )}
-                        {checklistComplete && !hasCompletionInput && (
-                            <Alert severity="warning">
-                                Provide action details or at least one attachment before closing.
-                            </Alert>
-                        )}
-                    </Stack>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setIsEditDialogOpen(false)} disabled={submitting}>Cancel</Button>
-                    <Button
-                        variant="outlined"
-                        onClick={handleSave}
-                        startIcon={<Save />}
-                        disabled={submitting}
-                    >
-                        Update
-                    </Button>
-                    {isQIUser && (
-                        <Button
-                            variant="contained"
-                            color="success"
-                            onClick={handleClose}
-                            disabled={!checklistComplete || !hasCompletionInput || submitting}
-                            startIcon={<CheckCircle />}
-                        >
-                            {submitting ? 'Closing...' : 'Close'}
-                        </Button>
-                    )}
-                </DialogActions>
-            </Dialog>
             {ErrorDialogComponent}
         </AppLayout>
     );

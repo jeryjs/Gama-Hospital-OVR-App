@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { alpha, styled, type SxProps, type Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
+import React from 'react';
 
 const StyledButton = styled(Button)(({ theme }) => ({
     minWidth: 0,
@@ -59,6 +60,21 @@ export function Section({
     mb = 3,
     elevation,
 }: SectionProps) {
+
+    const getTextContent = (node: ReactNode): string => {
+        let text = '';
+        if (typeof node === 'string') {
+            text = node;
+        } else if (Array.isArray(node)) {
+            text = node.map(getTextContent).join(' ');
+        } else if (React.isValidElement(node)) {
+            // Type guard: only access props if they exist
+            if ('props' in node && node.props && 'children' in (node.props as any))
+                text = getTextContent((node.props as { children: ReactNode }).children);
+        }
+        return text.trim();
+    };
+
     if (container === 'card') {
         return (
             <Card elevation={elevation ?? 2} sx={sx}>
@@ -88,7 +104,7 @@ export function Section({
     }
 
     return (
-        <Paper sx={{ p: 3, mb, ...sx as object }}>
+        <Paper component={'section'} id={getTextContent(title).replaceAll(' ', '-')} sx={{ p: 3, mb, ...sx as object }}>
             <Box
                 sx={(theme) => ({
                     display: 'flex',

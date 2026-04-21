@@ -103,10 +103,8 @@ function isApiErrorData(data: unknown): data is ApiErrorData {
     return (
         typeof data === 'object' &&
         data !== null &&
-        'error' in data &&
-        'code' in data &&
-        typeof (data as any).error === 'string' &&
-        typeof (data as any).code === 'string'
+        ('error' in data || 'code' in data) &&
+        (typeof (data as any).error === 'string' || typeof (data as any).code === 'string')
     );
 }
 

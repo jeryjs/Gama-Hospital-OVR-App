@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef, type FocusEvent } from 'react';
-import { Box, alpha } from '@mui/material';
+import { Box, Typography, alpha } from '@mui/material';
 import { Plate, PlateContent, usePlateEditor } from 'platejs/react';
 import { editorPlugins } from './plate-plugins';
 import { FixedToolbar } from './toolbar/FixedToolbar';
@@ -21,9 +21,9 @@ import {
 import type { EditorValue } from './plate-types';
 import { deserializeFromMarkdown, serializeToMarkdown } from './utils';
 import { WORD_BASE_FONT_SIZE, WORD_FONT_FAMILY, WORD_LINE_HEIGHT } from './word-styles';
-import { RichTextPreview } from './RichTextPreview';
 
 export interface RichTextEditorProps {
+    label?: string;
     value?: string;
     onChange?: (value: string) => void;
     placeholder?: string;
@@ -32,6 +32,7 @@ export interface RichTextEditorProps {
     maxHeight?: number | string;
     autoFocus?: boolean;
     disabled?: boolean;
+    helperText?: string;
 }
 
 // Component overrides for rendering elements
@@ -49,6 +50,7 @@ const editorComponents = {
 };
 
 export function RichTextEditor({
+    label,
     value,
     onChange,
     placeholder = 'Start typing...',
@@ -57,6 +59,7 @@ export function RichTextEditor({
     maxHeight = 400,
     autoFocus = false,
     disabled = false,
+    helperText,
 }: RichTextEditorProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
@@ -122,95 +125,108 @@ export function RichTextEditor({
     const showToolbar = isEditing && !readOnly && !disabled;
     // return <RichTextPreview value={value} emptyText={placeholder} />;
     return (
-        <Box
-            ref={rootRef}
-            onClick={handleContainerClick}
-            sx={{
-                position: 'relative',
-                border: '1px solid',
-                borderStyle: readOnly ? 'dashed' : 'solid',
-                borderColor: disabled
-                    ? 'ActiveBorder'
-                    : isFocused && !readOnly
-                        ? 'primary.main'
-                        : 'divider',
-                borderRadius: 2,
-                backgroundColor: (theme) => {
-                    if (disabled) {
-                        return alpha(theme.palette.action.disabledBackground, 0.08);
-                    }
+        <>
+            {label && (
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {label}
+                </Typography>
+            )}
+            <Box
+                ref={rootRef}
+                onClick={handleContainerClick}
+                sx={{
+                    position: 'relative',
+                    border: '1px solid',
+                    borderStyle: readOnly ? 'dashed' : 'solid',
+                    borderColor: disabled
+                        ? 'ActiveBorder'
+                        : isFocused && !readOnly
+                            ? 'primary.main'
+                            : 'divider',
+                    borderRadius: 2,
+                    backgroundColor: (theme) => {
+                        if (disabled) {
+                            return alpha(theme.palette.action.disabledBackground, 0.08);
+                        }
 
-                    if (readOnly) {
+                        if (readOnly) {
+                            return theme.palette.background.paper;
+                        }
+
                         return theme.palette.background.paper;
-                    }
-
-                    return theme.palette.background.paper;
-                },
-                transition: 'all 0.2s ease',
-                overflow: 'hidden',
-                cursor: isInPreviewMode ? 'pointer' : 'text',
-                '&:hover': !disabled && !readOnly && !isFocused
-                    ? {
-                        borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
-                    }
-                    : undefined,
-            }}
-        >
-            <Plate
-                editor={editor}
-                onChange={handleChange}
-                readOnly={readOnly || disabled}
+                    },
+                    transition: 'all 0.2s ease',
+                    overflow: 'hidden',
+                    cursor: isInPreviewMode ? 'pointer' : 'text',
+                    '&:hover': !disabled && !readOnly && !isFocused
+                        ? {
+                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+                        }
+                        : undefined,
+                }}
             >
-                {/* Fixed Toolbar */}
-                {showToolbar && <FixedToolbar />}
-
-                {/* Editor Content */}
-                <Box
-                    sx={{
-                        minHeight,
-                        maxHeight,
-                        overflow: 'auto',
-                        p: 2,
-                        fontFamily: WORD_FONT_FAMILY,
-                        fontSize: WORD_BASE_FONT_SIZE,
-                        lineHeight: WORD_LINE_HEIGHT,
-                    }}
+                <Plate
+                    editor={editor}
+                    onChange={handleChange}
+                    readOnly={readOnly || disabled}
                 >
-                    <PlateContent
-                        autoFocus={autoFocus}
-                        placeholder={placeholder}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        style={{
-                            outline: 'none',
-                            minHeight: 'inherit',
+                    {/* Fixed Toolbar */}
+                    {showToolbar && <FixedToolbar />}
+
+                    {/* Editor Content */}
+                    <Box
+                        sx={{
+                            minHeight,
+                            maxHeight,
+                            overflow: 'auto',
+                            p: 2,
                             fontFamily: WORD_FONT_FAMILY,
                             fontSize: WORD_BASE_FONT_SIZE,
-                            lineHeight: String(WORD_LINE_HEIGHT),
+                            lineHeight: WORD_LINE_HEIGHT,
                         }}
-                    />
-                </Box>
+                    >
+                        <PlateContent
+                            autoFocus={autoFocus}
+                            placeholder={placeholder}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            style={{
+                                outline: 'none',
+                                minHeight: 'inherit',
+                                fontFamily: WORD_FONT_FAMILY,
+                                fontSize: WORD_BASE_FONT_SIZE,
+                                lineHeight: String(WORD_LINE_HEIGHT),
+                            }}
+                        />
+                    </Box>
 
-                {/* Floating Toolbar (appears on selection) */}
-                {!readOnly && !disabled && <FloatingToolbar />}
-            </Plate>
+                    {/* Floating Toolbar (appears on selection) */}
+                    {!readOnly && !disabled && <FloatingToolbar />}
+                </Plate>
 
-            {/* Click to edit hint */}
-            {isInPreviewMode && !value?.trim() && (
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        color: 'text.disabled',
-                        pointerEvents: 'none',
-                        fontSize: '0.875rem',
-                    }}
-                >
-                    Click to edit
-                </Box>
+                {/* Click to edit hint */}
+                {isInPreviewMode && !value?.trim() && (
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: 'text.disabled',
+                            pointerEvents: 'none',
+                            fontSize: '0.875rem',
+                        }}
+                    >
+                        Click to edit
+                    </Box>
+                )}
+            </Box>
+
+            {helperText && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
+                    {helperText}
+                </Typography>
             )}
-        </Box>
+        </>
     );
 }
