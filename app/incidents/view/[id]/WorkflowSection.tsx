@@ -99,12 +99,13 @@ export function WorkflowSection({
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
-                {incident.investigation && (
+                {/* summary is now displayed in inv-management directly and will be removed in future. */}
+                {/* {incident.investigation && (
                     <InvestigationSummary
                         investigation={incident.investigation}
                         incidentId={incident.id}
                     />
-                )}
+                )} */}
 
                 <InvestigationManagement
                     incidentId={incident.id}

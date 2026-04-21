@@ -44,12 +44,151 @@ import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Section } from '@/components/shared';
 import { secureFetch } from '@/lib/client/csrf';
+import { InvestigationWithUsers } from '@/lib/types';
+import { RichTextPreview } from '../editor';
 
 interface InvestigationManagementProps {
     incidentId: string;
     investigationId?: number;
     onInvestigationCreated?: (investigationId: number) => void;
 }
+
+/**
+ * Display an investigation item
+ */
+function InvestigationItem({ investigation }: { investigation: InvestigationWithUsers }) {
+    if (!investigation) return null;
+
+    const isSubmitted = Boolean(investigation.submittedAt);
+    const investigators = investigation.investigatorUsers || [];
+
+    return (
+        <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+            {/* Investigators */}
+            <Typography variant="subtitle2" gutterBottom sx={{
+                color: "text.secondary"
+            }}>
+                Investigators
+            </Typography>
+            <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{
+                    flexWrap: "wrap",
+                    mb: 2
+                }}>
+                {investigators.length > 0 ? (
+                    investigators.map((investigator) => (
+                        <Chip
+                            key={investigator.id}
+                            avatar={
+                                <Avatar
+                                    src={investigator.profilePicture || undefined}
+                                    sx={{ width: 24, height: 24 }}
+                                >
+                                    {investigator.firstName?.[0] || '?'}
+                                </Avatar>
+                            }
+                            label={`${investigator.firstName || ''} ${investigator.lastName || ''}`.trim() || investigator.email}
+                            size="small"
+                            variant="outlined"
+                        />
+                    ))
+                ) : (
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
+                        No investigators assigned
+                    </Typography>
+                )}
+            </Stack>
+
+            {/* Findings snippet (if submitted) */}
+            {isSubmitted && investigation.findings && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{
+                        color: "text.secondary"
+                    }}>
+                        Findings
+                    </Typography>
+                    <Box
+                        sx={{
+                            overflow: 'hidden',
+                            '& > div': {
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                            }
+                        }}
+                    >
+                        <RichTextPreview
+                            value={investigation.findings}
+                            emptyText="No findings"
+                        />
+                    </Box>
+                </Box>
+            )}
+
+            {/* Problems Identified snippet (if submitted) */}
+            {isSubmitted && investigation.problemsIdentified && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{
+                        color: "text.secondary"
+                    }}>
+                        Problems Identified
+                    </Typography>
+                    <Box
+                        sx={{
+                            overflow: 'hidden',
+                            '& > div': {
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                            }
+                        }}
+                    >
+                        <RichTextPreview
+                            value={investigation.problemsIdentified}
+                            emptyText="No problems identified"
+                        />
+                    </Box>
+                </Box>
+            )}
+
+            {/* Cause Classification (if available) */}
+            {investigation.causeClassification && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{
+                        color: "text.secondary"
+                    }}>
+                        Cause Classification
+                    </Typography>
+                    <Chip
+                        label={investigation.causeClassification}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                    />
+                </Box>
+            )}
+
+            {/* Link to full investigation */}
+            {/* <Button
+                component={Link}
+                href={`/incidents/investigations/${investigation.id}`}
+                size="small"
+                endIcon={<OpenIcon />}
+                sx={{ mt: 1 }}
+            >
+                View Full Investigation
+            </Button> */}
+        </Box>
+    );
+}
+
 
 /**
  * Investigation Management Component
@@ -250,10 +389,12 @@ export function InvestigationManagement({
                             Open Investigation
                         </Button>
                     </Stack>
+
+                    {investigation && <InvestigationItem investigation={investigation} />}
                 </Box>
 
-                {/* Investigators List */}
-                {sharedAccess.length === 0 ? (
+                {/* Investigators List — Disabled as its rendered within investigation page. */}
+                {/* {sharedAccess.length === 0 ? (
                     <Alert severity="info">
                         No investigators invited yet. Click "Invite Investigator" to begin.
                     </Alert>
@@ -318,7 +459,7 @@ export function InvestigationManagement({
                             </ListItem>
                         ))}
                     </List>
-                )}
+                )} */}
 
                 {/* Success message when link copied */}
                 {copiedUrl && (
