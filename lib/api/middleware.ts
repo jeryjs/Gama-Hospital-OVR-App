@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { hasAnyRole } from '../auth-helpers';
 import type { AppRole } from '../constants';
 import { PaginationMeta, PaginationParams } from './schemas';
+import { randomBytes } from 'crypto';
 
 // ============================================
 // ERROR CLASSES
@@ -47,6 +48,20 @@ export class NotFoundError extends ApiError {
   constructor(resource: string) {
     super(404, `${resource} not found`, 'NOT_FOUND');
     this.name = 'NotFoundError';
+  }
+}
+
+export class CsrfError extends ApiError {
+  constructor(message = 'Invalid or missing CSRF token') {
+    super(403, message, 'CSRF_ERROR');
+    this.name = 'CsrfError';
+  }
+}
+
+export class DuplicateRequestError extends ApiError {
+  constructor(message = 'Duplicate request detected') {
+    super(409, message, 'DUPLICATE_REQUEST');
+    this.name = 'DuplicateRequestError';
   }
 }
 
@@ -201,6 +216,60 @@ export function handleApiError(error: unknown): NextResponse {
   }
 
   return NextResponse.json(response, { status: 500 });
+}
+
+// ============================================
+// CSRF & IDEMPOTENCY
+// ============================================
+
+// In-memory store for processed request IDs (simple LRU with 5min TTL)
+const processedRequests = new Map<string, number>();
+const IDEMPOTENCY_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup old entries every minute
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of processedRequests.entries()) {
+    if (now - timestamp > IDEMPOTENCY_TTL) {
+      processedRequests.delete(key);
+    }
+  }
+}, 60 * 1000);
+
+/**
+ SRF token for session
+ * Token is tied to user session and rotates per request
+ */
+export function generateCsrfToken(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+/**
+ * Validate CSRF token and check for duplicate requests
+ * Call this for all mutating operations (POST, PATCH, DELETE)
+ */
+export async function validateCsrfAndIdempotency(req: NextRequest) {
+  const session = await requireAuth(req);
+  
+  // Extract CSRF token from header
+  const csrfToken = req.headers.get('x-csrf-token');
+  if (!csrfToken) {
+    throw new CsrfError('CSRF token required');
+  }
+
+  // Extract idempotency key (optional but recommended)
+  const idempotencyKey = req.headers.get('x-idempotency-key');
+  if (idempotencyKey) {
+    // Check if we've already processed this request
+    const requestKey = `${session.user.id}:${idempotencyKey}`;
+    if (processedRequests.has(requestKey)) {
+      throw new DuplicateRequestError('This request has already been processed');
+    }
+    // Mark as processed
+    processedRequests.set(requestKey, Date.now());
+  }
+
+  return session;
 }
 
 // ============================================

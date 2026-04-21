@@ -43,6 +43,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Section } from '@/components/shared';
+import { secureFetch } from '@/lib/client/csrf';
 
 interface InvestigationManagementProps {
     incidentId: string;
@@ -73,7 +74,7 @@ export function InvestigationManagement({
     // Create investigation if doesn't exist
     const handleCreateInvestigation = async () => {
         try {
-            const response = await fetch('/api/investigations', {
+            const response = await secureFetch('/api/investigations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ovrReportId: incidentId }),

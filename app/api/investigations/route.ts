@@ -13,6 +13,7 @@ import {
     handleApiError,
     requireAuth,
     validateBody,
+    validateCsrfAndIdempotency,
 } from '@/lib/api/middleware';
 import { createInvestigationSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
@@ -123,7 +124,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await requireAuth(request);
+        // Validate CSRF token and check for duplicate requests
+        const session = await validateCsrfAndIdempotency(request);
 
         // Check permissions - only QI can create investigations
         if (!ACCESS_CONTROL.api.investigations.canCreate(session.user.roles)) {

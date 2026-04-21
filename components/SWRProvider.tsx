@@ -1,13 +1,19 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { SWRConfig } from 'swr';
+import { initializeCsrfToken } from '@/lib/client/csrf';
 
 interface SWRProviderProps {
   children: ReactNode;
 }
 
 export function SWRProvider({ children }: SWRProviderProps) {
+  // Initialize CSRF token on mount
+  useEffect(() => {
+    initializeCsrfToken();
+  }, []);
+
   return (
     <SWRConfig
       value={{

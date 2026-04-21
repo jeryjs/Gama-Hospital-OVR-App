@@ -1,4 +1,5 @@
 import type { ApiError } from '@/lib/types';
+import { secureFetch } from './csrf';
 
 /**
  * Client-side API error handling utilities
@@ -260,7 +261,7 @@ function createNetworkError(): ParsedError {
 }
 
 /**
- * Helper to make API calls with proper error handling
+ * Helper to make API calls with proper error handling and CSRF protection
  * Returns { data } on success or { error } on failure
  */
 export async function apiCall<T>(
@@ -285,7 +286,8 @@ export async function apiCall<T>(
       headers.set('Content-Type', 'application/json');
     }
 
-    const response = await fetch(url, {
+    // Use secureFautomatic CSRF injection
+    const response = await secureFetch(url, {
       ...options,
       body: normalizedBody,
       headers,

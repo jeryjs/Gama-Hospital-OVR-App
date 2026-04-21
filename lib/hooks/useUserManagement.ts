@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { useCallback, useMemo } from 'react';
 import type { User, UserCreate, UserListQuery, UserListResponse, UserUpdate } from '@/lib/api/schemas';
+import { secureFetch } from '@/lib/client/csrf';
 
 interface UserAdminActionMeta {
     reason?: string;
@@ -55,7 +56,7 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
     const updateUser = useCallback(
         async (userId: number, updates: UserUpdate, meta?: UserAdminActionMeta) => {
             try {
-                const res = await fetch('/api/users', {
+                const res = await secureFetch('/api/users', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId, updates, ...meta }),
@@ -90,7 +91,7 @@ export function useUserManagement(params: Partial<UserListQuery> = {}) {
 
     const createUser = useCallback(
         async (payload: UserCreate, meta?: UserAdminActionMeta) => {
-            const res = await fetch('/api/users', {
+            const res = await secureFetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...payload, ...meta }),
