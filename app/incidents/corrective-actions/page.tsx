@@ -48,6 +48,7 @@ export default function CorrectiveActionsPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
 
     // Check access
@@ -57,9 +58,17 @@ export default function CorrectiveActionsPage() {
         }
     }, [session, router]);
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm.trim());
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
+
     // Fetch actions
     const { actions, isLoading, error } = useCorrectiveActions({
-        search: searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         status: statusFilter,
     });
 

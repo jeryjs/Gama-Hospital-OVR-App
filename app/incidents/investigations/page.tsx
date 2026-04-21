@@ -48,6 +48,7 @@ export default function InvestigationsPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
     // Check access
@@ -57,9 +58,17 @@ export default function InvestigationsPage() {
         }
     }, [session, router]);
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm.trim());
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
+
     // Fetch investigations
     const { investigations, isLoading, error } = useInvestigations({
-        search: searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         status: statusFilter,
     });
 

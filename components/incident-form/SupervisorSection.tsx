@@ -91,87 +91,44 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
 
     return (
         <>
-        <Section
-            title="Supervisor Action"
-            icon={<SupervisorAccount />}
-            action={
-                <SectionEditControls
-                    canEdit={canEditSection}
-                    isEditing={isEditing}
-                    hasChanges={hasChanges}
-                    isSaving={isSaving}
-                    onStartEdit={() => setIsEditing(true)}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                />
-            }
-        >
+            <Section
+                title="Supervisor Action"
+                icon={<SupervisorAccount />}
+                action={
+                    <SectionEditControls
+                        canEdit={canEditSection}
+                        isEditing={isEditing}
+                        hasChanges={hasChanges}
+                        isSaving={isSaving}
+                        onStartEdit={() => setIsEditing(true)}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                    />
+                }
+            >
 
-            {isEditing ? (
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <FormControl component="fieldset">
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Was Supervisor Notified?
-                            </Typography>
-                            <RadioGroup
-                                row
-                                value={supervisorNotified ? 'yes' : 'no'}
-                                onChange={(e) => {
-                                    const value = e.target.value === 'yes';
-                                    setSupervisorNotified(value);
-                                    if (!value) {
-                                        setSupervisorAction('');
-                                    }
-                                }}
-                            >
-                                <FormControlLabel value="yes" control={<Radio />} label="Yes" />
-                                <FormControlLabel value="no" control={<Radio />} label="No" />
-                            </RadioGroup>
-                        </FormControl>
-                    </Grid>
-
-                    {(incident.supervisorId || supervisorName) && (
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                    Supervisor
-                                </Typography>
-                                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                    {supervisorName || `User #${incident.supervisorId}`}
-                                </Typography>
-                            </Box>
-                        </Grid>
-                    )}
-
-                    <Grid size={{ xs: 12 }}>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={4}
-                            label="Supervisor Action"
-                            value={supervisorAction}
-                            onChange={(e) => setSupervisorAction(e.target.value)}
-                            disabled={!supervisorNotified}
-                        />
-                    </Grid>
-                </Grid>
-            ) : (
-                <>
+                {isEditing ? (
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box>
+                            <FormControl component="fieldset">
                                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                    Supervisor Notified?
+                                    Was Supervisor Notified?
                                 </Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {incident.supervisorNotified ? (
-                                        <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
-                                    ) : (
-                                        <Chip icon={<Cancel />} label="No" size="small" />
-                                    )}
-                                </Box>
-                            </Box>
+                                <RadioGroup
+                                    row
+                                    value={supervisorNotified ? 'yes' : 'no'}
+                                    onChange={(e) => {
+                                        const value = e.target.value === 'yes';
+                                        setSupervisorNotified(value);
+                                        if (!value) {
+                                            setSupervisorAction('');
+                                        }
+                                    }}
+                                >
+                                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                                </RadioGroup>
+                            </FormControl>
                         </Grid>
 
                         {(incident.supervisorId || supervisorName) && (
@@ -186,29 +143,72 @@ export function SupervisorSection({ incident, onUpdate }: Props) {
                                 </Box>
                             </Grid>
                         )}
-                    </Grid>
 
-                    <Box sx={{ mt: 3 }}>
-                        <Box
-                            sx={{
-                                p: 2,
-                                bgcolor: (theme) => alpha(theme.palette.success.main, 0.05),
-                                borderRadius: 1,
-                                border: (theme) => `1px solid ${theme.palette.divider}`,
-                            }}
-                        >
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Supervisor Action
-                            </Typography>
-                            <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
-                                {incident.supervisorAction || 'No supervisor action recorded.'}
-                            </Typography>
+                        <Grid size={{ xs: 12 }}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={4}
+                                label="Supervisor Action"
+                                value={supervisorAction}
+                                onChange={(e) => setSupervisorAction(e.target.value)}
+                                disabled={!supervisorNotified}
+                            />
+                        </Grid>
+                    </Grid>
+                ) : (
+                    <>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                        Supervisor Notified?
+                                    </Typography>
+                                    <Box sx={{ mt: 0.5 }}>
+                                        {incident.supervisorNotified ? (
+                                            <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
+                                        ) : (
+                                            <Chip icon={<Cancel />} label="No" size="small" />
+                                        )}
+                                    </Box>
+                                </Box>
+                            </Grid>
+
+                            {(incident.supervisorId || supervisorName) && (
+                                <Grid size={{ xs: 12, md: 6 }}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                            Supervisor
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                            {supervisorName || `User #${incident.supervisorId}`}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            )}
+                        </Grid>
+
+                        <Box sx={{ mt: 3 }}>
+                            <Box
+                                sx={{
+                                    p: 2,
+                                    bgcolor: (theme) => alpha(theme.palette.success.main, 0.05),
+                                    borderRadius: 1,
+                                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                    Supervisor Action
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                                    {incident.supervisorAction || 'No supervisor action recorded.'}
+                                </Typography>
+                            </Box>
                         </Box>
-                    </Box>
-                </>
-            )}
-        </Section>
-        {ErrorDialogComponent}
+                    </>
+                )}
+            </Section>
+            {ErrorDialogComponent}
         </>
     );
 }

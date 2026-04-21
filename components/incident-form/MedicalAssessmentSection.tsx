@@ -154,256 +154,256 @@ export function MedicalAssessmentSection({ incident, onUpdate }: Props) {
 
     return (
         <>
-        <Section
-            title="Physician Follow-up"
-            icon={<LocalHospital />}
-            action={
-                <SectionEditControls
-                    canEdit={canEditSection}
-                    isEditing={isEditing}
-                    hasChanges={hasChanges}
-                    isSaving={isSaving}
-                    onStartEdit={() => setIsEditing(true)}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                />
-            }
-        >
+            <Section
+                title="Physician Follow-up"
+                icon={<LocalHospital />}
+                action={
+                    <SectionEditControls
+                        canEdit={canEditSection}
+                        isEditing={isEditing}
+                        hasChanges={hasChanges}
+                        isSaving={isSaving}
+                        onStartEdit={() => setIsEditing(true)}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                    />
+                }
+            >
 
-            {isEditing ? (
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <FormControl component="fieldset">
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Physician Notified?
-                            </Typography>
-                            <RadioGroup
-                                row
-                                value={physicianNotified ? 'yes' : 'no'}
-                                onChange={(e) => {
-                                    const value = e.target.value === 'yes';
-                                    setPhysicianNotified(value);
-                                    if (!value) {
-                                        setPhysicianSawPatient(false);
-                                        setAssessment('');
-                                        setTreatmentTypes([]);
-                                        setHospitalizedDetails('');
-                                        setTreatmentProvided('');
-                                    }
-                                }}
-                            >
-                                <FormControlLabel value="yes" control={<Radio />} label="Yes" />
-                                <FormControlLabel value="no" control={<Radio />} label="No" />
-                            </RadioGroup>
-                        </FormControl>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <FormControl component="fieldset" disabled={!physicianNotified}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Did Physician See the Patient?
-                            </Typography>
-                            <RadioGroup
-                                row
-                                value={physicianSawPatient ? 'yes' : 'no'}
-                                onChange={(e) => {
-                                    const value = e.target.value === 'yes';
-                                    setPhysicianSawPatient(value);
-                                    if (!value) {
-                                        setAssessment('');
-                                        setTreatmentTypes([]);
-                                        setHospitalizedDetails('');
-                                        setTreatmentProvided('');
-                                    }
-                                }}
-                            >
-                                <FormControlLabel value="yes" control={<Radio />} label="Yes" />
-                                <FormControlLabel value="no" control={<Radio />} label="No" />
-                            </RadioGroup>
-                        </FormControl>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                            fullWidth
-                            select
-                            label="Injury Outcome"
-                            value={injuryOutcome}
-                            onChange={(e) => setInjuryOutcome(e.target.value)}
-                            slotProps={{ select: { native: true } }}
-                        >
-                            <option value=""></option>
-                            {INJURY_OUTCOMES.map((outcome) => (
-                                <option key={outcome.value} value={outcome.value}>
-                                    {outcome.label}
-                                </option>
-                            ))}
-                        </TextField>
-                    </Grid>
-
-                    {physicianSawPatient && (
-                        <>
-                            <Grid size={{ xs: 12 }}>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={3}
-                                    label="Assessment / Diagnosis"
-                                    value={assessment}
-                                    onChange={(e) => setAssessment(e.target.value)}
-                                />
-                            </Grid>
-
-                            <Grid size={{ xs: 12, md: 8 }}>
-                                <Autocomplete
-                                    multiple
-                                    options={TREATMENT_TYPES.map((item) => item.value)}
-                                    getOptionLabel={(value) =>
-                                        TREATMENT_TYPES.find((item) => item.value === value)?.label || value
-                                    }
-                                    value={treatmentTypes}
-                                    onChange={(_, next) => {
-                                        setTreatmentTypes(next);
-                                        if (!next.includes('hospitalized') && !next.includes('transferred')) {
-                                            setHospitalizedDetails('');
-                                        }
-                                    }}
-                                    renderInput={(params) => (
-                                        <TextField {...params} label="Nature of Treatment/Exam" placeholder="Select all that apply" />
-                                    )}
-                                />
-                            </Grid>
-
-                            {includeHospitalizedDetails && (
-                                <Grid size={{ xs: 12, md: 4 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Hospitalized / Transferred To"
-                                        value={hospitalizedDetails}
-                                        onChange={(e) => setHospitalizedDetails(e.target.value)}
-                                    />
-                                </Grid>
-                            )}
-
-                            <Grid size={{ xs: 12 }}>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={4}
-                                    label="Physician's Notes"
-                                    value={treatmentProvided}
-                                    onChange={(e) => setTreatmentProvided(e.target.value)}
-                                />
-                            </Grid>
-                        </>
-                    )}
-                </Grid>
-            ) : (
-                <>
+                {isEditing ? (
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box>
+                            <FormControl component="fieldset">
                                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                                     Physician Notified?
                                 </Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {incident.physicianNotified ? (
-                                        <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
-                                    ) : (
-                                        <Chip icon={<Cancel />} label="No" size="small" />
-                                    )}
-                                </Box>
-                            </Box>
+                                <RadioGroup
+                                    row
+                                    value={physicianNotified ? 'yes' : 'no'}
+                                    onChange={(e) => {
+                                        const value = e.target.value === 'yes';
+                                        setPhysicianNotified(value);
+                                        if (!value) {
+                                            setPhysicianSawPatient(false);
+                                            setAssessment('');
+                                            setTreatmentTypes([]);
+                                            setHospitalizedDetails('');
+                                            setTreatmentProvided('');
+                                        }
+                                    }}
+                                >
+                                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                                </RadioGroup>
+                            </FormControl>
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box>
+                            <FormControl component="fieldset" disabled={!physicianNotified}>
                                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                                     Did Physician See the Patient?
                                 </Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {incident.physicianSawPatient ? (
-                                        <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
-                                    ) : (
-                                        <Chip icon={<Cancel />} label="No" size="small" />
-                                    )}
-                                </Box>
-                            </Box>
+                                <RadioGroup
+                                    row
+                                    value={physicianSawPatient ? 'yes' : 'no'}
+                                    onChange={(e) => {
+                                        const value = e.target.value === 'yes';
+                                        setPhysicianSawPatient(value);
+                                        if (!value) {
+                                            setAssessment('');
+                                            setTreatmentTypes([]);
+                                            setHospitalizedDetails('');
+                                            setTreatmentProvided('');
+                                        }
+                                    }}
+                                >
+                                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                                </RadioGroup>
+                            </FormControl>
                         </Grid>
-                    </Grid>
 
-                    {incident.assessment && (
-                        <Box sx={{ mt: 3 }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Assessment / Diagnosis
-                            </Typography>
-                            <Box
-                                sx={{
-                                    mt: 1,
-                                    p: 2,
-                                    bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-                                    borderRadius: 1,
-                                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                                }}
-                            >
-                                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                                    {incident.assessment}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )}
-
-                    <Grid container spacing={2} sx={{ mt: 2 }}>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <InfoRow label="Injury Outcome" value={injuryOutcomeLabel} />
+                            <TextField
+                                fullWidth
+                                select
+                                label="Injury Outcome"
+                                value={injuryOutcome}
+                                onChange={(e) => setInjuryOutcome(e.target.value)}
+                                slotProps={{ select: { native: true } }}
+                            >
+                                <option value=""></option>
+                                {INJURY_OUTCOMES.map((outcome) => (
+                                    <option key={outcome.value} value={outcome.value}>
+                                        {outcome.label}
+                                    </option>
+                                ))}
+                            </TextField>
                         </Grid>
 
-                        {treatmentLabels.length > 0 && (
-                            <Grid size={{ xs: 12 }}>
+                        {physicianSawPatient && (
+                            <>
+                                <Grid size={{ xs: 12 }}>
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={3}
+                                        label="Assessment / Diagnosis"
+                                        value={assessment}
+                                        onChange={(e) => setAssessment(e.target.value)}
+                                    />
+                                </Grid>
+
+                                <Grid size={{ xs: 12, md: 8 }}>
+                                    <Autocomplete
+                                        multiple
+                                        options={TREATMENT_TYPES.map((item) => item.value)}
+                                        getOptionLabel={(value) =>
+                                            TREATMENT_TYPES.find((item) => item.value === value)?.label || value
+                                        }
+                                        value={treatmentTypes}
+                                        onChange={(_, next) => {
+                                            setTreatmentTypes(next);
+                                            if (!next.includes('hospitalized') && !next.includes('transferred')) {
+                                                setHospitalizedDetails('');
+                                            }
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField {...params} label="Nature of Treatment/Exam" placeholder="Select all that apply" />
+                                        )}
+                                    />
+                                </Grid>
+
+                                {includeHospitalizedDetails && (
+                                    <Grid size={{ xs: 12, md: 4 }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Hospitalized / Transferred To"
+                                            value={hospitalizedDetails}
+                                            onChange={(e) => setHospitalizedDetails(e.target.value)}
+                                        />
+                                    </Grid>
+                                )}
+
+                                <Grid size={{ xs: 12 }}>
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={4}
+                                        label="Physician's Notes"
+                                        value={treatmentProvided}
+                                        onChange={(e) => setTreatmentProvided(e.target.value)}
+                                    />
+                                </Grid>
+                            </>
+                        )}
+                    </Grid>
+                ) : (
+                    <>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <Box>
                                     <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                        Nature of Treatment/Exam
+                                        Physician Notified?
                                     </Typography>
-                                    <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                        {treatmentLabels.map((label, idx) => (
-                                            <Chip key={idx} label={label} color="primary" size="small" variant="outlined" />
-                                        ))}
+                                    <Box sx={{ mt: 0.5 }}>
+                                        {incident.physicianNotified ? (
+                                            <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
+                                        ) : (
+                                            <Chip icon={<Cancel />} label="No" size="small" />
+                                        )}
                                     </Box>
                                 </Box>
                             </Grid>
-                        )}
 
-                        {incident.hospitalizedDetails && (
-                            <Grid size={{ xs: 12 }}>
-                                <InfoRow label="Hospitalized / Transferred To" value={incident.hospitalizedDetails} />
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                        Did Physician See the Patient?
+                                    </Typography>
+                                    <Box sx={{ mt: 0.5 }}>
+                                        {incident.physicianSawPatient ? (
+                                            <Chip icon={<CheckCircle />} label="Yes" color="success" size="small" />
+                                        ) : (
+                                            <Chip icon={<Cancel />} label="No" size="small" />
+                                        )}
+                                    </Box>
+                                </Box>
                             </Grid>
-                        )}
-                    </Grid>
+                        </Grid>
 
-                    {incident.treatmentProvided && (
-                        <Box sx={{ mt: 3 }}>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Physician's Notes
-                            </Typography>
-                            <Box
-                                sx={{
-                                    mt: 1,
-                                    p: 2,
-                                    bgcolor: (theme) => alpha(theme.palette.success.main, 0.05),
-                                    borderRadius: 1,
-                                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                                }}
-                            >
-                                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                                    {incident.treatmentProvided}
+                        {incident.assessment && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                    Assessment / Diagnosis
                                 </Typography>
+                                <Box
+                                    sx={{
+                                        mt: 1,
+                                        p: 2,
+                                        bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                                        borderRadius: 1,
+                                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                                    }}
+                                >
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {incident.assessment}
+                                    </Typography>
+                                </Box>
                             </Box>
-                        </Box>
-                    )}
-                </>
-            )}
-        </Section>
-        {ErrorDialogComponent}
+                        )}
+
+                        <Grid container spacing={2} sx={{ mt: 2 }}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <InfoRow label="Injury Outcome" value={injuryOutcomeLabel} />
+                            </Grid>
+
+                            {treatmentLabels.length > 0 && (
+                                <Grid size={{ xs: 12 }}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                            Nature of Treatment/Exam
+                                        </Typography>
+                                        <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                            {treatmentLabels.map((label, idx) => (
+                                                <Chip key={idx} label={label} color="primary" size="small" variant="outlined" />
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                            )}
+
+                            {incident.hospitalizedDetails && (
+                                <Grid size={{ xs: 12 }}>
+                                    <InfoRow label="Hospitalized / Transferred To" value={incident.hospitalizedDetails} />
+                                </Grid>
+                            )}
+                        </Grid>
+
+                        {incident.treatmentProvided && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                                    Physician's Notes
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        mt: 1,
+                                        p: 2,
+                                        bgcolor: (theme) => alpha(theme.palette.success.main, 0.05),
+                                        borderRadius: 1,
+                                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                                    }}
+                                >
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {incident.treatmentProvided}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+                    </>
+                )}
+            </Section>
+            {ErrorDialogComponent}
         </>
     );
 }

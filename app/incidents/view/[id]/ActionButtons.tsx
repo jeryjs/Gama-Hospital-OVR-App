@@ -64,30 +64,30 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
 
   return (
     <>
-    <Box sx={{ position: 'sticky', bottom: 16, zIndex: 10 }}>
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{
-          justifyContent: "flex-end",
-          p: 2,
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          boxShadow: 3
-        }}>
-        {canEdit && (
-          <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
-            {canEditDraft && !canEditAsQI ? 'Edit Draft' : 'Edit Report'}
-          </Button>
-        )}
-        {canDelete && (
-          <Button variant="outlined" color="error" startIcon={<Delete />} onClick={handleDelete}>
-            Delete Report
-          </Button>
-        )}
-      </Stack>
-    </Box>
-    {ErrorDialogComponent}
+      <Box sx={{ position: 'sticky', bottom: 16, zIndex: 10 }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            justifyContent: "flex-end",
+            p: 2,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 3
+          }}>
+          {canEdit && (
+            <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
+              {canEditDraft && !canEditAsQI ? 'Edit Draft' : 'Edit Report'}
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="outlined" color="error" startIcon={<Delete />} onClick={handleDelete}>
+              Delete Report
+            </Button>
+          )}
+        </Stack>
+      </Box>
+      {ErrorDialogComponent}
     </>
   );
 }
