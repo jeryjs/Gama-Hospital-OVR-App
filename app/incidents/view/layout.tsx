@@ -12,7 +12,6 @@ function SidebarWrapper({
     collapsed: boolean;
     onToggle: () => void;
 }) {
-    return // TODO: Disabling the sidebar for now until I optimize it further.
     return (
         <Suspense fallback={
             <Box sx={{
@@ -36,6 +35,9 @@ export default function IncidentViewLayout({
     children: React.ReactNode;
 }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    // TODO: Disabling the sidebar & layout for now until I optimize it further.
+    return children;
 
     return (
         <AppLayout>

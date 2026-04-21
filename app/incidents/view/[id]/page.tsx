@@ -24,6 +24,8 @@ import { ActionButtons } from './ActionButtons';
 import { CommentsSection } from './CommentsSection';
 import { IncidentHeader } from './IncidentHeader';
 import { WorkflowSection } from './WorkflowSection';
+import { AppLayout } from '@/components/AppLayout';
+import { motion } from 'framer-motion';
 
 // Inner component that fetches data
 function IncidentDetails() {
@@ -48,43 +50,49 @@ function IncidentDetails() {
   };
 
   return (
-    <>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 4 }}>
-        <IncidentHeader incident={incident} />
+    <AppLayout>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+        >
+          <IncidentHeader incident={incident} />
 
-        {/* Show timeline only after submission */}
-        {incident.status !== 'draft' && (
-          <StatusTimeline status={incident.status} submittedAt={incident.submittedAt} qiRejectionReason={incident.qiRejectionReason} />
-        )}
+          {/* Show timeline only after submission */}
+          {incident.status !== 'draft' && (
+            <StatusTimeline status={incident.status} submittedAt={incident.submittedAt} qiRejectionReason={incident.qiRejectionReason} />
+          )}
 
-        {/* ========== STATIC INFORMATION SECTIONS ========== */}
-        {/* Always visible - Basic incident information */}
-        <PatientInfoSection incident={incident} />
-        <OccurrenceDetailsSection incident={incident} />
+          {/* ========== STATIC INFORMATION SECTIONS ========== */}
+          {/* Always visible - Basic incident information */}
+          <PatientInfoSection incident={incident} />
+          <OccurrenceDetailsSection incident={incident} />
 
-        {/* Medical Assessment */}
-        <MedicalAssessmentSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
+          {/* Medical Assessment */}
+          <MedicalAssessmentSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
-        {/* Supervisor Section */}
-        <SupervisorSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
+          {/* Supervisor Section */}
+          <SupervisorSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
-        {/* Risk Classification */}
-        <RiskClassificationSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
+          {/* Risk Classification */}
+          <RiskClassificationSection incident={incident} onUpdate={canEditNonBasicSections ? mutate : undefined} />
 
-        {/* ========== WORKFLOW SECTIONS ========== */}
-        {/* Status-driven workflow components */}
-        <WorkflowSection
-          incident={incident}
-          onUpdate={mutate}
-          onClosureSuccess={handleClosureSuccess}
-        />
+          {/* ========== WORKFLOW SECTIONS ========== */}
+          {/* Status-driven workflow components */}
+          <WorkflowSection
+            incident={incident}
+            onUpdate={mutate}
+            onClosureSuccess={handleClosureSuccess}
+          />
 
-        {/* ========== COMMENTS & ACTIONS ========== */}
-        {/* Comments - Always visible after submission */}
-        {incident.status !== 'draft' && <CommentsSection incidentId={incident.id} />}
+          {/* ========== COMMENTS & ACTIONS ========== */}
+          {/* Comments - Always visible after submission */}
+          {incident.status !== 'draft' && <CommentsSection incidentId={incident.id} />}
 
-        {/* Action Buttons - Context-aware actions */}
-        <ActionButtons incident={incident} onUpdate={mutate} hidden={true} />
+          {/* Action Buttons - Context-aware actions */}
+          <ActionButtons incident={incident} onUpdate={mutate} hidden={true} />
+        </motion.div>
       </Box>
 
       {/* Completion Animation */}
@@ -93,7 +101,7 @@ function IncidentDetails() {
         incidentId={incident.id}
         onClose={() => setShowCompletion(false)}
       />
-    </>
+    </AppLayout>
   );
 }
 
