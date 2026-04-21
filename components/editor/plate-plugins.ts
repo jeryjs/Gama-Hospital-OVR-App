@@ -11,11 +11,13 @@ import {
     BlockquotePlugin,
 } from '@platejs/basic-nodes/react';
 import { ListPlugin } from '@platejs/list/react';
+import { toggleList } from '@platejs/list';
 import { LinkPlugin } from '@platejs/link/react';
-import { AutoformatPlugin } from '@platejs/autoformat';
+import { AutoformatPlugin, type AutoformatRule } from '@platejs/autoformat';
+import { KEYS } from 'platejs';
 
 // Autoformat rules for markdown-like shortcuts
-const autoformatRules = [
+const autoformatRules: AutoformatRule[] = [
     // Bold: **text** or __text__
     {
         mode: 'mark' as const,
@@ -50,17 +52,29 @@ const autoformatRules = [
         type: 'h3',
         match: '### ',
     },
-    // Bulleted list: - or * at start of line
+];
+
+const autoformatListRules: AutoformatRule[] = [
     {
         mode: 'block' as const,
-        type: 'ul',
+        type: 'list',
         match: ['- ', '* '],
+        format: (editor: any) => {
+            toggleList(editor, { listStyleType: KEYS.ul });
+        },
     },
-    // Numbered list: 1. at start of line
     {
         mode: 'block' as const,
-        type: 'ol',
-        match: '1. ',
+        type: 'list',
+        match: '^\\d+[.)]\\s$',
+        matchByRegex: true,
+        format: (editor: any, { matchString }: { matchString: string }) => {
+            const start = Number.parseInt(matchString, 10) || 1;
+            toggleList(editor, {
+                listStyleType: KEYS.ol,
+                listRestartPolite: start,
+            });
+        },
     },
 ];
 
@@ -85,7 +99,7 @@ export const editorPlugins = [
     // Autoformat for markdown shortcuts
     AutoformatPlugin.configure({
         options: {
-            rules: autoformatRules,
+            rules: [...autoformatRules, ...autoformatListRules],
             enableUndoOnDelete: true,
         },
     }),

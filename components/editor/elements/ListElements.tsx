@@ -2,6 +2,11 @@
 
 import { Box } from '@mui/material';
 import type { PlateElementProps } from 'platejs/react';
+import {
+    WORD_LIST_BASE_SX,
+    WORD_LIST_ITEM_CONTENT_SX,
+    WORD_LIST_ITEM_SX,
+} from '../word-styles';
 
 export function BulletedListElement({ children, attributes }: PlateElementProps) {
     return (
@@ -9,11 +14,10 @@ export function BulletedListElement({ children, attributes }: PlateElementProps)
             component="ul"
             {...attributes}
             sx={{
-                pl: 3,
-                my: 1,
+                ...WORD_LIST_BASE_SX,
                 listStyleType: 'disc',
-                '& > li': {
-                    display: 'list-item',
+                '& > *::marker': {
+                    color: 'text.primary',
                 },
             }}
         >
@@ -28,11 +32,10 @@ export function NumberedListElement({ children, attributes }: PlateElementProps)
             component="ol"
             {...attributes}
             sx={{
-                pl: 3,
-                my: 1,
+                ...WORD_LIST_BASE_SX,
                 listStyleType: 'decimal',
-                '& > li': {
-                    display: 'list-item',
+                '& > *::marker': {
+                    color: 'text.primary',
                 },
             }}
         >
@@ -46,10 +49,7 @@ export function ListItemElement({ children, attributes }: PlateElementProps) {
         <Box
             component="li"
             {...attributes}
-            sx={{
-                py: 0.25,
-                lineHeight: 1.7,
-            }}
+            sx={WORD_LIST_ITEM_SX}
         >
             {children}
         </Box>
@@ -61,10 +61,7 @@ export function ListItemContentElement({ children, attributes }: PlateElementPro
         <Box
             component="span"
             {...attributes}
-            sx={{
-                display: 'inline',
-                lineHeight: 1.7,
-            }}
+            sx={WORD_LIST_ITEM_CONTENT_SX}
         >
             {children}
         </Box>

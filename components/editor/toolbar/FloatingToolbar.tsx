@@ -25,13 +25,11 @@ import {
 } from '@mui/icons-material';
 import { ToolbarButton } from './ToolbarButton';
 import { useEditorRef, useEditorSelector } from 'platejs/react';
+import { ListStyleType, someList, toggleList } from '@platejs/list';
 import {
     MARK_BOLD,
     MARK_ITALIC,
     MARK_UNDERLINE,
-    ELEMENT_UL,
-    ELEMENT_OL,
-    ELEMENT_PARAGRAPH,
 } from '../plate-plugins';
 
 export function FloatingToolbar() {
@@ -74,11 +72,11 @@ export function FloatingToolbar() {
         []
     );
     const isBulletList = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: ELEMENT_UL } }),
+        (editor) => someList(editor, ListStyleType.Disc),
         []
     );
     const isNumberedList = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: ELEMENT_OL } }),
+        (editor) => someList(editor, ListStyleType.Decimal),
         []
     );
     const hasLink = useEditorSelector(
@@ -116,14 +114,9 @@ export function FloatingToolbar() {
     );
 
     const handleToggleBlock = useCallback(
-        (blockType: string) => {
+        (listType: ListStyleType) => {
             if (!editor) return;
-            const isActive = editor.api.some({ match: { type: blockType } });
-            if (isActive) {
-                editor.tf.setNodes({ type: ELEMENT_PARAGRAPH }, { match: (n) => 'type' in n });
-            } else {
-                editor.tf.setNodes({ type: blockType }, { match: (n) => 'type' in n });
-            }
+            toggleList(editor, { listStyleType: listType });
             editor.tf.focus();
         },
         [editor]
@@ -230,13 +223,13 @@ export function FloatingToolbar() {
                                         icon={<FormatListBulleted fontSize="small" />}
                                         tooltip="Bullet List"
                                         isActive={isBulletList}
-                                        onClick={() => handleToggleBlock(ELEMENT_UL)}
+                                        onClick={() => handleToggleBlock(ListStyleType.Disc)}
                                     />
                                     <ToolbarButton
                                         icon={<FormatListNumbered fontSize="small" />}
                                         tooltip="Numbered List"
                                         isActive={isNumberedList}
-                                        onClick={() => handleToggleBlock(ELEMENT_OL)}
+                                        onClick={() => handleToggleBlock(ListStyleType.Decimal)}
                                     />
 
                                     <Divider orientation="vertical" flexItem sx={{ mx: 0.25, height: 20 }} />

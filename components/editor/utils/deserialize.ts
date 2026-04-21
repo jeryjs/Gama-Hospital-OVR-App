@@ -278,23 +278,19 @@ export function deserializeFromMarkdown(markdown: string | undefined | null): Ed
             }
 
             case 'list':
-                return [{
-                    type: node.ordered ? 'ol' : 'ul',
-                    children: (node.children || []).map((item: any) => {
-                        const firstParagraph = (item.children || []).find((c: any) => c.type === 'paragraph');
-                        const licChildren = firstParagraph
-                            ? inlineFromMd(firstParagraph.children || [])
-                            : [{ text: '' }];
+                return (node.children || []).map((item: any) => {
+                    const firstParagraph = (item.children || []).find((c: any) => c.type === 'paragraph');
+                    const listChildren = firstParagraph
+                        ? inlineFromMd(firstParagraph.children || [])
+                        : [{ text: '' }];
 
-                        return {
-                            type: 'li',
-                            children: [{
-                                type: 'lic',
-                                children: licChildren,
-                            }],
-                        };
-                    }),
-                }];
+                    return {
+                        type: 'p',
+                        listStyleType: node.ordered ? 'decimal' : 'disc',
+                        indent: 1,
+                        children: listChildren.length ? listChildren : [{ text: '' }],
+                    };
+                });
 
             case 'thematicBreak':
                 return [{ type: 'p', children: [{ text: '---' }] }];

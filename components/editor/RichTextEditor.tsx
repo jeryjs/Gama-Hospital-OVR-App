@@ -20,6 +20,7 @@ import {
 } from './elements';
 import type { EditorValue } from './plate-types';
 import { deserializeFromMarkdown, serializeToMarkdown } from './utils';
+import { WORD_BASE_FONT_SIZE, WORD_FONT_FAMILY, WORD_LINE_HEIGHT } from './word-styles';
 
 export interface RichTextEditorProps {
     value?: string;
@@ -169,6 +170,9 @@ export function RichTextEditor({
                         maxHeight,
                         overflow: 'auto',
                         p: 2,
+                        fontFamily: WORD_FONT_FAMILY,
+                        fontSize: WORD_BASE_FONT_SIZE,
+                        lineHeight: WORD_LINE_HEIGHT,
                     }}
                 >
                     <PlateContent
@@ -179,6 +183,9 @@ export function RichTextEditor({
                         style={{
                             outline: 'none',
                             minHeight: 'inherit',
+                            fontFamily: WORD_FONT_FAMILY,
+                            fontSize: WORD_BASE_FONT_SIZE,
+                            lineHeight: String(WORD_LINE_HEIGHT),
                         }}
                     />
                 </Box>

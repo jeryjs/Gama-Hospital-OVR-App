@@ -3,6 +3,17 @@
 import { Box, Typography, Link, alpha } from '@mui/material';
 import type { EditorValue, TElement, TText } from './plate-types';
 import { deserializeFromMarkdown } from './utils';
+import {
+    WORD_BASE_FONT_SIZE,
+    WORD_FONT_FAMILY,
+    WORD_HEADING_SX,
+    WORD_LINE_HEIGHT,
+    WORD_LIST_BASE_SX,
+    WORD_LIST_ITEM_CONTENT_SX,
+    WORD_LIST_ITEM_SX,
+    WORD_PARAGRAPH_SX,
+    getWordListParagraphSx,
+} from './word-styles';
 
 interface RichTextPreviewProps {
     value?: string | null;
@@ -55,13 +66,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
             return (
                 <Typography
                     key={index}
-                    variant="h5"
                     component="h1"
                     sx={{
-                        fontWeight: 700,
-                        mt: index > 0 ? 2 : 0,
-                        mb: 1,
-                        color: 'text.primary',
+                        ...WORD_HEADING_SX.h1,
+                        mt: index > 0 ? WORD_HEADING_SX.h1.mt : 0,
                     }}
                 >
                     {children}
@@ -72,13 +80,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
             return (
                 <Typography
                     key={index}
-                    variant="h6"
                     component="h2"
                     sx={{
-                        fontWeight: 600,
-                        mt: index > 0 ? 1.5 : 0,
-                        mb: 0.75,
-                        color: 'text.primary',
+                        ...WORD_HEADING_SX.h2,
+                        mt: index > 0 ? WORD_HEADING_SX.h2.mt : 0,
                     }}
                 >
                     {children}
@@ -89,13 +94,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
             return (
                 <Typography
                     key={index}
-                    variant="subtitle1"
                     component="h3"
                     sx={{
-                        fontWeight: 600,
-                        mt: index > 0 ? 1.25 : 0,
-                        mb: 0.5,
-                        color: 'text.primary',
+                        ...WORD_HEADING_SX.h3,
+                        mt: index > 0 ? WORD_HEADING_SX.h3.mt : 0,
                     }}
                 >
                     {children}
@@ -114,6 +116,9 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                         py: 0.5,
                         my: 1.5,
                         mx: 0,
+                        fontFamily: WORD_FONT_FAMILY,
+                        fontSize: WORD_BASE_FONT_SIZE,
+                        lineHeight: WORD_LINE_HEIGHT,
                         backgroundColor: alpha(theme.palette.primary.main, 0.08),
                         borderRadius: '0 8px 8px 0',
                         fontStyle: 'italic',
@@ -130,14 +135,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     key={index}
                     component="ul"
                     sx={{
-                        pl: 3,
-                        my: 1,
+                        ...WORD_LIST_BASE_SX,
                         listStyleType: 'disc',
-                        '& > li': {
-                            display: 'list-item',
-                        },
-                        '& > li::marker': {
-                            color: 'primary.main',
+                        '& > *::marker': {
+                            color: 'text.primary',
                         },
                     }}
                 >
@@ -151,15 +152,10 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                     key={index}
                     component="ol"
                     sx={{
-                        pl: 3,
-                        my: 1,
+                        ...WORD_LIST_BASE_SX,
                         listStyleType: 'decimal',
-                        '& > li': {
-                            display: 'list-item',
-                        },
-                        '& > li::marker': {
-                            color: 'primary.main',
-                            fontWeight: 600,
+                        '& > *::marker': {
+                            color: 'text.primary',
                         },
                     }}
                 >
@@ -172,11 +168,7 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                 <Box
                     key={index}
                     component="li"
-                    sx={{
-                        py: 0.25,
-                        lineHeight: 1.7,
-                        color: 'text.primary',
-                    }}
+                    sx={WORD_LIST_ITEM_SX}
                 >
                     {children}
                 </Box>
@@ -187,10 +179,7 @@ function renderNode(node: unknown, index: number): React.ReactNode {
                 <Box
                     key={index}
                     component="span"
-                    sx={{
-                        lineHeight: 1.7,
-                        color: 'text.primary',
-                    }}
+                    sx={WORD_LIST_ITEM_CONTENT_SX}
                 >
                     {children}
                 </Box>
@@ -220,22 +209,27 @@ function renderNode(node: unknown, index: number): React.ReactNode {
 
         case 'p':
         default:
+            if (node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string') {
+                const listNode = node as TElement & { listStyleType: string; indent?: number };
+
+                return (
+                    <Typography
+                        key={index}
+                        variant="body1"
+                        component="p"
+                        sx={getWordListParagraphSx(listNode.listStyleType, listNode.indent ?? 1)}
+                    >
+                        {children}
+                    </Typography>
+                );
+            }
+
             return (
                 <Typography
                     key={index}
-                    variant="body2"
+                    variant="body1"
                     component="p"
-                    sx={{
-                        my: 0.5,
-                        lineHeight: 1.7,
-                        color: 'text.primary',
-                        '&:first-of-type': {
-                            mt: 0,
-                        },
-                        '&:last-of-type': {
-                            mb: 0,
-                        },
-                    }}
+                    sx={WORD_PARAGRAPH_SX}
                 >
                     {children}
                 </Typography>
@@ -287,6 +281,9 @@ export function RichTextPreview({
     return (
         <Box
             sx={{
+                fontFamily: WORD_FONT_FAMILY,
+                fontSize: WORD_BASE_FONT_SIZE,
+                lineHeight: WORD_LINE_HEIGHT,
                 '& > *:first-of-type': {
                     mt: 0,
                 },

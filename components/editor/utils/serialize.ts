@@ -18,6 +18,13 @@ function isElementNode(node: unknown): node is TElement {
     return typeof node === 'object' && node !== null && 'type' in node && 'children' in node;
 }
 
+function isListParagraphNode(node: unknown): node is TElement & {
+    listStyleType?: string;
+    indent?: number;
+} {
+    return isElementNode(node) && node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string';
+}
+
 /**
  * Convert Plate value to plain text
  * @param value - The Plate editor value
@@ -42,6 +49,10 @@ export function serializeToPlainText(
                 ?.map((child) => extractText(child))
                 .join('') || '';
 
+            if (node.type === 'p' && typeof (node as { listStyleType?: unknown }).listStyleType === 'string') {
+                return childText;
+            }
+
             // Add appropriate separators based on block type
             switch (node.type) {
                 case 'h1':
@@ -52,11 +63,22 @@ export function serializeToPlainText(
                     return childText;
                 case 'li':
                 case 'lic':
-                    return `• ${childText}`;
+                    return childText;
                 case 'ul':
+                    return node.children
+                        ?.map((child) => {
+                            const text = extractText(child).trim();
+                            return text ? `• ${text}` : '';
+                        })
+                        .filter(Boolean)
+                        .join(separator) || '';
                 case 'ol':
                     return node.children
-                        ?.map((child) => extractText(child))
+                        ?.map((child, index) => {
+                            const text = extractText(child).trim();
+                            return text ? `${index + 1}. ${text}` : '';
+                        })
+                        .filter(Boolean)
                         .join(separator) || '';
                 default:
                     return childText;
@@ -66,8 +88,31 @@ export function serializeToPlainText(
         return '';
     };
 
+    let orderedIndex = 0;
+    let inOrderedList = false;
+
     return value
-        .map((node) => extractText(node))
+        .map((node) => {
+            if (isListParagraphNode(node)) {
+                const text = extractText(node).trim();
+
+                if (!text) return '';
+
+                if (node.listStyleType === 'decimal') {
+                    orderedIndex = inOrderedList ? orderedIndex + 1 : 1;
+                    inOrderedList = true;
+                    return `${orderedIndex}. ${text}`;
+                }
+
+                inOrderedList = false;
+                orderedIndex = 0;
+                return `• ${text}`;
+            }
+
+            inOrderedList = false;
+            orderedIndex = 0;
+            return extractText(node);
+        })
         .filter(Boolean)
         .join(separator)
         .trim();
@@ -179,6 +224,17 @@ function toMdInline(node: unknown): any[] {
     return node.children?.flatMap((child) => toMdInline(child)) || [];
 }
 
+function toMdListItem(node: TElement): any {
+    return {
+        type: 'listItem',
+        spread: false,
+        children: [{
+            type: 'paragraph',
+            children: node.children?.flatMap((child) => toMdInline(child)) || [{ type: 'text', value: '' }],
+        }],
+    };
+}
+
 function toMdBlock(node: unknown): any[] {
     if (!isElementNode(node)) {
         return [];
@@ -242,9 +298,39 @@ export function serializeToMarkdown(value: EditorValue | undefined | null): stri
         return '';
     }
 
+    const rootChildren: any[] = [];
+    let activeList: { ordered: boolean; indent: number; node: any } | null = null;
+
+    for (const node of value) {
+        if (isListParagraphNode(node)) {
+            const ordered = node.listStyleType === 'decimal';
+            const indent = node.indent ?? 1;
+
+            if (!activeList || activeList.ordered !== ordered || activeList.indent !== indent) {
+                activeList = {
+                    ordered,
+                    indent,
+                    node: {
+                        type: 'list',
+                        ordered,
+                        spread: false,
+                        children: [],
+                    },
+                };
+                rootChildren.push(activeList.node);
+            }
+
+            activeList.node.children.push(toMdListItem(node));
+            continue;
+        }
+
+        activeList = null;
+        rootChildren.push(...toMdBlock(node));
+    }
+
     const root = {
         type: 'root',
-        children: value.flatMap((node) => toMdBlock(node)),
+        children: rootChildren,
     } as any;
 
     return unified()

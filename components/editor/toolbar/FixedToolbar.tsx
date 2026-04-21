@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { ToolbarButton } from './ToolbarButton';
 import { useEditorRef, useEditorSelector } from 'platejs/react';
+import { ListStyleType, someList, toggleList } from '@platejs/list';
 import {
     MARK_BOLD,
     MARK_ITALIC,
@@ -34,8 +35,6 @@ import {
     ELEMENT_H3,
     ELEMENT_PARAGRAPH,
     ELEMENT_BLOCKQUOTE,
-    ELEMENT_UL,
-    ELEMENT_OL,
 } from '../plate-plugins';
 
 export function FixedToolbar() {
@@ -59,34 +58,61 @@ export function FixedToolbar() {
 
     // Check active block states
     const isBlockquote = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: ELEMENT_BLOCKQUOTE } }),
+        (editor) => Boolean(editor.api.above({ match: { type: ELEMENT_BLOCKQUOTE } })),
         []
     );
     const isBulletList = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: ELEMENT_UL } }),
+        (editor) => someList(editor, ListStyleType.Disc),
         []
     );
     const isNumberedList = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: ELEMENT_OL } }),
+        (editor) => someList(editor, ListStyleType.Decimal),
         []
     );
     const hasLink = useEditorSelector(
-        (editor) => editor.api.some({ match: { type: 'a' } }),
+        (editor) => Boolean(editor.api.above({ match: { type: 'a' } })),
         []
     );
 
     // Determine current block type for heading selector
     const currentBlockType = useEditorSelector((editor) => {
-        if (editor.api.some({ match: { type: ELEMENT_H1 } })) return ELEMENT_H1;
-        if (editor.api.some({ match: { type: ELEMENT_H2 } })) return ELEMENT_H2;
-        if (editor.api.some({ match: { type: ELEMENT_H3 } })) return ELEMENT_H3;
+        const blockEntry = editor.api.block();
+        const blockType = String((blockEntry?.[0] as { type?: unknown } | undefined)?.type || '');
+
+        if (blockType === ELEMENT_H1) return ELEMENT_H1;
+        if (blockType === ELEMENT_H2) return ELEMENT_H2;
+        if (blockType === ELEMENT_H3) return ELEMENT_H3;
+
         return ELEMENT_PARAGRAPH;
     }, []);
 
     const handleBlockChange = useCallback(
         (value: string) => {
             if (!editor) return;
-            editor.tf.setNodes({ type: value }, { match: (n) => 'type' in n });
+            editor.tf.unsetNodes(
+                ['listStyleType', 'indent', 'checked', 'listStart', 'listRestart', 'listRestartPolite'],
+                { match: (node) => 'type' in node && (node as { type?: unknown }).type === ELEMENT_PARAGRAPH }
+            );
+            editor.tf.setNodes(
+                { type: value },
+                {
+                    match: (node) => {
+                        if (!(node && typeof node === 'object' && 'type' in node)) {
+                            return false;
+                        }
+
+                        const nodeType = String((node as { type?: unknown }).type || '');
+
+                        return (
+                            nodeType === ELEMENT_PARAGRAPH ||
+                            nodeType === ELEMENT_H1 ||
+                            nodeType === ELEMENT_H2 ||
+                            nodeType === ELEMENT_H3 ||
+                            nodeType === ELEMENT_BLOCKQUOTE
+                        );
+                    },
+                }
+            );
             editor.tf.focus();
         },
         [editor]
@@ -104,12 +130,16 @@ export function FixedToolbar() {
     const handleToggleBlock = useCallback(
         (blockType: string) => {
             if (!editor) return;
-            const isActive = editor.api.some({ match: { type: blockType } });
-            if (isActive) {
-                editor.tf.setNodes({ type: ELEMENT_PARAGRAPH }, { match: (n) => 'type' in n });
-            } else {
-                editor.tf.setNodes({ type: blockType }, { match: (n) => 'type' in n });
-            }
+            editor.tf.toggleBlock(blockType);
+            editor.tf.focus();
+        },
+        [editor]
+    );
+
+    const handleToggleList = useCallback(
+        (listType: ListStyleType) => {
+            if (!editor) return;
+            toggleList(editor, { listStyleType: listType });
             editor.tf.focus();
         },
         [editor]
@@ -208,13 +238,13 @@ export function FixedToolbar() {
                     icon={<FormatListBulleted fontSize="small" />}
                     tooltip="Bullet List"
                     isActive={isBulletList}
-                    onClick={() => handleToggleBlock(ELEMENT_UL)}
+                    onClick={() => handleToggleList(ListStyleType.Disc)}
                 />
                 <ToolbarButton
                     icon={<FormatListNumbered fontSize="small" />}
                     tooltip="Numbered List"
                     isActive={isNumberedList}
-                    onClick={() => handleToggleBlock(ELEMENT_OL)}
+                    onClick={() => handleToggleList(ListStyleType.Decimal)}
                 />
 
                 <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
