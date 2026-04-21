@@ -12,7 +12,18 @@ const MAIL_ENABLED = process.env.MAIL_NOTIFICATIONS_ENABLED !== 'false';
 const MAIL_OUTBOX_MAX_ATTEMPTS = Number(process.env.MAIL_OUTBOX_MAX_ATTEMPTS || 5);
 const MAIL_OUTBOX_BASE_RETRY_MINUTES = Number(process.env.MAIL_OUTBOX_BASE_RETRY_MINUTES || 5);
 const MAIL_OUTBOX_DEFAULT_BATCH = Number(process.env.MAIL_OUTBOX_RETRY_BATCH || 10);
+const MAIL_TRANSPORT = (process.env.MAIL_TRANSPORT || 'smtp').trim().toLowerCase();
+const MAIL_SMTP_HOST = (process.env.MAIL_SMTP_HOST || '').trim();
+const MAIL_SMTP_PORT = Number(process.env.MAIL_SMTP_PORT || 587);
+const MAIL_SMTP_SECURE = process.env.MAIL_SMTP_SECURE === 'true';
+const MAIL_SMTP_USER = (process.env.MAIL_SMTP_USER || '').trim();
+const MAIL_SMTP_PASS = process.env.MAIL_SMTP_PASS || '';
 const MAIL_DIRECT_HOSTNAME = (process.env.MAIL_DIRECT_HOSTNAME || 'localhost').trim();
+const MAIL_NO_REPLY_FROM = (
+    process.env.MAIL_NO_REPLY_FROM ||
+    (MAIL_SMTP_USER ? `OVR Notifications <${MAIL_SMTP_USER}>` : 'OVR Notifications <no-reply@localhost>')
+).trim();
+const MAIL_NO_REPLY_REPLY_TO = (process.env.MAIL_NO_REPLY_REPLY_TO || '').trim();
 const MAIL_OUTBOX_PROCESS_INLINE = process.env.MAIL_OUTBOX_PROCESS_INLINE
     ? process.env.MAIL_OUTBOX_PROCESS_INLINE === 'true'
     : process.env.NODE_ENV === 'production';
@@ -108,7 +119,7 @@ class NonRetryableMailError extends Error {
     }
 }
 
-let directTransportCache: Transporter | null = null;
+let mailTransportCache: Transporter | null = null;
 
 function normalizeEmail(email: string | null | undefined): string | null {
     if (!email) return null;
@@ -167,15 +178,27 @@ function isRetryableMailError(error: unknown): boolean {
         return true;
     }
 
-    const code = typeof (error as { code?: unknown }).code === 'string'
-        ? (error as { code?: string }).code
+    const nestedError = Array.isArray((error as { errors?: unknown[] }).errors)
+        ? (error as { errors?: unknown[] }).errors?.[0]
+        : null;
+
+    const codeSource = nestedError && typeof nestedError === 'object'
+        ? (nestedError as { code?: unknown })
+        : (error as { code?: unknown });
+
+    const code = typeof codeSource.code === 'string'
+        ? codeSource.code
         : null;
 
     if (code === 'EAUTH' || code === 'EENVELOPE') {
         return false;
     }
 
-    const rawResponseCode = (error as { responseCode?: unknown }).responseCode;
+    const responseCodeSource = nestedError && typeof nestedError === 'object'
+        ? (nestedError as { responseCode?: unknown })
+        : (error as { responseCode?: unknown });
+
+    const rawResponseCode = responseCodeSource.responseCode;
     const responseCode: number | null = typeof rawResponseCode === 'number'
         ? rawResponseCode
         : null;
@@ -184,19 +207,49 @@ function isRetryableMailError(error: unknown): boolean {
         return false;
     }
 
+    if (responseCode !== null && responseCode >= 400 && responseCode < 500) {
+        return true;
+    }
+
     return true;
 }
 
-function getDirectTransport(): Transporter {
-    if (directTransportCache) {
-        return directTransportCache;
+function getConfiguredTransport(): Transporter {
+    if (mailTransportCache) {
+        return mailTransportCache;
     }
 
-    directTransportCache = nodemailer.createTransport(directTransport({
-        name: MAIL_DIRECT_HOSTNAME,
-    }));
+    if (MAIL_TRANSPORT === 'smtp') {
+        if (!MAIL_SMTP_HOST || !MAIL_SMTP_USER || !MAIL_SMTP_PASS) {
+            throw new NonRetryableMailError('Missing SMTP mail configuration (MAIL_SMTP_HOST, MAIL_SMTP_USER, MAIL_SMTP_PASS)');
+        }
 
-    return directTransportCache;
+        if (!Number.isFinite(MAIL_SMTP_PORT) || MAIL_SMTP_PORT <= 0) {
+            throw new NonRetryableMailError('MAIL_SMTP_PORT must be a positive number');
+        }
+
+        mailTransportCache = nodemailer.createTransport({
+            host: MAIL_SMTP_HOST,
+            port: MAIL_SMTP_PORT,
+            secure: MAIL_SMTP_SECURE,
+            auth: {
+                user: MAIL_SMTP_USER,
+                pass: MAIL_SMTP_PASS,
+            },
+        });
+
+        return mailTransportCache;
+    }
+
+    if (MAIL_TRANSPORT === 'direct') {
+        mailTransportCache = nodemailer.createTransport(directTransport({
+            name: MAIL_DIRECT_HOSTNAME,
+        }));
+
+        return mailTransportCache;
+    }
+
+    throw new NonRetryableMailError('Invalid MAIL_TRANSPORT value. Use "smtp" or "direct".');
 }
 
 function appUrl(path: string): string {
@@ -644,22 +697,23 @@ async function buildEnvelope<T extends WorkflowMailEvent>(
 }
 
 async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<void> {
-    const sender = normalizeEmail(actor.email);
+    const transport = getConfiguredTransport();
 
-    if (!sender) {
-        throw new NonRetryableMailError('A valid actor email is required to send workflow mail');
-    }
-
-    const transport = getDirectTransport();
+    const actorEmail = normalizeEmail(actor.email);
+    const replyTo = MAIL_NO_REPLY_REPLY_TO || undefined;
 
     await transport.sendMail({
-        from: sender,
-        sender,
-        replyTo: sender,
+        from: MAIL_NO_REPLY_FROM,
+        replyTo,
         to: envelope.to,
         subject: envelope.subject,
         html: envelope.html,
         text: envelope.text,
+        headers: actorEmail
+            ? {
+                'X-OVR-Actor': actorEmail,
+            }
+            : undefined,
     });
 }
 

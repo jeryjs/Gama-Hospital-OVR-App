@@ -65,4 +65,5 @@ App runs on `http://localhost:3005`.
 
 - User roles are DB-managed (`users.roles`) and validated against app role constants.
 - Authentication is delegated to Microsoft identity; authorization is enforced in-app using DB roles.
-- Workflow emails are sent as the acting user via direct SMTP transport (no Exchange mailbox required), with outbox/retry safeguards.
+- Workflow emails are sent in GitHub-style no-reply mode from the application sender, with outbox/retry safeguards.
+- Set `MAIL_TRANSPORT=smtp` and provide `MAIL_SMTP_*` + `MAIL_NO_REPLY_FROM` for production delivery.
