@@ -209,7 +209,7 @@ export default function QIReviewPage() {
                       </TableRow>
                     ) : (
                       incidents.map((incident) => (
-                        <TableRow key={incident.id} hover>
+                        <TableRow key={incident.id} component={Link} href={`/incidents/view/${incident.id}`} hover>
                           <TableCell>
                             <Typography variant="body2" sx={{
                               fontWeight: 600
@@ -247,14 +247,14 @@ export default function QIReviewPage() {
                               >
                                 View
                               </Button>
-                              <Button
+                              {/* <Button
                                 size="small"
                                 variant="contained"
                                 startIcon={<CheckCircle />}
                                 onClick={() => handleOpenReviewDialog(incident.id)}
                               >
                                 Review
-                              </Button>
+                              </Button> */}
                             </Stack>
                           </TableCell>
                         </TableRow>
