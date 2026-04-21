@@ -29,7 +29,7 @@ export function IncidentHeader({ incident }: Props) {
   });
 
   const canViewTurnaround = ACCESS_CONTROL.api.qiReview.canReview(session?.user?.roles || []);
-  const shouldShowTurnaround = canViewTurnaround && turnaround.tracked && !!turnaround.dueDate;
+  const shouldShowTurnaround = turnaround.tracked && !!turnaround.dueDate;
 
   const turnaroundChipColor =
     turnaround.status === 'overdue'
@@ -85,14 +85,6 @@ export function IncidentHeader({ incident }: Props) {
               : `Created on ${format(new Date(incident.createdAt), 'MMM dd, yyyy HH:mm')}`
             }
           </Typography>
-          {shouldShowTurnaround && (
-            <Typography
-              variant="caption"
-              color={turnaround.status === 'overdue' ? 'error.main' : 'text.secondary'}
-            >
-              Turnaround: {turnaround.zoneLabel} • Due {format(turnaround.dueDate || new Date(), 'MMM dd, yyyy')} ({turnaround.workingDays} working days)
-            </Typography>
-          )}
         </Box>
 
         <Chip
@@ -106,12 +98,14 @@ export function IncidentHeader({ incident }: Props) {
         />
 
         {shouldShowTurnaround && (
-          <Chip
-            label={turnaroundLabel}
-            color={turnaroundChipColor}
-            variant="outlined"
-            sx={{ fontWeight: 600 }}
-          />
+          <Tooltip arrow={true} title={`${turnaround.zoneLabel} • Due in ${turnaround.workingDays} working days`}>
+            <Chip
+              label={turnaroundLabel}
+              color={turnaroundChipColor}
+              variant="outlined"
+              sx={{ fontWeight: 600 }}
+            />
+          </Tooltip>
         )}
 
         <Tooltip title="Print Report">
