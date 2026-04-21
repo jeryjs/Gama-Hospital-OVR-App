@@ -7,6 +7,7 @@ import { Box, Button, Stack } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import type { OVRReport } from '../../_shared/types';
+import { secureFetch } from '@/lib/client/csrf';
 
 interface Props {
   incident: OVRReport;
@@ -43,7 +44,7 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
     }
 
     try {
-      const res = await fetch(`/api/incidents/${incident.id}`, {
+      const res = await secureFetch(`/api/incidents/${incident.id}`, {
         method: 'DELETE',
       });
 

@@ -37,6 +37,7 @@ import {
   type LocalDraft,
 } from '@/lib/utils/draft-storage';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { secureFetch } from '@/lib/client/csrf';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import {
@@ -1661,7 +1662,7 @@ export default function NewIncidentPage() {
             })()
             : preparedPayload;
 
-          const res = await fetch(`/api/incidents/${serverDraftIncidentId}`, {
+          const res = await secureFetch(`/api/incidents/${serverDraftIncidentId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -1748,12 +1749,12 @@ export default function NewIncidentPage() {
         : preparePayload(formData);
 
       const res = serverDraftIncidentId
-        ? await fetch(`/api/incidents/${serverDraftIncidentId}`, {
+        ? await secureFetch(`/api/incidents/${serverDraftIncidentId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
-        : await fetch('/api/incidents', {
+        : await secureFetch('/api/incidents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
