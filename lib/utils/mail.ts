@@ -697,15 +697,25 @@ async function buildEnvelope<T extends WorkflowMailEvent>(
 }
 
 async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<void> {
-    const transport = getConfiguredTransport();
-
     const actorEmail = normalizeEmail(actor.email);
     const replyTo = MAIL_NO_REPLY_REPLY_TO || undefined;
+
+    if (!actorEmail) {
+        throw new NonRetryableMailError('Actor email is required to send mail');
+    }
+
+    // Prevent sending emails to fake test users
+    if (actorEmail.startsWith('test.')) return console.warn(`Skipping email dispatch for test user: ${actorEmail}`);
+    // Filter out test recipients
+    const filteredRecipients = envelope.to.filter(email => !email.startsWith('test.'));
+    if (!filteredRecipients.length) return console.warn('All recipients are test users, skipping email dispatch');
+
+    const transport = getConfiguredTransport();
 
     await transport.sendMail({
         from: MAIL_NO_REPLY_FROM,
         replyTo,
-        to: envelope.to,
+        to: filteredRecipients,
         subject: envelope.subject,
         html: envelope.html,
         text: envelope.text,
