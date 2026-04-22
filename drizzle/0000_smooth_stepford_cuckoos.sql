@@ -1,7 +1,7 @@
 CREATE TYPE "public"."injury_outcome" AS ENUM('no_injury', 'minor', 'serious', 'death');--> statement-breakpoint
 CREATE TYPE "public"."level_of_harm" AS ENUM('med_a', 'med_b', 'med_c', 'med_d', 'med_e', 'med_f', 'med_g', 'med_h', 'med_i', 'near_miss', 'none', 'minor', 'moderate', 'major', 'catastrophic');--> statement-breakpoint
 CREATE TYPE "public"."ovr_status" AS ENUM('draft', 'submitted', 'qi_review', 'investigating', 'qi_final_actions', 'closed');--> statement-breakpoint
-CREATE TYPE "public"."person_involved" AS ENUM('patient', 'staff', 'visitor_watcher', 'others');--> statement-breakpoint
+CREATE TYPE "public"."person_involved" AS ENUM('patient', 'staff', 'public', 'organization');--> statement-breakpoint
 CREATE TYPE "public"."severity_level" AS ENUM('near_miss', 'no_apparent_injury', 'minor', 'major');--> statement-breakpoint
 CREATE TYPE "public"."treatment_type" AS ENUM('first_aid', 'sutures', 'observation', 'bloodwork', 'radiology', 'hospitalized', 'transferred');--> statement-breakpoint
 CREATE TABLE "departments" (
@@ -21,6 +21,7 @@ CREATE TABLE "locations" (
 	"department_id" integer,
 	"building" varchar(100),
 	"floor" varchar(50),
+	"display_order" integer,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "locations_code_unique" UNIQUE("code")
@@ -83,6 +84,22 @@ CREATE TABLE "ovr_investigations" (
 	"submitted_at" timestamp
 );
 --> statement-breakpoint
+CREATE TABLE "ovr_mail_outbox" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"event" varchar(64) NOT NULL,
+	"payload" text NOT NULL,
+	"actor_user_id" integer NOT NULL,
+	"actor_email" varchar(255) NOT NULL,
+	"status" varchar(20) DEFAULT 'pending' NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"last_error" text,
+	"last_attempt_at" timestamp,
+	"next_retry_at" timestamp DEFAULT now() NOT NULL,
+	"sent_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "ovr_reports" (
 	"id" varchar(20) PRIMARY KEY NOT NULL,
 	"occurrence_date" date NOT NULL,
@@ -118,9 +135,6 @@ CREATE TABLE "ovr_reports" (
 	"treatment_types" text[],
 	"hospitalized_details" varchar(255),
 	"treatment_provided" text,
-	"physician_name" varchar(255),
-	"physician_id" varchar(50),
-	"physician_signature_date" timestamp,
 	"risk_impact" integer,
 	"risk_likelihood" integer,
 	"risk_score" integer,
@@ -170,6 +184,16 @@ CREATE TABLE "ovr_shared_access" (
 	CONSTRAINT "ovr_shared_access_access_token_unique" UNIQUE("access_token")
 );
 --> statement-breakpoint
+CREATE TABLE "user_admin_audit_logs" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"target_user_id" integer NOT NULL,
+	"actor_user_id" integer NOT NULL,
+	"action" varchar(40) NOT NULL,
+	"reason" text,
+	"changes" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" varchar(255) NOT NULL,
@@ -200,6 +224,7 @@ ALTER TABLE "ovr_corrective_actions" ADD CONSTRAINT "ovr_corrective_actions_crea
 ALTER TABLE "ovr_corrective_actions" ADD CONSTRAINT "ovr_corrective_actions_closed_by_users_id_fk" FOREIGN KEY ("closed_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_investigations" ADD CONSTRAINT "ovr_investigations_ovr_report_id_ovr_reports_id_fk" FOREIGN KEY ("ovr_report_id") REFERENCES "public"."ovr_reports"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_investigations" ADD CONSTRAINT "ovr_investigations_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ovr_mail_outbox" ADD CONSTRAINT "ovr_mail_outbox_actor_user_id_users_id_fk" FOREIGN KEY ("actor_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_location_id_locations_id_fk" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_involved_staff_id_users_id_fk" FOREIGN KEY ("involved_staff_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_reports" ADD CONSTRAINT "ovr_reports_reporter_id_users_id_fk" FOREIGN KEY ("reporter_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -212,6 +237,12 @@ ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_ovr_report_id_
 ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_invited_by_users_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ovr_shared_access" ADD CONSTRAINT "ovr_shared_access_revoked_by_users_id_fk" FOREIGN KEY ("revoked_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_admin_audit_logs" ADD CONSTRAINT "user_admin_audit_logs_target_user_id_users_id_fk" FOREIGN KEY ("target_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_admin_audit_logs" ADD CONSTRAINT "user_admin_audit_logs_actor_user_id_users_id_fk" FOREIGN KEY ("actor_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "ovr_mail_outbox_status_retry_idx" ON "ovr_mail_outbox" USING btree ("status","next_retry_at");--> statement-breakpoint
+CREATE INDEX "ovr_mail_outbox_actor_idx" ON "ovr_mail_outbox" USING btree ("actor_user_id");--> statement-breakpoint
 CREATE INDEX "ovr_shared_access_resource_idx" ON "ovr_shared_access" USING btree ("resource_type","resource_id");--> statement-breakpoint
 CREATE INDEX "ovr_shared_access_token_idx" ON "ovr_shared_access" USING btree ("access_token");--> statement-breakpoint
-CREATE INDEX "ovr_shared_access_email_idx" ON "ovr_shared_access" USING btree ("email");
+CREATE INDEX "ovr_shared_access_email_idx" ON "ovr_shared_access" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "user_admin_audit_target_created_idx" ON "user_admin_audit_logs" USING btree ("target_user_id","created_at");--> statement-breakpoint
+CREATE INDEX "user_admin_audit_actor_created_idx" ON "user_admin_audit_logs" USING btree ("actor_user_id","created_at");

@@ -165,9 +165,6 @@ export const ovrReports = pgTable('ovr_reports', {
   treatmentTypes: text('treatment_types').array(),
   hospitalizedDetails: varchar('hospitalized_details', { length: 255 }),
   treatmentProvided: text('treatment_provided'),
-  physicianName: varchar('physician_name', { length: 255 }),
-  physicianId: varchar('physician_id', { length: 50 }),
-  physicianSignatureDate: timestamp('physician_signature_date'),
 
   // Risk Assessment
   riskImpact: integer('risk_impact'), // 1-5 (Negligible to Catastrophic)
@@ -296,12 +293,12 @@ export const ovrSharedAccess = pgTable('ovr_shared_access', {
   invitedAt: timestamp('invited_at').notNull().defaultNow(),
   revokedBy: integer('revoked_by').references(() => users.id),
   revokedAt: timestamp('revoked_at'),
-}, (table) => ({
+}, (table) => [
   // Composite index for fast lookups
-  resourceIdx: index('ovr_shared_access_resource_idx').on(table.resourceType, table.resourceId),
-  tokenIdx: index('ovr_shared_access_token_idx').on(table.accessToken),
-  emailIdx: index('ovr_shared_access_email_idx').on(table.email),
-}));
+  index('ovr_shared_access_resource_idx').on(table.resourceType, table.resourceId),
+  index('ovr_shared_access_token_idx').on(table.accessToken),
+  index('ovr_shared_access_email_idx').on(table.email),
+]);
 
 // ============================================
 // MAIL OUTBOX - Reliable notification retries
@@ -328,10 +325,10 @@ export const ovrMailOutbox = pgTable('ovr_mail_outbox', {
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  statusRetryIdx: index('ovr_mail_outbox_status_retry_idx').on(table.status, table.nextRetryAt),
-  actorIdx: index('ovr_mail_outbox_actor_idx').on(table.actorUserId),
-}));
+}, (table) => [
+  index('ovr_mail_outbox_status_retry_idx').on(table.status, table.nextRetryAt),
+  index('ovr_mail_outbox_actor_idx').on(table.actorUserId),
+]);
 
 // ============================================
 // USER ADMIN AUDIT LOGS - Role/access management traceability
@@ -344,10 +341,10 @@ export const userAdminAuditLogs = pgTable('user_admin_audit_logs', {
   reason: text('reason'),
   changes: text('changes').notNull(), // JSON payload
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => ({
-  targetCreatedIdx: index('user_admin_audit_target_created_idx').on(table.targetUserId, table.createdAt),
-  actorCreatedIdx: index('user_admin_audit_actor_created_idx').on(table.actorUserId, table.createdAt),
-}));
+}, (table) => [
+  index('user_admin_audit_target_created_idx').on(table.targetUserId, table.createdAt),
+  index('user_admin_audit_actor_created_idx').on(table.actorUserId, table.createdAt)
+]);
 
 // ============================================
 // OVR ATTACHMENTS

@@ -223,7 +223,14 @@ Room signage: Fall precautions posted`,
                 physicianNotified: true,
                 physicianSawPatient: true,
                 assessment: 'Left hip pain, limited range of motion. X-ray ordered. Suspected hip fracture.',
-                treatmentProvided: JSON.stringify(['observation', 'radiology', 'hospitalized']),
+                diagnosis: 'Left hip fracture',
+                treatmentTypes: ['observation', 'radiology', 'hospitalized'],
+                treatmentProvided: 'Patient assessed immediately post-fall. X-ray confirmed left hip fracture. Pain management initiated with IV morphine. Orthopedic surgery consulted. Patient transferred to surgical ward for operative management.',
+
+                // Risk assessment
+                riskImpact: 4,
+                riskLikelihood: 3,
+                riskScore: 12,
 
                 // Reporter info
                 reporterId: users[4].id,
@@ -296,7 +303,13 @@ Patient sustained left hip fracture requiring surgical intervention. Full recove
                 physicianNotified: true,
                 physicianSawPatient: true,
                 assessment: 'Patient developed mild hypoglycemia (BG: 65 mg/dL). Responded well to D50 bolus and continuous glucose monitoring. No long-term complications expected.',
-                treatmentProvided: JSON.stringify(['bloodwork', 'observation']),
+                diagnosis: 'Iatrogenic hypoglycemia secondary to insulin overdose',
+                treatmentTypes: ['bloodwork', 'observation'],
+                treatmentProvided: 'Immediate hypoglycemia protocol initiated. D50 50ml IV bolus administered. Blood glucose monitoring every 15 minutes for 2 hours. Patient remained stable with BG 85-110 mg/dL. Continuous observation in ICU for 24 hours. No adverse outcomes.',
+
+                riskImpact: 5,
+                riskLikelihood: 2,
+                riskScore: 10,
 
                 reporterId: pharmaLee.id,
                 reporterDepartment: 'Pharmacy',
@@ -345,6 +358,10 @@ Patient's father presented with minor laceration requiring assessment. Departmen
                 injuryOutcome: 'no_injury',
                 levelOfHarm: 'none',
                 physicianNotified: false,
+
+                riskImpact: 2,
+                riskLikelihood: 3,
+                riskScore: 6,
 
                 reporterId: nurseThompson.id,
                 reporterDepartment: 'Emergency Department',
@@ -404,6 +421,10 @@ Patient's father presented with minor laceration requiring assessment. Departmen
                 physicianNotified: true,
                 physicianSawPatient: false,
 
+                riskImpact: 3,
+                riskLikelihood: 3,
+                riskScore: 9,
+
                 reporterId: users[0].id,
                 reporterDepartment: 'Radiology',
                 reporterPosition: 'CT Technologist',
@@ -457,6 +478,10 @@ Correct medication dispensed after prescriber clarification. Patient unaware of 
                 physicianNotified: true,
                 physicianSawPatient: false,
 
+                riskImpact: 4,
+                riskLikelihood: 2,
+                riskScore: 8,
+
                 reporterId: pharmaLee.id,
                 reporterDepartment: 'Pharmacy',
                 reporterPosition: 'Clinical Pharmacist',
@@ -488,6 +513,10 @@ Correct medication dispensed after prescriber clarification. Patient unaware of 
                 isSentinelEvent: false,
                 injuryOutcome: 'no_injury',
                 physicianNotified: false,
+
+                riskImpact: 2,
+                riskLikelihood: 2,
+                riskScore: 4,
 
                 reporterId: securityBrown.id,
                 reporterDepartment: 'Security',

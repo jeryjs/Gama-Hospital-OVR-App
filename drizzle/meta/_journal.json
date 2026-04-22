@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1765284802070,
-      "tag": "0000_sweet_golden_guardian",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1765330145294,
-      "tag": "0001_redundant_shatterstar",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774764000000,
-      "tag": "0002_mail_outbox",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774767000000,
-      "tag": "0003_user_admin_audit_logs",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774767600000,
-      "tag": "0004_user_admin_audit_reason",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1774770000000,
-      "tag": "0005_entity_involved_rename",
+      "when": 1776833987043,
+      "tag": "0000_smooth_stepford_cuckoos",
       "breakpoints": true
     }
   ]
