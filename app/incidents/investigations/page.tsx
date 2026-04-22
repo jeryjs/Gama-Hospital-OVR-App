@@ -38,7 +38,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IncidentsHeader, MetricsCards } from '../_shared';
+import { IncidentsHeader, IncidentsPagination, MetricsCards } from '../_shared';
 
 /**
  * Investigations List Page
@@ -47,6 +47,8 @@ import { IncidentsHeader, MetricsCards } from '../_shared';
 export default function InvestigationsPage() {
     const { data: session } = useSession();
     const router = useRouter();
+    const [page, setPage] = useState(1);
+    const limit = 10;
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -66,8 +68,14 @@ export default function InvestigationsPage() {
         return () => clearTimeout(timeout);
     }, [searchTerm]);
 
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearchTerm, statusFilter]);
+
     // Fetch investigations
-    const { investigations, isLoading, error } = useInvestigations({
+    const { investigations, pagination, isLoading, error } = useInvestigations({
+        page,
+        limit,
         search: debouncedSearchTerm || undefined,
         status: statusFilter,
     });
@@ -90,7 +98,7 @@ export default function InvestigationsPage() {
         );
     }
 
-    const totalCount = investigations?.length || 0;
+    const totalCount = pagination?.total || investigations?.length || 0;
     const pendingCount = investigations?.filter((inv: InvestigationListItem) => !inv.submittedAt).length || 0;
     const completedCount = investigations?.filter((inv: InvestigationListItem) => inv.submittedAt).length || 0;
 
@@ -224,6 +232,16 @@ export default function InvestigationsPage() {
                                 </Table>
                             </TableContainer>
                         </Paper>
+
+                        {pagination && (
+                            <IncidentsPagination
+                                page={page}
+                                totalPages={pagination.totalPages}
+                                totalItems={pagination.total}
+                                itemsPerPage={limit}
+                                onPageChange={setPage}
+                            />
+                        )}
                     </Stack>
                 </motion.div>
             </Box>

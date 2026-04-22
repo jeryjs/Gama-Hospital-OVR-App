@@ -7,6 +7,7 @@
 
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
+import type { PaginationMeta } from '@/lib/types';
 
 /**
  * Corrective Action List Item
@@ -38,6 +39,8 @@ export interface CorrectiveActionListItem {
 }
 
 export interface UseCorrectiveActionsParams {
+    page?: number;
+    limit?: number;
     search?: string;
     status?: 'open' | 'closed' | 'all';
     ovrReportId?: string;
@@ -46,6 +49,7 @@ export interface UseCorrectiveActionsParams {
 
 export interface UseCorrectiveActionsReturn {
     actions: CorrectiveActionListItem[] | undefined;
+    pagination: PaginationMeta | null;
     isLoading: boolean;
     error: ParsedError | undefined;
     mutate: () => Promise<void>;
@@ -69,6 +73,8 @@ export function useCorrectiveActions(
 ): UseCorrectiveActionsReturn {
     // Build query string
     const queryParams = new URLSearchParams();
+    queryParams.set('page', String(params?.page ?? 1));
+    queryParams.set('limit', String(params?.limit ?? 10));
     if (params?.search) queryParams.set('search', params.search);
     if (params?.status && params?.status !== 'all') queryParams.set('status', params.status);
     if (params?.ovrReportId) queryParams.set('ovrReportId', params.ovrReportId);
@@ -80,15 +86,16 @@ export function useCorrectiveActions(
     // Fetcher function
     const fetcher = async (url: string) => {
         const { data, error } = await apiCall<{
-            actions: CorrectiveActionListItem[];
+            data: CorrectiveActionListItem[];
+            pagination: PaginationMeta;
         }>(url);
 
         if (error) throw error;
-        return data?.actions || [];
+        return data;
     };
 
     // SWR hook
-    const { data, error, mutate, isLoading } = useSWR<CorrectiveActionListItem[], ParsedError>(
+    const { data, error, mutate, isLoading } = useSWR<{ data: CorrectiveActionListItem[]; pagination: PaginationMeta } | undefined, ParsedError>(
         url,
         fetcher,
         {
@@ -99,7 +106,8 @@ export function useCorrectiveActions(
     );
 
     return {
-        actions: data,
+        actions: data?.data,
+        pagination: data?.pagination || null,
         isLoading,
         error,
         mutate: async () => {

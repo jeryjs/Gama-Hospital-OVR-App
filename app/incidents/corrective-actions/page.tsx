@@ -38,7 +38,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IncidentsHeader, MetricsCards } from '../_shared';
+import { IncidentsHeader, IncidentsPagination, MetricsCards } from '../_shared';
 
 /**
  * Corrective Actions List Page
@@ -47,6 +47,8 @@ import { IncidentsHeader, MetricsCards } from '../_shared';
 export default function CorrectiveActionsPage() {
     const { data: session } = useSession();
     const router = useRouter();
+    const [page, setPage] = useState(1);
+    const limit = 10;
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
@@ -66,8 +68,14 @@ export default function CorrectiveActionsPage() {
         return () => clearTimeout(timeout);
     }, [searchTerm]);
 
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearchTerm, statusFilter]);
+
     // Fetch actions
-    const { actions, isLoading, error } = useCorrectiveActions({
+    const { actions, pagination, isLoading, error } = useCorrectiveActions({
+        page,
+        limit,
         search: debouncedSearchTerm || undefined,
         status: statusFilter,
     });
@@ -90,7 +98,7 @@ export default function CorrectiveActionsPage() {
         );
     }
 
-    const totalCount = actions?.length || 0;
+    const totalCount = pagination?.total || actions?.length || 0;
     const openCount = actions?.filter((action: CorrectiveActionListItem) => action.status === 'open').length || 0;
     const closedCount = actions?.filter((action: CorrectiveActionListItem) => action.status === 'closed').length || 0;
     const overdueCount = actions?.filter(
@@ -246,6 +254,16 @@ export default function CorrectiveActionsPage() {
                                 </Table>
                             </TableContainer>
                         </Paper>
+
+                        {pagination && (
+                            <IncidentsPagination
+                                page={page}
+                                totalPages={pagination.totalPages}
+                                totalItems={pagination.total}
+                                itemsPerPage={limit}
+                                onPageChange={setPage}
+                            />
+                        )}
                     </Stack>
                 </motion.div>
             </Box>

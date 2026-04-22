@@ -8,6 +8,7 @@
 import { apiCall, type ParsedError } from '@/lib/client/error-handler';
 import useSWR from 'swr';
 import type { Investigation } from './useInvestigation';
+import type { PaginationMeta } from '@/lib/types';
 
 /**
  * Extended investigation list item with relations
@@ -22,6 +23,8 @@ export interface InvestigationListItem extends Omit<Investigation, 'rcaAnalysis'
 }
 
 export interface UseInvestigationsParams {
+    page?: number;
+    limit?: number;
     search?: string;
     status?: 'pending' | 'completed' | 'all';
     ovrReportId?: string;
@@ -29,6 +32,7 @@ export interface UseInvestigationsParams {
 
 export interface UseInvestigationsReturn {
     investigations: InvestigationListItem[] | undefined;
+    pagination: PaginationMeta | null;
     isLoading: boolean;
     error: ParsedError | undefined;
     mutate: () => Promise<void>;
@@ -51,6 +55,8 @@ export function useInvestigations(
 ): UseInvestigationsReturn {
     // Build query string
     const queryParams = new URLSearchParams();
+    queryParams.set('page', String(params?.page ?? 1));
+    queryParams.set('limit', String(params?.limit ?? 10));
     if (params?.search) queryParams.set('search', params.search);
     if (params?.status && params.status !== 'all') queryParams.set('status', params.status);
     if (params?.ovrReportId) queryParams.set('ovrReportId', params.ovrReportId);
@@ -61,15 +67,16 @@ export function useInvestigations(
     // Fetcher function
     const fetcher = async (url: string) => {
         const { data, error } = await apiCall<{
-            investigations: InvestigationListItem[];
+            data: InvestigationListItem[];
+            pagination: PaginationMeta;
         }>(url);
 
         if (error) throw error;
-        return data?.investigations || [];
+        return data;
     };
 
     // SWR hook
-    const { data, error, mutate, isLoading } = useSWR<InvestigationListItem[], ParsedError>(
+    const { data, error, mutate, isLoading } = useSWR<{ data: InvestigationListItem[]; pagination: PaginationMeta } | undefined, ParsedError>(
         url,
         fetcher,
         {
@@ -80,7 +87,8 @@ export function useInvestigations(
     );
 
     return {
-        investigations: data,
+        investigations: data?.data,
+        pagination: data?.pagination || null,
         isLoading,
         error,
         mutate: async () => {

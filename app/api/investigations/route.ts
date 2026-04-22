@@ -10,6 +10,7 @@ import { ovrInvestigations, ovrReports } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
     AuthorizationError,
+    createPaginatedResponse,
     handleApiError,
     requireAuth,
     validateBody,
@@ -34,6 +35,9 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
+        const page = Math.max(1, Number(searchParams.get('page') || 1));
+        const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 10)));
+        const offset = (page - 1) * limit;
         const search = searchParams.get('search')?.trim();
         const status = searchParams.get('status');
         const ovrReportId = searchParams.get('ovrReportId')?.trim();
@@ -63,6 +67,14 @@ export async function GET(request: NextRequest) {
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+        const countResult = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(ovrInvestigations)
+            .leftJoin(ovrReports, eq(ovrInvestigations.ovrReportId, ovrReports.id))
+            .where(whereClause);
+
+        const total = Number(countResult[0]?.count || 0);
+
         const rows = await db
             .select({
                 id: ovrInvestigations.id,
@@ -88,7 +100,9 @@ export async function GET(request: NextRequest) {
             .from(ovrInvestigations)
             .leftJoin(ovrReports, eq(ovrInvestigations.ovrReportId, ovrReports.id))
             .where(whereClause)
-            .orderBy(desc(ovrInvestigations.createdAt));
+            .orderBy(desc(ovrInvestigations.createdAt))
+            .limit(limit)
+            .offset(offset);
 
         const investigations = rows.map((row) => ({
             id: row.id,
@@ -116,7 +130,14 @@ export async function GET(request: NextRequest) {
                 : undefined,
         }));
 
-        return NextResponse.json({ investigations });
+        return NextResponse.json(
+            createPaginatedResponse(investigations, total, {
+                page,
+                limit,
+                sortBy: 'createdAt',
+                sortOrder: 'desc',
+            })
+        );
     } catch (error) {
         return handleApiError(error);
     }

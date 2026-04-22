@@ -12,6 +12,7 @@ import { ovrCorrectiveActions, ovrReports } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
     AuthorizationError,
+    createPaginatedResponse,
     handleApiError,
     requireAuth,
     validateCsrfAndIdempotency,
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
+        const page = Math.max(1, Number(searchParams.get('page') || 1));
+        const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 10)));
+        const offset = (page - 1) * limit;
         const search = searchParams.get('search')?.trim();
         const status = searchParams.get('status');
         const ovrReportId = searchParams.get('ovrReportId')?.trim();
@@ -71,6 +75,14 @@ export async function GET(request: NextRequest) {
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+        const countResult = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(ovrCorrectiveActions)
+            .leftJoin(ovrReports, eq(ovrCorrectiveActions.ovrReportId, ovrReports.id))
+            .where(whereClause);
+
+        const total = Number(countResult[0]?.count || 0);
+
         const rows = await db
             .select({
                 id: ovrCorrectiveActions.id,
@@ -94,7 +106,9 @@ export async function GET(request: NextRequest) {
             .from(ovrCorrectiveActions)
             .leftJoin(ovrReports, eq(ovrCorrectiveActions.ovrReportId, ovrReports.id))
             .where(whereClause)
-            .orderBy(desc(ovrCorrectiveActions.createdAt));
+            .orderBy(desc(ovrCorrectiveActions.createdAt))
+            .limit(limit)
+            .offset(offset);
 
         const actions = rows.map((row) => ({
             id: row.id,
@@ -121,7 +135,14 @@ export async function GET(request: NextRequest) {
                 : undefined,
         }));
 
-        return NextResponse.json({ actions });
+        return NextResponse.json(
+            createPaginatedResponse(actions, total, {
+                page,
+                limit,
+                sortBy: 'createdAt',
+                sortOrder: 'desc',
+            })
+        );
     } catch (error) {
         return handleApiError(error);
     }
