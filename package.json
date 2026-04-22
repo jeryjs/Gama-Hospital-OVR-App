@@ -48,6 +48,7 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
+    "resend": "^6.12.2",
     "swr": "^2.4.1",
     "unified": "^11.0.5",
     "zod": "4.2.0"

@@ -6,6 +6,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import directTransport from 'nodemailer-direct-transport';
 import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
+import { Resend } from 'resend';
 
 const MAIL_SUBJECT_PREFIX = process.env.MAIL_SUBJECT_PREFIX || '[OVR]';
 const MAIL_ENABLED = process.env.MAIL_NOTIFICATIONS_ENABLED !== 'false';
@@ -13,6 +14,7 @@ const MAIL_OUTBOX_MAX_ATTEMPTS = Number(process.env.MAIL_OUTBOX_MAX_ATTEMPTS || 
 const MAIL_OUTBOX_BASE_RETRY_MINUTES = Number(process.env.MAIL_OUTBOX_BASE_RETRY_MINUTES || 5);
 const MAIL_OUTBOX_DEFAULT_BATCH = Number(process.env.MAIL_OUTBOX_RETRY_BATCH || 10);
 const MAIL_TRANSPORT = (process.env.MAIL_TRANSPORT || 'smtp').trim().toLowerCase();
+const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
 const MAIL_SMTP_HOST = (process.env.MAIL_SMTP_HOST || '').trim();
 const MAIL_SMTP_PORT = Number(process.env.MAIL_SMTP_PORT || 587);
 const MAIL_SMTP_SECURE = process.env.MAIL_SMTP_SECURE === 'true';
@@ -27,6 +29,8 @@ const MAIL_NO_REPLY_REPLY_TO = (process.env.MAIL_NO_REPLY_REPLY_TO || '').trim()
 const MAIL_OUTBOX_PROCESS_INLINE = process.env.MAIL_OUTBOX_PROCESS_INLINE
     ? process.env.MAIL_OUTBOX_PROCESS_INLINE === 'true'
     : process.env.NODE_ENV === 'production';
+
+let resendClient: Resend | null = null;
 
 const QI_NOTIFICATION_ROLES: AppRole[] = [
     APP_ROLES.SUPER_ADMIN,
@@ -249,7 +253,7 @@ function getConfiguredTransport(): Transporter {
         return mailTransportCache;
     }
 
-    throw new NonRetryableMailError('Invalid MAIL_TRANSPORT value. Use "smtp" or "direct".');
+    throw new NonRetryableMailError('Invalid MAIL_TRANSPORT value. Use "smtp", "direct", or "resend".');
 }
 
 function appUrl(path: string): string {
@@ -700,9 +704,7 @@ async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<v
     const actorEmail = normalizeEmail(actor.email);
     const replyTo = MAIL_NO_REPLY_REPLY_TO || undefined;
 
-    if (!actorEmail) {
-        throw new NonRetryableMailError('Actor email is required to send mail');
-    }
+    if (!actorEmail) throw new NonRetryableMailError('Actor email is required to send mail');
 
     // Prevent sending emails to fake test users
     if (actorEmail.startsWith('test.')) return console.warn(`Skipping email dispatch for test user: ${actorEmail}`);
@@ -710,21 +712,43 @@ async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<v
     const filteredRecipients = envelope.to.filter(email => !email.startsWith('test.'));
     if (!filteredRecipients.length) return console.warn('All recipients are test users, skipping email dispatch');
 
-    const transport = getConfiguredTransport();
+    // Use Resend if configured
+    if (MAIL_TRANSPORT === 'resend') {
+        if (!RESEND_API_KEY) throw new NonRetryableMailError('RESEND_API_KEY is required when MAIL_TRANSPORT=resend');
 
-    await transport.sendMail({
-        from: MAIL_NO_REPLY_FROM,
-        replyTo,
-        to: filteredRecipients,
-        subject: envelope.subject,
-        html: envelope.html,
-        text: envelope.text,
-        headers: actorEmail
-            ? {
+        if (!resendClient) resendClient = new Resend(RESEND_API_KEY);
+
+        await resendClient.emails.send({
+            from: MAIL_NO_REPLY_FROM,
+            replyTo: replyTo,
+            to: filteredRecipients,
+            subject: envelope.subject,
+            html: envelope.html,
+            text: envelope.text,
+            headers: {
                 'X-OVR-Actor': actorEmail,
-            }
-            : undefined,
-    });
+            },
+        });
+
+        return;
+    } else {
+        // Else use nodemailer for SMTP/direct
+        const transport = getConfiguredTransport();
+
+        await transport.sendMail({
+            from: MAIL_NO_REPLY_FROM,
+            replyTo,
+            to: filteredRecipients,
+            subject: envelope.subject,
+            html: envelope.html,
+            text: envelope.text,
+            headers: actorEmail
+                ? {
+                    'X-OVR-Actor': actorEmail,
+                }
+                : undefined,
+        });
+    }
 }
 
 function withActorEmail(actor: Actor, actorEmail: string): Actor {
