@@ -213,7 +213,12 @@ export default function QIReviewPage() {
                       </TableRow>
                     ) : (
                       incidents.map((incident) => (
-                        <TableRow key={incident.id} component={Link} href={`/incidents/view/${incident.id}`} hover>
+                        <TableRow
+                          key={incident.id}
+                          hover
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => router.push(`/incidents/view/${incident.id}`)}
+                        >
                           <TableCell>
                             <Typography variant="body2" sx={{
                               fontWeight: 600
@@ -247,6 +252,7 @@ export default function QIReviewPage() {
                                 size="small"
                                 component={Link}
                                 href={`/incidents/view/${incident.id}`}
+                                onClick={(e) => e.stopPropagation()}
                                 startIcon={<Visibility />}
                               >
                                 View
