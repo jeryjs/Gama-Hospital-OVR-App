@@ -285,7 +285,7 @@ export const ovrSharedAccess = pgTable('ovr_shared_access', {
   tokenExpiresAt: timestamp('token_expires_at'),
 
   // Status
-  status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending' | 'accepted' | 'revoked'
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending' | 'accepted' | 'revoked'. // note: 'revoked' status is no longer used, but we still keep the comments for me to look back on
   lastAccessedAt: timestamp('last_accessed_at'),
 
   // Metadata
@@ -298,6 +298,12 @@ export const ovrSharedAccess = pgTable('ovr_shared_access', {
   index('ovr_shared_access_resource_idx').on(table.resourceType, table.resourceId),
   index('ovr_shared_access_token_idx').on(table.accessToken),
   index('ovr_shared_access_email_idx').on(table.email),
+  index('ovr_shared_access_unique_active_person_role_idx').on(
+    table.resourceType,
+    table.resourceId,
+    table.role,
+    sql`LOWER(${table.email})`
+  ),
 ]);
 
 // ============================================

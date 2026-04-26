@@ -75,7 +75,7 @@ export default function InvestigationDetailPage() {
     }, []);
 
     // Fetch investigation (with token support)
-    const { investigation, sharedAccess, isLoading, error, mutate, update, submit } = useInvestigation(
+    const { investigation, accessRole, sharedAccess, isLoading, error, mutate, update, submit } = useInvestigation(
         investigationId,
         accessToken
     );
@@ -129,7 +129,8 @@ export default function InvestigationDetailPage() {
 
     const isQIUser = session && ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user.roles || []);
     const isSubmitted = Boolean(investigation?.submittedAt);
-    const canEditActiveInvestigation = !isSubmitted && Boolean(isQIUser || accessToken);
+    const isAcceptedInvestigator = accessRole === 'investigator';
+    const canEditActiveInvestigation = !isSubmitted && Boolean(isQIUser || isAcceptedInvestigator);
     const isIncidentClosed = linkedIncident?.status === 'closed';
     const canQIEditSubmitted = Boolean(isQIUser && isSubmitted && !isIncidentClosed);
     const canEditFindingsSection = canEditActiveInvestigation || isEditingFindings;
@@ -319,9 +320,9 @@ export default function InvestigationDetailPage() {
                                 </Alert>
                             )}
 
-                            {!isQIUser && accessToken && !isSubmitted && (
+                            {!isQIUser && isAcceptedInvestigator && !isSubmitted && (
                                 <Alert severity="info">
-                                    You are viewing this investigation via a shared access link. Use <strong>Save Changes</strong> to save edits and <strong>Submit Investigation</strong> when complete.
+                                    You have investigator shared access. Use <strong>Save Changes</strong> to save edits and <strong>Submit Investigation</strong> when complete.
                                 </Alert>
                             )}
 

@@ -32,6 +32,7 @@ export type SharedAccessInfo = SharedAccessInvitation;
 
 export interface UseInvestigationReturn {
     investigation: Investigation | null;
+    accessRole: 'investigator' | 'action_handler' | 'viewer' | null;
     sharedAccess: SharedAccessInvitation[];
     isLoading: boolean;
     error: ParsedError | undefined;
@@ -79,6 +80,7 @@ export function useInvestigation(
 
         const { data, error } = await apiCall<{
             investigation: Investigation;
+            accessRole: 'investigator' | 'action_handler' | 'viewer' | null;
             sharedAccess: SharedAccessInfo[];
         }>(url);
 
@@ -142,6 +144,7 @@ export function useInvestigation(
 
     return {
         investigation: data?.investigation || null,
+        accessRole: data?.accessRole || null,
         sharedAccess: data?.sharedAccess || [],
         isLoading,
         error,

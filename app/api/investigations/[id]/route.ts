@@ -73,6 +73,12 @@ export async function GET(
             throw new NotFoundError('Investigation');
         }
 
+        const grant = await getInvestigationSharedAccessGrant(
+            investigationId,
+            userContext,
+            accessToken || undefined
+        );
+
         // Also fetch shared access list if user has permission
         let sharedAccess: any[] = [];
         if (session && ACCESS_CONTROL.api.investigations.canUpdate(session.user.roles, false)) {
@@ -89,6 +95,7 @@ export async function GET(
 
         return NextResponse.json({
             investigation,
+            accessRole: grant?.role || null,
             sharedAccess,
         });
     } catch (error) {
