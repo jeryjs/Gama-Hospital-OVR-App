@@ -34,6 +34,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { apiCall } from '@/lib/client/error-handler';
 import type { UserSearchResult } from '@/lib/api/schemas';
 import { useSharedAccess } from '@/lib/hooks';
@@ -110,6 +111,7 @@ export function SharedAccessManager({
   const [submitting, setSubmitting] = useState(false);
 
   const { showError, ErrorDialogComponent } = useErrorDialog();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const { createInvitation, revokeAccess } = useSharedAccess(resourceType, resourceId);
 
   // Determine role based on resource type
@@ -295,7 +297,14 @@ export function SharedAccessManager({
   };
 
   const handleRevoke = async (accessId: number) => {
-    if (!confirm('Revoke access for this user?')) return;
+    const confirmed = await confirm({
+      title: 'Revoke Access',
+      message: 'Revoke access for this user?',
+      confirmText: 'Revoke',
+      confirmColor: 'error',
+      severity: 'warning',
+    });
+    if (!confirmed) return;
 
     try {
       await revokeAccess(accessId);
@@ -562,6 +571,7 @@ export function SharedAccessManager({
         </DialogActions>
       </Dialog>
       {ErrorDialogComponent}
+      {ConfirmDialogComponent}
     </>
   );
 }

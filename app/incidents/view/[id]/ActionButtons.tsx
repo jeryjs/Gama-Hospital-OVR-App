@@ -1,6 +1,7 @@
 'use client';
 
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Delete, Edit } from '@mui/icons-material';
 import { Box, Button, Stack } from '@mui/material';
@@ -19,6 +20,7 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
   const { showError, ErrorDialogComponent } = useErrorDialog();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const roles = session?.user.roles || [];
 
   const isOwner = session?.user?.id === incident.reporterId.toString();
@@ -39,7 +41,14 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+    const confirmed = await confirm({
+      title: 'Delete Report',
+      message: 'Are you sure you want to delete this report? This action cannot be undone.',
+      confirmText: 'Delete Report',
+      confirmColor: 'error',
+      severity: 'warning',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -89,6 +98,7 @@ export function ActionButtons({ incident, onUpdate, hidden = false }: Props) {
         </Stack>
       </Box>
       {ErrorDialogComponent}
+      {ConfirmDialogComponent}
     </>
   );
 }

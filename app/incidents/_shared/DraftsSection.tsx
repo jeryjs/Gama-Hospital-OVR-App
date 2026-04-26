@@ -1,6 +1,7 @@
 'use client';
 
 import { deleteDraft, getUserDrafts, type LocalDraft } from '@/lib/utils/draft-storage';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { Delete, Edit } from '@mui/icons-material';
 import {
     alpha,
@@ -30,6 +31,7 @@ interface DraftsSectionProps {
 export function DraftsSection({ userId }: DraftsSectionProps) {
     const router = useRouter();
     const [deletedDraftIds, setDeletedDraftIds] = useState<string[]>([]);
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
     const drafts = useMemo<LocalDraft[]>(() => {
         if (!userId) return [];
@@ -40,14 +42,20 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
 
     // Handle draft deletion
     const handleDeleteDraft = useCallback(
-        (draftId: string, e: React.MouseEvent) => {
+        async (draftId: string, e: React.MouseEvent) => {
             e.stopPropagation();
-            if (window.confirm('Are you sure you want to delete this draft?')) {
-                deleteDraft(draftId);
-                setDeletedDraftIds((prev) => [...prev, draftId]);
-            }
+            const confirmed = await confirm({
+                title: 'Delete Draft',
+                message: 'Are you sure you want to delete this draft?',
+                confirmText: 'Delete',
+                confirmColor: 'error',
+                severity: 'warning',
+            });
+            if (!confirmed) return;
+            deleteDraft(draftId);
+            setDeletedDraftIds((prev) => [...prev, draftId]);
         },
-        []
+        [confirm]
     );
 
     // Don't render if no drafts or not loaded
@@ -59,6 +67,7 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
     const displayedDrafts = drafts.slice(0, 6);
 
     return (
+        <>
         <Card
             variant="outlined"
             sx={{
@@ -168,5 +177,7 @@ export function DraftsSection({ userId }: DraftsSectionProps) {
                 </Stack>
             </CardContent>
         </Card>
+        {ConfirmDialogComponent}
+        </>
     );
 }

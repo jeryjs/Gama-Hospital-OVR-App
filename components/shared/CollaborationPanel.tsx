@@ -40,6 +40,7 @@ import { useState } from 'react';
 import { useComments } from '@/lib/hooks';
 import type { Comment } from '@/lib/api/schemas';
 import { Section } from './Section';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 
 export interface CollaborationPanelProps {
   resourceType: 'investigation' | 'corrective_action';
@@ -81,6 +82,7 @@ export function CollaborationPanel({
   const [editText, setEditText] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   const canUseCommentsApi = Boolean(session?.user) && canComment;
   const { comments, addComment, updateComment, deleteComment } = useComments(
@@ -112,7 +114,14 @@ export function CollaborationPanel({
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!confirm('Delete this comment?')) return;
+    const confirmed = await confirm({
+      title: 'Delete Comment',
+      message: 'Delete this comment?',
+      confirmText: 'Delete',
+      confirmColor: 'error',
+      severity: 'warning',
+    });
+    if (!confirmed) return;
 
     try {
       await deleteComment(commentId);
@@ -365,6 +374,7 @@ export function CollaborationPanel({
           Delete
         </MenuItem>
       </Menu>
+      {ConfirmDialogComponent}
     </Section>
   );
 }

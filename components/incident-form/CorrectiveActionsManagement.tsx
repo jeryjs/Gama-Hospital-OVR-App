@@ -42,6 +42,7 @@ import {
 import { useState } from 'react';
 import { useCorrectiveAction, useSharedAccess } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import type { CreateCorrectiveActionInput } from '@/lib/api/schemas';
 import { addDays, format, isPast, isToday } from 'date-fns';
 import { useSession } from 'next-auth/react';
@@ -84,6 +85,7 @@ export function CorrectiveActionsManagement({
     const [checklistItems, setChecklistItems] = useState<string[]>([]);
 
     const { showError, ErrorDialogComponent } = useErrorDialog();
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
     const { createInvitation } = useSharedAccess('corrective_action', selectedActionId);
 
     const normalizeChecklistItems = (items: string[]) => {
@@ -142,7 +144,17 @@ export function CorrectiveActionsManagement({
 
             if (!data?.action?.id) {
                 await showError(new Error('Corrective action was created but the response was incomplete.'));
-                return confirm('Reload the page to see the new action.') ? location.reload() : null; // Fallback to reload to show the new action
+                const shouldReload = await confirm({
+                    title: 'Reload Page?',
+                    message: 'Reload the page to see the new action.',
+                    confirmText: 'Reload',
+                    confirmColor: 'warning',
+                    severity: 'info',
+                });
+                if (shouldReload) {
+                    location.reload();
+                }
+                return;
             }
 
             onActionCreated?.(data.action.id);
@@ -376,6 +388,7 @@ export function CorrectiveActionsManagement({
                 </DialogActions>
             </Dialog>
             {ErrorDialogComponent}
+            {ConfirmDialogComponent}
         </>
     );
 }

@@ -37,6 +37,7 @@ import {
   type LocalDraft,
 } from '@/lib/utils/draft-storage';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { secureFetch } from '@/lib/client/csrf';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
@@ -718,12 +719,14 @@ function ClassificationSection({
 function ImmediateActionsSection({
   formData,
   onChange,
+  onConfirmClearAssessment,
 }: {
   formData: FormData;
   onChange: (key: keyof FormData, value: unknown) => void;
+  onConfirmClearAssessment: () => Promise<boolean>;
 }) {
   // Wrap onChange to handle confirm logic for clearing fields
-  const handleChange = (key: keyof FormData, value: unknown) => {
+  const handleChange = async (key: keyof FormData, value: unknown) => {
     // Confirm before clearing assessment/treatment details
     if (
       key === 'physicianSawPatient' &&
@@ -733,7 +736,8 @@ function ImmediateActionsSection({
         formData.hospitalizedDetails ||
         (formData.treatmentTypes && (formData.treatmentTypes as string[]).length))
     ) {
-      if (!window.confirm('Changing this will clear entered assessment/treatment details. Continue?')) return;
+      const confirmed = await onConfirmClearAssessment();
+      if (!confirmed) return;
       onChange('assessment', '');
       onChange('treatmentProvided', '');
       onChange('hospitalizedDetails', '');
@@ -773,7 +777,9 @@ function ImmediateActionsSection({
             <RadioGroup
               row
               value={formData.physicianNotified ? 'yes' : 'no'}
-              onChange={(e) => handleChange('physicianNotified', e.target.value === 'yes')}
+              onChange={(e) => {
+                void handleChange('physicianNotified', e.target.value === 'yes');
+              }}
             >
               <FormControlLabel value="yes" control={<Radio />} label="Yes" />
               <FormControlLabel value="no" control={<Radio />} label="No" />
@@ -789,7 +795,9 @@ function ImmediateActionsSection({
             <RadioGroup
               row
               value={formData.physicianSawPatient ? 'yes' : 'no'}
-              onChange={(e) => handleChange('physicianSawPatient', e.target.value === 'yes')}
+              onChange={(e) => {
+                void handleChange('physicianSawPatient', e.target.value === 'yes');
+              }}
             >
               <FormControlLabel value="yes" control={<Radio />} label="Yes" />
               <FormControlLabel value="no" control={<Radio />} label="No" />
@@ -1435,6 +1443,7 @@ export default function NewIncidentPage() {
   const { data: session, status: sessionStatus } = useSession();
   const { departments, isLoading: isLoadingDepartments } = useDepartmentsWithLocations();
   const { showError, ErrorDialogComponent } = useErrorDialog();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -1837,6 +1846,15 @@ export default function NewIncidentPage() {
               <ImmediateActionsSection
                 formData={formData}
                 onChange={handleChange}
+                onConfirmClearAssessment={() =>
+                  confirm({
+                    title: 'Clear Assessment Details?',
+                    message: 'Changing this will clear entered assessment/treatment details. Continue?',
+                    confirmText: 'Continue',
+                    confirmColor: 'warning',
+                    severity: 'warning',
+                  })
+                }
               />
 
               <RiskIdentificationSection formData={formData} onChange={handleChange} />
@@ -1911,6 +1929,7 @@ export default function NewIncidentPage() {
         </Box>
       </LocalizationProvider>
       {ErrorDialogComponent}
+      {ConfirmDialogComponent}
       <Snackbar
         open={!!successMessage}
         autoHideDuration={4000}

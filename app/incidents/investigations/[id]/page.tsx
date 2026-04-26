@@ -14,6 +14,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, ErrorLayout, SharedAccessManager } from '@/components/shared';
 import { RCAFishboneSection } from '@/components/incident-form/rca-fishbone';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { getRiskLevel } from '@/lib/constants';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
@@ -65,6 +66,7 @@ export default function InvestigationDetailPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const { showError, ErrorDialogComponent } = useErrorDialog();
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
     const investigationId = Number(params.id);
     // Read token from URL on client without useSearchParams
@@ -194,7 +196,14 @@ export default function InvestigationDetailPage() {
             return;
         }
 
-        if (!confirm('Submit investigation? This cannot be undone.')) return;
+        const confirmed = await confirm({
+            title: 'Submit Investigation',
+            message: 'Submit investigation? This cannot be undone.',
+            confirmText: 'Submit',
+            confirmColor: 'warning',
+            severity: 'warning',
+        });
+        if (!confirmed) return;
 
         setSubmitting(true);
 
@@ -710,6 +719,7 @@ export default function InvestigationDetailPage() {
                 </Grid>
             </Box>
             {ErrorDialogComponent}
+            {ConfirmDialogComponent}
         </AppLayout>
     );
 }

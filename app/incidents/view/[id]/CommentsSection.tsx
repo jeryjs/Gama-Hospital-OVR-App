@@ -2,6 +2,7 @@
 
 import { ovrReports } from '@/db/schema';
 import { useComments } from '@/lib/hooks';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { Comment as CommentIcon, Delete, Send } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
@@ -32,6 +33,7 @@ export function CommentsSection({ incidentId }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   const { comments, addComment, updateComment, deleteComment } = useComments(incidentId);
 
@@ -55,7 +57,14 @@ export function CommentsSection({ incidentId }: Props) {
   };
 
   const handleDelete = async (commentId: number) => {
-    if (!confirm('Delete this comment?')) return;
+    const confirmed = await confirm({
+      title: 'Delete Comment',
+      message: 'Delete this comment?',
+      confirmText: 'Delete',
+      confirmColor: 'error',
+      severity: 'warning',
+    });
+    if (!confirmed) return;
     try {
       await deleteComment(commentId);
     } catch (error) {
@@ -86,6 +95,7 @@ export function CommentsSection({ incidentId }: Props) {
   };
 
   return (
+    <>
     <Paper
       elevation={1}
       sx={{
@@ -353,6 +363,8 @@ export function CommentsSection({ incidentId }: Props) {
         </>
       )}
     </Paper>
+    {ConfirmDialogComponent}
+    </>
   );
 }
 

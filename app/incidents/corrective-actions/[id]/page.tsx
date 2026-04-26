@@ -13,6 +13,7 @@
 import { AppLayout } from '@/components/AppLayout';
 import { CollaborationPanel, Section, SharedAccessManager } from '@/components/shared';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { formatErrorForAlert } from '@/lib/client/error-handler';
 import { useCorrectiveAction } from '@/lib/hooks';
@@ -57,6 +58,7 @@ export default function CorrectiveActionDetailPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const { showError, ErrorDialogComponent } = useErrorDialog();
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
     const actionId = Number(params.id);
     // Read token from URL on client without using useSearchParams (avoids prerender bailouts)
@@ -211,7 +213,14 @@ export default function CorrectiveActionDetailPage() {
             return;
         }
 
-        if (!confirm('Close this action? This cannot be undone.')) return;
+        const confirmed = await confirm({
+            title: 'Close Action',
+            message: 'Close this action? This cannot be undone.',
+            confirmText: 'Close Action',
+            confirmColor: 'warning',
+            severity: 'warning',
+        });
+        if (!confirmed) return;
 
         setSubmitting(true);
         try {
@@ -616,6 +625,7 @@ export default function CorrectiveActionDetailPage() {
                 </Grid>
             </Box>
             {ErrorDialogComponent}
+            {ConfirmDialogComponent}
         </AppLayout>
     );
 }
