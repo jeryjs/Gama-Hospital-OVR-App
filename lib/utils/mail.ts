@@ -712,6 +712,18 @@ async function dispatchEnvelope(actor: Actor, envelope: MailEnvelope): Promise<v
     const filteredRecipients = envelope.to.filter(email => !email.startsWith('test.'));
     if (!filteredRecipients.length) return console.warn('All recipients are test users, skipping email dispatch');
 
+    // In development, just log the email instead of sending it
+    if (process.env.NODE_ENV === 'development') {
+        console.log('--- Email Dispatch ---');
+        console.log('From:', MAIL_NO_REPLY_FROM);
+        console.log('To:', filteredRecipients);
+        console.log('Subject:', envelope.subject);
+        console.log('HTML:', envelope.html);
+        console.log('Text:', envelope.text);
+        console.log('--- End Email ---');
+        return;
+    }
+
     // Use Resend if configured
     if (MAIL_TRANSPORT === 'resend') {
         if (!RESEND_API_KEY) throw new NonRetryableMailError('RESEND_API_KEY is required when MAIL_TRANSPORT=resend');
