@@ -32,9 +32,10 @@ import { Section } from '@/components/shared';
 import { secureFetch } from '@/lib/client/csrf';
 import { RichTextPreview } from '../editor';
 import { useRouter } from 'next/navigation';
+import { OVRReportWithRelations } from '@/lib/types';
 
 interface InvestigationManagementProps {
-    incidentId: string;
+    incident: OVRReportWithRelations;
     incidentStatus?: string;
     onInvestigationCreated?: (investigationId: number) => void;
 }
@@ -165,7 +166,7 @@ function InvestigationItem({ investigation }: { investigation: InvestigationList
  * Handles creating investigations and managing investigator access
  */
 export function InvestigationManagement({
-    incidentId,
+    incident,
     incidentStatus,
     onInvestigationCreated,
 }: InvestigationManagementProps) {
@@ -176,12 +177,13 @@ export function InvestigationManagement({
 
     const [creating, setCreating] = useState(false);
     const { investigations, isLoading, error, mutate } = useInvestigations({
-        ovrReportId: incidentId,
+        ovrReportId: incident.id,
         status: 'all',
         limit: 100,
     });
     const { showError, ErrorDialogComponent } = useErrorDialog();
 
+    const canView = canManage || Boolean(session?.user);
     const investigationCount = investigations?.length || 0;
 
     // Create investigation
@@ -191,7 +193,7 @@ export function InvestigationManagement({
             const response = await secureFetch('/api/investigations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ovrReportId: incidentId }),
+                body: JSON.stringify({ ovrReportId: incident.id }),
             });
 
             if (!response.ok) throw response;
@@ -207,7 +209,7 @@ export function InvestigationManagement({
         }
     };
 
-    if (!canManage && investigationCount === 0) {
+    if (!canView && investigationCount === 0) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" sx={{
@@ -249,11 +251,11 @@ export function InvestigationManagement({
 
                 {error ? (
                     <Alert severity="warning" sx={{ mb: 2 }}>
-                        Could not load investigations right now.
+                        {error.message || 'Failed to load investigations'}
                     </Alert>
                 ) : null}
 
-                {!isLoading && investigationCount === 0 ? (
+                {!isLoading && !error && investigationCount === 0 ? (
                     <Alert severity="info" sx={{ mb: 0 }}>
                         No investigation has been created for this incident yet.
                     </Alert>

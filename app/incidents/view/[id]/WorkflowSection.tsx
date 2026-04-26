@@ -94,7 +94,7 @@ export function WorkflowSection({
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
                 <InvestigationManagement
-                    incidentId={incident.id}
+                    incident={incident}
                     incidentStatus={incident.status}
                     onInvestigationCreated={() => {
                         onUpdate();
@@ -114,7 +114,7 @@ export function WorkflowSection({
                 <Divider sx={{ my: 3 }} />
 
                 <InvestigationManagement
-                    incidentId={incident.id}
+                    incident={incident}
                     incidentStatus={incident.status}
                     onInvestigationCreated={() => {
                         onUpdate();
@@ -145,7 +145,7 @@ export function WorkflowSection({
                 <Divider sx={{ my: 3 }} />
 
                 <InvestigationManagement
-                    incidentId={incident.id}
+                    incident={incident}
                     incidentStatus={incident.status}
                     onInvestigationCreated={() => {
                         onUpdate();

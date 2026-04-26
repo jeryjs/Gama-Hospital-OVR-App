@@ -204,6 +204,7 @@ export const incidentRelations = {
     columns: {
       id: true,
       email: true,
+      userId: true,
       role: true,
       status: true,
     },
@@ -256,6 +257,7 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   sharedAccess: z.array(z.object({
     id: z.number(),
     email: z.string(),
+    userId: z.number().nullable().optional(),
     role: z.string(),
     status: z.string(),
   })).optional(),
