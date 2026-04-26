@@ -11,7 +11,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { CollaborationPanel, SharedAccessManager } from '@/components/shared';
+import { CollaborationPanel, ErrorLayout, SharedAccessManager } from '@/components/shared';
 import { RCAFishboneSection } from '@/components/incident-form/rca-fishbone';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
@@ -224,9 +224,7 @@ export default function InvestigationDetailPage() {
     if (error) {
         return (
             <AppLayout>
-                <Alert severity="error" sx={{ mt: 4 }}>
-                    Failed to load investigation. {formatErrorForAlert(error)}
-                </Alert>
+                <ErrorLayout error={error} />
             </AppLayout>
         );
     }

@@ -75,7 +75,7 @@ export default function AdminDashboard({ stats, session }: { stats: DashboardSta
               <Typography variant="body1" sx={{
                 color: "text.secondary"
               }}>
-                Welcome back, {session?.user?.name} • System Overview
+                Welcome back, {session?.user?.name} {session?.user?.position && ` • ${session.user.position}`} {session?.user?.department && `• ${session.user.department}`}
               </Typography>
             </Box>
 

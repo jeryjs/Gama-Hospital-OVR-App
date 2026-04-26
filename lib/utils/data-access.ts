@@ -6,9 +6,11 @@
  * 
  * Key Principles:
  * 1. Always apply WHERE clauses based on user permissions
- * 2. Return 404 instead of 403 to prevent information disclosure
- * 3. Use parameterized queries to prevent SQL injection
- * 4. Filter related data based on access rights
+ * 2. Use parameterized queries to prevent SQL injection
+ * 3. Filter related data based on access rights
+ * 
+ * Note: For backward compatibility, we initially threw 404 for unauthorized access to avoid leaking existence of resources, 
+ * but this caused issues with shared access links. Now we throw 403 for unauthorized access and reserve 404 for truly non-existent resources.
  */
 
 import { db } from '@/db';
@@ -533,7 +535,7 @@ export async function getInvestigationSecure(
     const hasAccess = await canAccessInvestigation(investigationId, userContext, accessToken);
 
     if (!hasAccess) {
-        throw new NotFoundError('Investigation'); // Return 404, not 403
+        throw new AuthorizationError('You do not have permission to view this investigation');
     }
 
     const [investigation] = await db
@@ -560,7 +562,7 @@ export async function getCorrectiveActionSecure(
     const hasAccess = await canAccessCorrectiveAction(actionId, userContext, accessToken);
 
     if (!hasAccess) {
-        throw new NotFoundError('Corrective Action'); // Return 404, not 403
+        throw new AuthorizationError('You do not have permission to view this corrective action');
     }
 
     const [action] = await db

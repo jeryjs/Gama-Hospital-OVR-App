@@ -4,7 +4,7 @@ import { eq, sql } from 'drizzle-orm';
 import { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
-import { APP_ROLES } from './constants';
+import { APP_ROLES, AppRole } from './constants';
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com'])
   .map((d) => d.trim().toLowerCase())
@@ -365,7 +365,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.roles = (token.roles as any) || [APP_ROLES.EMPLOYEE];
+        session.user.roles = (token.roles as AppRole[]) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
         session.user.position = token.position as string | null;

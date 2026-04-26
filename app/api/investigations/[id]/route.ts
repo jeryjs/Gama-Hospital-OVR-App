@@ -59,7 +59,7 @@ export async function GET(
         );
 
         if (!hasAccess) {
-            throw new NotFoundError('Investigation');
+            throw new AuthorizationError('You do not have permission to view this investigation');
         }
 
         // Fetch investigation
@@ -129,7 +129,7 @@ export async function PATCH(
         );
 
         if (!hasAccess) {
-            throw new NotFoundError('Investigation');
+            throw new AuthorizationError('You do not have permission to view this investigation');
         }
 
         const isPrivileged = Boolean(

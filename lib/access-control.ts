@@ -315,12 +315,22 @@ export const ACCESS_CONTROL = {
                     APP_ROLES.DEVELOPER,
                 ]),
 
+            canViewInvestigations: (roles: AppRole[], hasAccess) =>
+                hasAccess ||
+                hasAnyRole(roles, [APP_ROLES.QUALITY_ANALYST]) ||
+                ACCESS_CONTROL.ui.incidentForm.canManageInvestigations(roles),
+
             canManageInvestigations: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.DEVELOPER,
                 ]),
+
+            canViewCorrectiveActions: (roles: AppRole[], hasAccess) =>
+                hasAccess ||
+                hasAnyRole(roles, [APP_ROLES.QUALITY_ANALYST]) ||
+                ACCESS_CONTROL.ui.incidentForm.canManageCorrectiveActions(roles),
 
             canManageCorrectiveActions: (roles: AppRole[]) =>
                 hasAnyRole(roles, [
