@@ -26,6 +26,7 @@ import {
     Box,
     Button,
     Chip,
+    CircularProgress,
     Divider,
     Grid,
     IconButton,
@@ -97,6 +98,7 @@ export default function InvestigationDetailPage() {
     const [analysisSeed, setAnalysisSeed] = useState(0);
     const [isEditingFindings, setIsEditingFindings] = useState(false);
     const [isEditingAnalysis, setIsEditingAnalysis] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     // Initialize form when data loads
@@ -172,6 +174,8 @@ export default function InvestigationDetailPage() {
     const handleSave = async () => {
         if (!canEditFindingsSection) return;
 
+        setSaving(true);
+
         try {
             await update({
                 findings: findings || undefined,
@@ -185,6 +189,8 @@ export default function InvestigationDetailPage() {
             }
         } catch (error) {
             await showError(error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -345,6 +351,7 @@ export default function InvestigationDetailPage() {
                                         canEdit={canQIEditSubmitted}
                                         isEditing={isEditingFindings}
                                         hasChanges={hasFindingsChanges}
+                                        isSaving={saving}
                                         onStartEdit={() => setIsEditingFindings(true)}
                                         onSave={handleSave}
                                         onCancel={cancelFindingsEditing}
@@ -451,9 +458,10 @@ export default function InvestigationDetailPage() {
                                             <Button
                                                 variant="outlined"
                                                 onClick={handleSave}
-                                                startIcon={<Save />}
+                                                startIcon={saving ? <CircularProgress size={16} /> : <Save />}
+                                                disabled={saving || submitting}
                                             >
-                                                Save Changes
+                                                {saving ? 'Saving...' : 'Save Changes'}
                                             </Button>
                                             <Tooltip
                                                 title={canSubmitInvestigation
