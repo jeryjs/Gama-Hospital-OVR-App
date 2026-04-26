@@ -13,7 +13,13 @@ import {
   getDetailColumns,
   incidentRelations,
 } from '@/lib/api/schemas';
-import { getIncidentSecure, canEditIncident, populateInvestigationUsers, populateActionUsers } from '@/lib/utils';
+import {
+  getIncidentSecure,
+  canEditIncident,
+  populateInvestigationUsers,
+  populateActionUsers,
+  getInvestigationsForIncident,
+} from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,11 +33,12 @@ export async function GET(
     const { id } = await params;
 
     // Use security utility - automatically filters by permissions
-    const incident = await getIncidentSecure(id, {
-      userId: parseInt(session.user.id),
-      roles: session.user.roles,
-      email: session.user.email,
-    });
+    // > commenting out as it seems to be unused, but leaving in place for future consideration
+    // const incident = await getIncidentSecure(id, {
+    //   userId: parseInt(session.user.id),
+    //   roles: session.user.roles,
+    //   email: session.user.email,
+    // });
 
     // Fetch full details with relations
     const fullIncident = await db.query.ovrReports.findFirst({
@@ -44,12 +51,30 @@ export async function GET(
       return NextResponse.json(fullIncident);
     }
 
-    // Populate user details for investigation and corrective actions
-    const enrichedIncident = { ...fullIncident } as any;
+    // Populate user details for investigation(s) and corrective actions
+    const enrichedIncident = { ...fullIncident } as any; // Will be enriched with user details, so widen type for now
 
-    // Populate investigators in investigation
-    if (fullIncident.investigation) {
-      enrichedIncident.investigation = await populateInvestigationUsers(fullIncident.investigation);
+    const userContext = {
+      userId: parseInt(session.user.id),
+      roles: session.user.roles,
+      email: session.user.email,
+    };
+
+    // Populate investigators in all investigations for this incident
+    const incidentInvestigations = await getInvestigationsForIncident(id, userContext);
+    if (incidentInvestigations.length > 0) {
+      const populatedInvestigations = await Promise.all(
+        incidentInvestigations.map((investigation) => populateInvestigationUsers(investigation))
+      );
+
+      // Keep latest first for consistent UI rendering
+      populatedInvestigations.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      enrichedIncident.investigations = populatedInvestigations;
+    } else {
+      enrichedIncident.investigations = [];
     }
 
     // Populate assignees in corrective actions

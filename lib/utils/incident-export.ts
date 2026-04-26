@@ -36,6 +36,10 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
     organization: 'Organization',
   }[incident.personInvolved || ''] || incident.personInvolved || 'Not specified';
 
+  const investigations = incident.investigations?.length
+    ? incident.investigations
+    : [];
+
   return `
 <!DOCTYPE html>
 <html>
@@ -305,34 +309,40 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
   </div>
   ` : ''}
 
-  ${incident.investigation ? `
-  <h2>Investigation</h2>
+  ${investigations.length > 0 ? `
+  <h2>Investigations</h2>
+  ${investigations.map((investigation) => `
   <div class="section">
-    ${incident.investigation.findings ? `
+    <div class="field">
+      <div class="label">Investigation</div>
+      <div class="value">INV-${investigation.id}${investigation.submittedAt ? ' (Completed)' : ' (Pending)'}</div>
+    </div>
+    ${investigation.findings ? `
     <div class="field">
       <div class="label">Findings</div>
-      <div class="description">${incident.investigation.findings}</div>
+      <div class="description">${investigation.findings}</div>
     </div>
     ` : ''}
-    ${incident.investigation.problemsIdentified ? `
+    ${investigation.problemsIdentified ? `
     <div class="field">
       <div class="label">Problems Identified</div>
-      <div class="description">${incident.investigation.problemsIdentified}</div>
+      <div class="description">${investigation.problemsIdentified}</div>
     </div>
     ` : ''}
-    ${incident.investigation.causeClassification ? `
+    ${investigation.causeClassification ? `
     <div class="field">
       <div class="label">Cause Classification</div>
-      <div class="value">${incident.investigation.causeClassification}</div>
+      <div class="value">${investigation.causeClassification}</div>
     </div>
     ` : ''}
-    ${incident.investigation.causeDetails ? `
+    ${investigation.causeDetails ? `
     <div class="field">
       <div class="label">Cause Details</div>
-      <div class="description">${incident.investigation.causeDetails}</div>
+      <div class="description">${investigation.causeDetails}</div>
     </div>
     ` : ''}
   </div>
+  `).join('')}
   ` : ''}
 
   ${incident.correctiveActions && incident.correctiveActions.length > 0 ? `

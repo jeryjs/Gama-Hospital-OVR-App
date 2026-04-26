@@ -250,7 +250,7 @@ export const ovrReportWithRelationsSchema = ovrReportSelectSchema.extend({
   supervisor: userMinimalSchema.optional(),
   involvedPerson: userPublicSchema.optional(),
   qiReviewedByPerson: userMinimalSchema.optional(),
-  investigation: investigationWithUsersSchema.nullable().optional(),
+  investigations: z.array(investigationWithUsersSchema).optional(),
   correctiveActions: z.array(correctiveActionWithUsersSchema).optional(),
   sharedAccess: z.array(z.object({
     id: z.number(),

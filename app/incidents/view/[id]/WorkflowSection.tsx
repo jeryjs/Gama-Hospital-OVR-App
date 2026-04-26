@@ -41,10 +41,7 @@ export function WorkflowSection({
     onUpdate,
     onClosureSuccess,
 }: WorkflowSectionProps) {
-    // Track investigation and action IDs
-    const [investigationId, setInvestigationId] = useState<number | undefined>(
-        incident.investigation?.id
-    );
+    // Track action IDs
     const [actionIds, setActionIds] = useState<number[]>(
         incident.correctiveActions?.map((a) => a.id) || []
     );
@@ -116,14 +113,6 @@ export function WorkflowSection({
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
-                {/* summary is now displayed in inv-management directly and will be removed in future. */}
-                {/* {incident.investigation && (
-                    <InvestigationSummary
-                        investigation={incident.investigation}
-                        incidentId={incident.id}
-                    />
-                )} */}
-
                 <InvestigationManagement
                     incidentId={incident.id}
                     incidentStatus={incident.status}
@@ -132,7 +121,7 @@ export function WorkflowSection({
                     }}
                 />
 
-                {incident.investigation && (
+                {(incident.investigations || []).length > 0 && (
                     <CorrectiveActionsManagement
                         incidentId={incident.id}
                         actionIds={actionIds}
@@ -194,12 +183,18 @@ export function WorkflowSection({
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
-                {/* Investigation Summary */}
-                {incident.investigation && (
-                    <InvestigationSummary
-                        investigation={incident.investigation}
-                        incidentId={incident.id}
-                    />
+                {/* Investigation Summaries */}
+                {(incident.investigations || []).length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                        {(incident.investigations || []).map((investigation) => (
+                            <Box key={investigation.id} sx={{ mb: 2 }}>
+                                <InvestigationSummary
+                                    investigation={investigation}
+                                    incidentId={incident.id}
+                                />
+                            </Box>
+                        ))}
+                    </Box>
                 )}
 
                 {/* Corrective Actions Summary */}

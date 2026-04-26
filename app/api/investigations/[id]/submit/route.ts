@@ -82,78 +82,92 @@ export async function POST(
         // Validate submission data
         const body = await validateBody(request, submitInvestigationSchema);
 
-        const workflowResult = await db.transaction(async (tx) => {
-            const [investigationWithIncident] = await tx
-                .select({
-                    ovrReportId: ovrInvestigations.ovrReportId,
-                    submittedAt: ovrInvestigations.submittedAt,
-                    incidentStatus: ovrReports.status,
-                })
-                .from(ovrInvestigations)
-                .innerJoin(ovrReports, eq(ovrReports.id, ovrInvestigations.ovrReportId))
-                .where(eq(ovrInvestigations.id, investigationId))
-                .limit(1);
+        // Fetch investigation with incident details for validation and workflow processing
+        const [investigationWithIncident] = await db
+            .select({
+                ovrReportId: ovrInvestigations.ovrReportId,
+                submittedAt: ovrInvestigations.submittedAt,
+                incidentStatus: ovrReports.status,
+            })
+            .from(ovrInvestigations)
+            .innerJoin(ovrReports, eq(ovrReports.id, ovrInvestigations.ovrReportId))
+            .where(eq(ovrInvestigations.id, investigationId))
+            .limit(1);
 
-            if (!investigationWithIncident) {
-                throw new NotFoundError('Investigation');
-            }
+        if (!investigationWithIncident) {
+            throw new NotFoundError('Investigation');
+        }
 
-            if (investigationWithIncident.submittedAt) {
-                throw new ValidationError('Investigation is already submitted');
-            }
+        if (investigationWithIncident.submittedAt) {
+            throw new ValidationError('Investigation is already submitted');
+        }
 
-            if (
-                investigationWithIncident.incidentStatus !== 'investigating' &&
-                investigationWithIncident.incidentStatus !== 'qi_review' &&
-                investigationWithIncident.incidentStatus !== 'qi_final_actions'
-            ) {
-                throw new AuthorizationError(
-                    `Cannot submit investigation while incident is in status: ${investigationWithIncident.incidentStatus}`
-                );
-            }
+        if (
+            investigationWithIncident.incidentStatus !== 'investigating' &&
+            investigationWithIncident.incidentStatus !== 'qi_review' &&
+            investigationWithIncident.incidentStatus !== 'qi_final_actions'
+        ) {
+            throw new AuthorizationError(
+                `Cannot submit investigation while incident is in status: ${investigationWithIncident.incidentStatus}`
+            );
+        }
 
-            const [updatedInvestigation] = await tx
-                .update(ovrInvestigations)
-                .set({
-                    findings: body.findings,
-                    problemsIdentified: body.problemsIdentified,
-                    causeClassification: body.causeClassification,
-                    causeDetails: body.causeDetails,
-                    submittedAt: new Date(),
-                    updatedAt: new Date(),
-                })
-                .where(eq(ovrInvestigations.id, investigationId))
-                .returning();
-
-            const [remainingOpenInvestigation] = await tx
-                .select({ id: ovrInvestigations.id })
-                .from(ovrInvestigations)
-                .where(
-                    and(
-                        eq(ovrInvestigations.ovrReportId, investigationWithIncident.ovrReportId),
-                        isNull(ovrInvestigations.submittedAt)
-                    )
+        // Update investigation as submitted and set findings
+        const [updatedInvestigation] = await db
+            .update(ovrInvestigations)
+            .set({
+                findings: body.findings,
+                problemsIdentified: body.problemsIdentified,
+                causeClassification: body.causeClassification,
+                causeDetails: body.causeDetails,
+                submittedAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .where(
+                and(
+                    eq(ovrInvestigations.id, investigationId),
+                    isNull(ovrInvestigations.submittedAt)
                 )
-                .limit(1);
+            )
+            .returning();
 
-            const nextIncidentStatus = remainingOpenInvestigation ? 'investigating' : 'qi_final_actions';
+        if (!updatedInvestigation) {
+            throw new ValidationError('Investigation state changed. Please refresh and try again.');
+        }
 
-            await tx
+        // Check if there are any remaining open investigations for the incident
+        const [remainingOpenInvestigation] = await db
+            .select({ id: ovrInvestigations.id })
+            .from(ovrInvestigations)
+            .where(
+                and(
+                    eq(ovrInvestigations.ovrReportId, investigationWithIncident.ovrReportId),
+                    isNull(ovrInvestigations.submittedAt)
+                )
+            )
+            .limit(1);
+
+        const nextIncidentStatus = remainingOpenInvestigation ? 'investigating' : 'qi_final_actions';
+
+        // Skip DB write if status already matches target
+        if (investigationWithIncident.incidentStatus !== nextIncidentStatus) {
+            await db
                 .update(ovrReports)
                 .set({
                     status: nextIncidentStatus,
                     updatedAt: new Date(),
                 })
                 .where(eq(ovrReports.id, investigationWithIncident.ovrReportId));
+        }
 
-            return {
-                investigation: updatedInvestigation,
-                incidentId: investigationWithIncident.ovrReportId,
-            };
-        });
+        const workflowResult = {
+            investigation: updatedInvestigation,
+            incidentId: investigationWithIncident.ovrReportId,
+        };
 
         if (session) {
-            await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
+            // Dont await to send email - if it fails we still want to return success response for the investigation submission
+            sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
                 incidentId: workflowResult.incidentId,
                 investigationId,
             });
