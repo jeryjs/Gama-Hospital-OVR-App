@@ -262,7 +262,7 @@ export function InvestigationManagement({
                 ) : (
                     <Stack spacing={2}>
                         {(investigations || []).map((investigation) => (
-                            <InvestigationItem investigation={investigation} />
+                            <InvestigationItem key={investigation.id} investigation={investigation} />
                         ))}
                     </Stack>
                 )}

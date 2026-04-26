@@ -51,7 +51,7 @@ function IncidentDetails() {
 
   return (
     <AppLayout>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 4 }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 4 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
