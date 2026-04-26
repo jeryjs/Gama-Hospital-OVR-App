@@ -101,6 +101,10 @@ function getFullName(user: UserSearchResult): string {
     return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
 }
 
+function getUserSubtitle(user: UserSearchResult): string {
+    return [user.position, user.department].filter(Boolean).join(' • ');
+}
+
 /**
  * Loading skeleton for autocomplete options
  */
@@ -132,6 +136,7 @@ function UserOptionStandard({
 }) {
     const fullName = getFullName(user);
     const initials = getInitials(user.firstName, user.lastName);
+    const subtitle = getUserSubtitle(user);
 
     // Extract key from props so we don't spread it into the DOM element
     const { key, ...liProps } = props;
@@ -204,7 +209,7 @@ function UserOptionStandard({
                         }}>
                         {fullName}
                     </Typography>
-                    {user.department && (
+                    {subtitle && (
                         <Typography
                             variant="caption"
                             sx={{
@@ -214,7 +219,7 @@ function UserOptionStandard({
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
                             }}>
-                            {user.department}
+                            {subtitle}
                         </Typography>
                     )}
                 </Box>
@@ -235,91 +240,95 @@ function UserOptionModern({
 }) {
     const fullName = getFullName(user);
     const initials = getInitials(user.firstName, user.lastName);
+    const subtitle = getUserSubtitle(user);
 
     // Extract key from props so we don't spread it into the DOM element
     const { key, ...liProps } = props;
 
     return (
-        <Box
-            key={key}
-            component="li"
-            {...liProps}
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                py: 1.5,
-                px: 2,
-                cursor: 'pointer',
-                borderRadius: 2,
-                border: (theme) => `1px solid transparent`,
-                transition: 'all 0.15s ease',
-                '&:hover': {
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
-                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                },
-                '&[aria-selected="true"]': {
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                    borderColor: (theme) => theme.palette.primary.main,
-                },
-            }}
+        <Tooltip
+            arrow
+            title={
+                <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{fullName}</Typography>
+                    <Typography variant="caption">{user.email}</Typography>
+                    <Typography variant="caption" sx={{ display: "block", mt: 0.5, opacity: 0.8 }}>
+                        Roles: {user.roles.join(', ')}
+                    </Typography>
+                </Box>
+            }
+            placement="right"
+            enterDelay={750}
         >
-            <Avatar
-                src={user.profilePicture || undefined}
+            <Box
+                key={key}
+                component="li"
+                {...liProps}
                 sx={{
-                    width: 40,
-                    height: 40,
-                    bgcolor: 'primary.main',
-                    fontSize: '1rem',
-                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    py: 1.5,
+                    px: 2,
+                    cursor: 'pointer',
+                    borderRadius: 2,
+                    border: (theme) => `1px solid transparent`,
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                        borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                    },
+                    '&[aria-selected="true"]': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        borderColor: (theme) => theme.palette.primary.main,
+                    },
                 }}
             >
-                {initials}
-            </Avatar>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                    variant="body1"
+                <Avatar
+                    src={user.profilePicture || undefined}
                     sx={{
+                        width: 40,
+                        height: 40,
+                        bgcolor: 'primary.main',
+                        fontSize: '1rem',
                         fontWeight: 600,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                    }}
+                >
+                    {initials}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            fontWeight: 600,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}>
+                        {fullName}
+                    </Typography>
+                    <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
                     }}>
-                    {fullName}
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{
-                    alignItems: "center"
-                }}>
-                    {user.department && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.secondary",
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                            }}>
-                            {user.department}
-                        </Typography>
-                    )}
-                    {user.roles && user.roles.length > 0 && (
-                        <>
-                            {user.department && <Typography variant="caption" sx={{
-                                color: "text.disabled"
-                            }}>•</Typography>}
+                        {subtitle && (
                             <Typography
                                 variant="caption"
                                 sx={{
-                                    color: "primary.main",
-                                    fontWeight: 500
+                                    color: "text.secondary",
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
                                 }}>
-                                {user.roles[0]}
+                                {subtitle} •
                             </Typography>
-                        </>
-                    )}
-                </Stack>
+                        )}
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                            {user.email}
+                        </Typography>
+                    </Stack>
+                </Box>
             </Box>
-        </Box>
+        </Tooltip>
     );
 }
 
@@ -606,9 +615,65 @@ export function PeoplePicker({
         );
     }
 
+    const singleSelectedUser = !multiple && value && !Array.isArray(value) ? value : null;
+
     return (
         <Box>
-            <Autocomplete
+            {singleSelectedUser ? (
+                <Box>
+                    {label && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block' }}>
+                            {label}
+                        </Typography>
+                    )}
+                    <Box sx={{ position: 'relative' }}>
+                        <OptionComponent
+                            user={singleSelectedUser}
+                            props={{
+                                style: {
+                                    border: error ? '1px solid' : undefined,
+                                    borderColor: error ? 'error.main' : undefined,
+                                },
+                            }}
+                        />
+                        {!disabled && (
+                            <Tooltip title="Remove">
+                                <Box
+                                    component="span"
+                                    onClick={() => onChange(null)}
+                                    sx={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        right: 8,
+                                        transform: 'translateY(-50%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 1,
+                                        cursor: 'pointer',
+                                        color: 'text.secondary',
+                                        bgcolor: 'background.paper',
+                                        '&:hover': {
+                                            bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+                                            color: 'error.main',
+                                        },
+                                    }}
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </Box>
+                            </Tooltip>
+                        )}
+                    </Box>
+                    {helperText && (
+                        <Typography variant="caption" sx={{ color: error ? 'error.main' : 'text.secondary', mt: 0.5, display: 'block', ml: 1.75 }}>
+                            {helperText}
+                        </Typography>
+                    )}
+                </Box>
+            ) : (
+                <Autocomplete
                 multiple={multiple}
                 value={value}
                 onChange={handleChange}
@@ -703,8 +768,9 @@ export function PeoplePicker({
                     }
                 }}
             />
+            )}
             {/* Manual entry toggle */}
-            {showManualToggle && (
+            {showManualToggle && !singleSelectedUser && (
                 <Box sx={{ mt: 1 }}>
                     <Button
                         size="small"

@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
                     ilike(users.lastName, searchTerm),
                     ilike(users.email, searchTerm),
                     ilike(users.employeeId, searchTerm),
+                    ilike(users.position, searchTerm),
+                    ilike(users.department, searchTerm),
                     // Also search full name (firstName + lastName)
                     sql`CONCAT(${users.firstName}, ' ', ${users.lastName}) ILIKE ${searchTerm}`
                 )!
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
                 lastName: users.lastName,
                 email: users.email,
                 department: users.department,
+                position: users.position,
                 profilePicture: users.profilePicture,
                 roles: users.roles,
             })

@@ -43,6 +43,7 @@ export const userSearchResultSchema = userSelectSchema.pick({
   lastName: true,
   email: true,
   department: true,
+  position: true,
   profilePicture: true,
   roles: true,
 });

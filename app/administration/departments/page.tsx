@@ -662,6 +662,7 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
                     lastName: department.head.lastName,
                     email: '', // Not available in minimal schema
                     department: null,
+                    position: null,
                     profilePicture: null,
                     roles: [],
                 });

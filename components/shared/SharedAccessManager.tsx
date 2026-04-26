@@ -8,9 +8,6 @@
 'use client';
 
 import {
-  Add,
-  ContentCopy,
-  Delete,
   Email,
   Link as LinkIcon,
   PersonAdd,
@@ -20,6 +17,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Chip,
   Dialog,
   DialogActions,
@@ -30,15 +28,17 @@ import {
   ListItem,
   ListItemText,
   Stack,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useErrorDialog } from '@/components/ErrorDialog';
+import { apiCall } from '@/lib/client/error-handler';
+import type { UserSearchResult } from '@/lib/api/schemas';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
 import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
+import { PeoplePicker } from './PeoplePicker';
 import { Section } from './Section';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -50,6 +50,17 @@ export interface SharedAccessManagerProps {
   invitations: SharedAccessInvitation[];
   onUpdate?: () => void | Promise<void>;
 }
+
+type RecommendationReason =
+  | 'department_head'
+  | 'reporter'
+  | 'involved_person'
+  | 'resource_member'
+  | 'resource_owner';
+
+type RecommendedUser = UserSearchResult & {
+  recommendationReason: RecommendationReason;
+};
 
 /**
  * Shared Access Manager Component
@@ -81,7 +92,9 @@ export function SharedAccessManager({
   const router = useRouter();
   const inviteParam = useSearchParams().get('invite');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [recommendedUsers, setRecommendedUsers] = useState<RecommendedUser[]>([]);
+  const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -103,8 +116,78 @@ export function SharedAccessManager({
     }
   }, [inviteParam, router]);
 
+  useEffect(() => {
+    if (!inviteDialogOpen) {
+      return;
+    }
+
+    let active = true;
+
+    const loadRecommended = async () => {
+      setIsLoadingRecommended(true);
+
+      try {
+        const params = new URLSearchParams();
+        params.set('ovrReportId', ovrReportId);
+        params.set('resourceType', resourceType);
+        params.set('resourceId', String(resourceId));
+
+        const { data, error } = await apiCall<RecommendedUser[]>(
+          `/api/users/recommended?${params.toString()}`
+        );
+
+        if (error || !active) {
+          if (error) {
+            throw error;
+          }
+          return;
+        }
+
+        const invitedEmails = new Set(
+          invitations.map((invitation) => invitation.email.trim().toLowerCase())
+        );
+
+        setRecommendedUsers(
+          (data || []).filter(
+            (user) => !invitedEmails.has(user.email.trim().toLowerCase())
+          )
+        );
+      } catch (error) {
+        console.error('Failed to load recommended people:', error);
+      } finally {
+        if (active) {
+          setIsLoadingRecommended(false);
+        }
+      }
+    };
+
+    loadRecommended();
+
+    return () => {
+      active = false;
+    };
+  }, [inviteDialogOpen, invitations, ovrReportId, resourceId, resourceType]);
+
+  const getRecommendedReasonLabel = (reason: RecommendationReason) => {
+    switch (reason) {
+      case 'department_head': return 'Dept Head';
+      case 'reporter': return 'Reporter';
+      case 'involved_person': return 'Involved Staff';
+      case 'resource_member': return resourceType === 'investigation' ? 'Investigator' : 'Assignee';
+      case 'resource_owner': return 'Created This';
+      default: return 'Suggested';
+    }
+  };
+
+  const getUserName = (user: UserSearchResult) =>
+    `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+
+  const getUserDescriptor = (user: UserSearchResult) =>
+    [user.position, user.department].filter(Boolean).join(' • ');
+
   const handleInvite = async () => {
-    if (!inviteEmail.trim() || !isValidEmail(inviteEmail)) {
+    if (!selectedUser?.email) {
+      await showError(new Error(`Please select a ${roleLabel.toLowerCase()} first`));
       return;
     }
 
@@ -115,7 +198,7 @@ export function SharedAccessManager({
         resourceType,
         resourceId,
         ovrReportId,
-        email: inviteEmail.trim(),
+        email: selectedUser.email.trim(),
         role,
       });
 
@@ -124,7 +207,7 @@ export function SharedAccessManager({
       setCopiedUrl(result.accessUrl);
 
       // Reset form
-      setInviteEmail('');
+      setSelectedUser(null);
       setInviteDialogOpen(false);
       if (onUpdate) {
         await onUpdate();
@@ -309,44 +392,94 @@ export function SharedAccessManager({
       {/* Invite Dialog */}
       <Dialog
         open={inviteDialogOpen}
-        onClose={() => setInviteDialogOpen(false)}
+        onClose={() => {
+          setInviteDialogOpen(false);
+          setSelectedUser(null);
+        }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Invite {roleLabel}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
+            <PeoplePicker
               autoFocus
-              label="Email Address"
-              type="email"
-              fullWidth
+              label={`Select ${roleLabel}`}
+              placeholder={`Search by name, position, or department`}
+              value={selectedUser}
+              onChange={(value) => {
+                if (!value || Array.isArray(value)) {
+                  setSelectedUser(null);
+                  return;
+                }
+                setSelectedUser(value);
+              }}
+              variant="ms-modern"
               required
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder={`${roleLabel.toLowerCase()}@example.com`}
-              error={inviteEmail.length > 0 && !isValidEmail(inviteEmail)}
-              helperText={
-                inviteEmail.length > 0 && !isValidEmail(inviteEmail)
-                  ? 'Please enter a valid email address'
-                  : 'A secure invitation email is sent automatically; link is copied as backup'
-              }
+              fullWidth
+              helperText="Select the exact person by name, position, and department"
             />
+
+            {isLoadingRecommended && (
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <CircularProgress size={16} />
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  Loading suggestions...
+                </Typography>
+              </Stack>
+            )}
+
+            {!isLoadingRecommended && recommendedUsers.length > 0 && (
+              <Box>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                  Suggested people
+                </Typography>
+                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                  {recommendedUsers
+                    .filter((user) => !selectedUser || user.id !== selectedUser.id)
+                    .map((user) => {
+                      const descriptor = getUserDescriptor(user);
+                      const reason = getRecommendedReasonLabel(user.recommendationReason);
+                      const label = descriptor
+                        ? `${getUserName(user)} • ${descriptor}`
+                        : getUserName(user);
+
+                      return (
+                        <Tooltip key={user.id} title={`${reason} • ${user.email}`} arrow>
+                          <Chip
+                            clickable
+                            onClick={() => setSelectedUser(user)}
+                            label={label}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Tooltip>
+                      );
+                    })}
+                </Stack>
+              </Box>
+            )}
 
             <Alert severity="info">
               <Typography variant="body2">
-                The {roleLabel.toLowerCase()} will receive a unique email invitation to access this {resourceType}.
-                No extra mail app steps required.
+                The selected person will receive a unique email invitation to access this {resourceType}.
               </Typography>
             </Alert>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setInviteDialogOpen(false);
+              setSelectedUser(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleInvite}
             variant="contained"
-            disabled={!inviteEmail.trim() || !isValidEmail(inviteEmail) || submitting}
+            disabled={!selectedUser || submitting}
             startIcon={<Email />}
           >
             {submitting ? 'Sending...' : 'Send Invitation'}
@@ -356,11 +489,4 @@ export function SharedAccessManager({
       {ErrorDialogComponent}
     </>
   );
-}
-
-/**
- * Simple email validation
- */
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
