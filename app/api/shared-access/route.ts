@@ -24,8 +24,105 @@ import {
 } from '@/lib/api/schemas';
 import { buildSharedAccessUrl, generateSharedAccessToken } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+type SharedAccessInviteInput = {
+    resourceType: 'investigation' | 'corrective_action';
+    resourceId: number;
+    ovrReportId: string;
+    email: string;
+    role: 'investigator' | 'action_handler' | 'viewer';
+    tokenExpiresAt?: string;
+};
+
+async function saveSharedAccessInvitation(
+    session: Awaited<ReturnType<typeof requireAuth>> | Awaited<ReturnType<typeof validateCsrfAndIdempotency>>,
+    invite: SharedAccessInviteInput
+) {
+    const normalizedEmail = invite.email.trim().toLowerCase();
+    const [existingUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
+
+    const matchingInvitations = await db
+        .select()
+        .from(ovrSharedAccess)
+        .where(
+            and(
+                eq(ovrSharedAccess.resourceType, invite.resourceType),
+                eq(ovrSharedAccess.resourceId, invite.resourceId),
+                eq(ovrSharedAccess.role, invite.role),
+                sql`LOWER(${ovrSharedAccess.email}) = ${normalizedEmail}`
+            )
+        )
+        .orderBy(desc(ovrSharedAccess.invitedAt), desc(ovrSharedAccess.id));
+
+    const activeInvitation = matchingInvitations.find((row) => row.status !== 'revoked');
+
+    if (activeInvitation) {
+        const duplicateIds = matchingInvitations
+            .filter((row) => row.id !== activeInvitation.id)
+            .map((row) => row.id);
+
+        if (duplicateIds.length > 0) {
+            await Promise.all(
+                duplicateIds.map((id) =>
+                    db.delete(ovrSharedAccess).where(eq(ovrSharedAccess.id, id))
+                )
+            );
+        }
+    } else if (matchingInvitations.length > 0) {
+        await Promise.all(
+            matchingInvitations.map((row) =>
+                db.delete(ovrSharedAccess).where(eq(ovrSharedAccess.id, row.id))
+            )
+        );
+    }
+
+    const { token, expiresAt } = generateSharedAccessToken(7);  // Default to 7 days validity for new invitations
+    const shouldPreserveStatus = activeInvitation?.status === 'accepted' ? 'accepted' : 'pending';
+
+    const values = {
+        resourceType: invite.resourceType,
+        resourceId: invite.resourceId,
+        ovrReportId: invite.ovrReportId,
+        email: normalizedEmail,
+        userId: existingUser?.id || null,
+        role: invite.role,
+        accessToken: token,
+        tokenExpiresAt: invite.tokenExpiresAt
+            ? new Date(invite.tokenExpiresAt)
+            : expiresAt,
+        status: shouldPreserveStatus,
+        invitedBy: parseInt(session.user.id),
+        invitedAt: new Date(),
+        revokedBy: null,
+        revokedAt: null,
+    };
+
+    const invitation = activeInvitation
+        ? (await db.update(ovrSharedAccess)
+            .set(values)
+            .where(eq(ovrSharedAccess.id, activeInvitation.id))
+            .returning())[0]
+        : (await db.insert(ovrSharedAccess).values(values).returning())[0];
+
+    const accessUrl = buildSharedAccessUrl(
+        invite.resourceType,
+        invite.resourceId,
+        token,
+        process.env.NEXTAUTH_URL
+    );
+
+    return {
+        invitation,
+        accessUrl,
+        normalizedEmail,
+    };
+}
 
 /**
  * POST /api/shared-access - Create single invitation
@@ -39,43 +136,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await validateBody(request, createSharedAccessSchema);
-        const normalizedEmail = body.email.trim().toLowerCase();
-
-        // Generate secure token
-        const { token, expiresAt } = generateSharedAccessToken(30); // 30 days
-
-        // Check if user exists in system
-        const [existingUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.email, normalizedEmail))
-            .limit(1);
-
-        const [invitation] = await db
-            .insert(ovrSharedAccess)
-            .values({
-                resourceType: body.resourceType,
-                resourceId: body.resourceId,
-                ovrReportId: body.ovrReportId,
-                email: normalizedEmail,
-                userId: existingUser?.id || null,
-                role: body.role,
-                accessToken: token,
-                tokenExpiresAt: body.tokenExpiresAt
-                    ? new Date(body.tokenExpiresAt)
-                    : expiresAt,
-                status: 'pending',
-                invitedBy: parseInt(session.user.id),
-                invitedAt: new Date(),
-            })
-            .returning();
-
-        const accessUrl = buildSharedAccessUrl(
-            body.resourceType,
-            body.resourceId,
-            token,
-            process.env.NEXTAUTH_URL
-        );
+        const { invitation, accessUrl, normalizedEmail } = await saveSharedAccessInvitation(session, body);
 
         await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
             incidentId: body.ovrReportId,
@@ -114,44 +175,16 @@ export async function PUT(request: NextRequest) {
         const body = await validateBody(request, bulkCreateSharedAccessSchema);
 
         const invitations = [] as (typeof ovrSharedAccess.$inferInsert & { accessUrl: string })[];
-        const invitedBy = parseInt(session.user.id);
 
         for (const invite of body.invitations) {
-            const { token, expiresAt } = generateSharedAccessToken(30);
-            const normalizedEmail = invite.email.trim().toLowerCase();
-
-            // Check if user exists
-            const [existingUser] = await db
-                .select()
-                .from(users)
-                .where(eq(users.email, normalizedEmail))
-                .limit(1);
-
-            const [invitation] = await db
-                .insert(ovrSharedAccess)
-                .values({
-                    resourceType: body.resourceType,
-                    resourceId: body.resourceId,
-                    ovrReportId: body.ovrReportId,
-                    email: normalizedEmail,
-                    userId: existingUser?.id || null,
-                    role: invite.role,
-                    accessToken: token,
-                    tokenExpiresAt: body.tokenExpiresAt
-                        ? new Date(body.tokenExpiresAt)
-                        : expiresAt,
-                    status: 'pending',
-                    invitedBy,
-                    invitedAt: new Date(),
-                })
-                .returning();
-
-            const accessUrl = buildSharedAccessUrl(
-                body.resourceType,
-                body.resourceId,
-                token,
-                process.env.NEXTAUTH_URL
-            );
+            const { invitation, accessUrl, normalizedEmail } = await saveSharedAccessInvitation(session, {
+                resourceType: body.resourceType,
+                resourceId: body.resourceId,
+                ovrReportId: body.ovrReportId,
+                email: invite.email,
+                role: invite.role,
+                tokenExpiresAt: body.tokenExpiresAt,
+            });
 
             await sendWorkflowMailSafely(request, session.user, 'shared_access_invited', {
                 incidentId: body.ovrReportId,
@@ -261,12 +294,7 @@ export async function DELETE(request: NextRequest) {
         }
 
         const [revoked] = await db
-            .update(ovrSharedAccess)
-            .set({
-                status: 'revoked',
-                revokedBy: parseInt(session.user.id),
-                revokedAt: new Date(),
-            })
+            .delete(ovrSharedAccess)
             .where(eq(ovrSharedAccess.id, parseInt(accessId)))
             .returning();
 

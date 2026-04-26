@@ -30,10 +30,6 @@ export async function GET(request: NextRequest) {
     try {
         const session = await requireAuth(request);
 
-        if (!ACCESS_CONTROL.api.investigations.canView(session.user.roles, false)) {
-            throw new AuthorizationError('Only authorized QI roles can view investigations');
-        }
-
         const { searchParams } = new URL(request.url);
         const page = Math.max(1, Number(searchParams.get('page') || 1));
         const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 10)));
@@ -41,6 +37,20 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search')?.trim();
         const status = searchParams.get('status');
         const ovrReportId = searchParams.get('ovrReportId')?.trim();
+
+        const canViewAll = ACCESS_CONTROL.api.investigations.canView(session.user.roles, false);
+
+        if (!canViewAll) {
+            if (!ovrReportId) {
+                throw new AuthorizationError('Only authorized QI roles can view investigations');
+            }
+
+            await getIncidentSecure(ovrReportId, {
+                userId: parseInt(session.user.id),
+                roles: session.user.roles,
+                email: session.user.email,
+            });
+        }
 
         const conditions: SQL[] = [];
 
