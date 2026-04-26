@@ -27,6 +27,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Popover,
   Stack,
   Tooltip,
   Typography,
@@ -40,6 +41,8 @@ import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
 import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
 import { PeoplePicker } from './PeoplePicker';
 import { Section } from './Section';
+import { PersonListItem } from './PersonListItem';
+import type { PersonListItemData } from './PersonListItem';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export interface SharedAccessManagerProps {
@@ -50,6 +53,10 @@ export interface SharedAccessManagerProps {
   invitations: SharedAccessInvitation[];
   onUpdate?: () => void | Promise<void>;
 }
+
+type InvitationWithPerson = SharedAccessInvitation & {
+  person?: PersonListItemData | null;
+};
 
 type RecommendationReason =
   | 'department_head'
@@ -95,6 +102,10 @@ export function SharedAccessManager({
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [recommendedUsers, setRecommendedUsers] = useState<RecommendedUser[]>([]);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
+  const [invitationsWithPeople, setInvitationsWithPeople] = useState<InvitationWithPerson[]>([]);
+  const [isLoadingPeople, setIsLoadingPeople] = useState(false);
+  const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedInvitationId, setSelectedInvitationId] = useState<number | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -167,6 +178,66 @@ export function SharedAccessManager({
       active = false;
     };
   }, [inviteDialogOpen, invitations, ovrReportId, resourceId, resourceType]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPeopleForInvitations = async () => {
+      if (invitations.length === 0) {
+        setInvitationsWithPeople([]);
+        return;
+      }
+
+      setIsLoadingPeople(true);
+
+      try {
+        const emails = invitations.map((inv) => inv.email).join(',');
+        const params = new URLSearchParams();
+        params.set('emails', emails);
+
+        const { data, error } = await apiCall<UserSearchResult[]>(
+          `/api/users/search?${params.toString()}`
+        );
+
+        if (error || !active) {
+          if (error) {
+            throw error;
+          }
+          return;
+        }
+
+        const emailToPerson = new Map(
+          (data || []).map((user) => [user.email.toLowerCase(), user])
+        );
+
+        const withPeople = invitations.map((invitation) => ({
+          ...invitation,
+          person: emailToPerson.get(invitation.email.toLowerCase()) || null,
+        }));
+
+        if (active) {
+          setInvitationsWithPeople(withPeople);
+        }
+      } catch (error) {
+        console.error('Failed to load people for invitations:', error);
+        if (active) {
+          setInvitationsWithPeople(
+            invitations.map((inv) => ({ ...inv, person: null }))
+          );
+        }
+      } finally {
+        if (active) {
+          setIsLoadingPeople(false);
+        }
+      }
+    };
+
+    loadPeopleForInvitations();
+
+    return () => {
+      active = false;
+    };
+  }, [invitations]);
 
   const getRecommendedReasonLabel = (reason: RecommendationReason) => {
     switch (reason) {
@@ -307,87 +378,91 @@ export function SharedAccessManager({
           <Alert severity="info">
             No {roleLabel.toLowerCase()}s invited yet. Click "Invite {roleLabel}" to begin.
           </Alert>
+        ) : isLoadingPeople ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={24} />
+          </Box>
         ) : (
           <List sx={{ p: 0 }}>
-            {invitations.map((invitation) => (
-              <ListItem
-                key={invitation.id}
-                sx={{
-                  px: 0,
-                  py: 1.5,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  '&:last-child': {
-                    borderBottom: 'none',
-                  },
-                  '.MuiListItem-secondaryAction': {
-                    right: 0,
-                  },
-                }}
-                secondaryAction={
-                  invitation.status !== 'revoked' && invitation.accessToken ? (
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Tooltip arrow title={
-                        <Button
-                          fullWidth
+            {invitationsWithPeople.map((invitation) => {
+              return (
+                <PersonListItem
+                  key={invitation.id}
+                  person={invitation.person || {
+                    email: invitation.email,
+                    firstName: null,
+                    lastName: null,
+                    position: null,
+                    department: null,
+                    profilePicture: null,
+                  }}
+                  secondaryAction={
+                    invitation.status !== 'revoked' && invitation.accessToken ? (
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+                        <Chip
+                          label={invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
                           size="small"
-                          variant="text"
-                          color="error"
-                          startIcon={<GroupRemove fontSize="small" />}
-                          onClick={() => handleRevoke(invitation.id)}
+                          color={getStatusColor(invitation.status)}
+                        />
+                        <IconButton
+                          size="small"
+                          aria-label={`Actions for ${invitation.email}`}
+                          onClick={(e) => {
+                            setPopoverAnchorEl(e.currentTarget);
+                            setSelectedInvitationId(invitation.id);
+                          }}
                         >
-                          Revoke access
-                        </Button>
-                      }
-                      >
-                        <IconButton size="small" aria-label={`Actions for ${invitation.email}`}>
                           <Typography component="span" sx={{ fontSize: '1.25rem', lineHeight: 0 }}>
                             ⋮
                           </Typography>
                         </IconButton>
-                      </Tooltip>
-                    </Box>
-                  ) : null
-                }
-              >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Email fontSize="small" color="action" />
-                      <Typography variant="body1">{invitation.email}</Typography>
-                    </Box>
-                  }
-                  slotProps={{ secondary: { component: 'span' } }}
-                  secondary={
-                    <Box component="span" sx={{ fontSize: '0.75rem' }}>
-                      Invited: {new Date(invitation.invitedAt).toLocaleDateString()}
-                      {invitation.lastAccessedAt && (
-                        <>
-                          <br />
-                          Last accessed: {new Date(invitation.lastAccessedAt).toLocaleDateString()}
-                        </>
-                      )}
-                      <Chip
-                        label={invitation.status}
-                        size="small"
-                        variant="outlined"
-                        sx={{ ml: 1, scale: 0.9 }}
-                        color={getStatusColor(invitation.status) as any}
-                      />
-                    </Box>
+                      </Stack>
+                    ) : invitation.status === 'revoked' ? (
+                      <Chip label="Revokded" size="small" color="error" />
+                    ) : null
                   }
                 />
-              </ListItem>
-            ))}
+              );
+            })}
           </List>
         )}
       </Section>
+
+      {/* Popover for invitation actions */}
+      <Popover
+        open={Boolean(popoverAnchorEl)}
+        anchorEl={popoverAnchorEl}
+        onClose={() => {
+          setPopoverAnchorEl(null);
+          setSelectedInvitationId(null);
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <Button
+          fullWidth
+          size="small"
+          variant="text"
+          color="error"
+          startIcon={<GroupRemove fontSize="small" />}
+          onClick={() => {
+            if (selectedInvitationId) {
+              handleRevoke(selectedInvitationId);
+            }
+            setPopoverAnchorEl(null);
+            setSelectedInvitationId(null);
+          }}
+          sx={{ px: 2, py: 1, justifyContent: 'flex-start' }}
+        >
+          Revoke access
+        </Button>
+      </Popover>
 
       {/* Invite Dialog */}
       <Dialog
