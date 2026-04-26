@@ -10,99 +10,77 @@
 import {
     Alert,
     alpha,
-    Avatar,
     Box,
     Button,
     Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    List,
-    ListItem,
-    ListItemText,
+    LinearProgress,
     Stack,
-    TextField,
-    Tooltip,
     Typography,
 } from '@mui/material';
 import {
     Add as AddIcon,
-    ContentCopy as CopyIcon,
-    Delete as DeleteIcon,
-    Email as EmailIcon,
-    Link as LinkIcon,
-    PersonAdd as PersonAddIcon,
     OpenInNew as OpenIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
-import { useInvestigation, useSharedAccess } from '@/lib/hooks';
+import { useInvestigations, type InvestigationListItem } from '@/lib/hooks';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { Section } from '@/components/shared';
 import { secureFetch } from '@/lib/client/csrf';
-import { InvestigationWithUsers } from '@/lib/types';
 import { RichTextPreview } from '../editor';
+import { useRouter } from 'next/navigation';
 
 interface InvestigationManagementProps {
     incidentId: string;
-    investigationId?: number;
+    incidentStatus?: string;
     onInvestigationCreated?: (investigationId: number) => void;
 }
 
 /**
  * Display an investigation item
  */
-function InvestigationItem({ investigation }: { investigation: InvestigationWithUsers }) {
+function InvestigationItem({ investigation }: { investigation: InvestigationListItem }) {
     if (!investigation) return null;
 
     const isSubmitted = Boolean(investigation.submittedAt);
-    const investigators = investigation.investigatorUsers || [];
 
     return (
-        <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+        <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        INV-{investigation.id}
+                    </Typography>
+                    <Chip
+                        label={isSubmitted ? 'Completed' : 'Pending'}
+                        size="small"
+                        color={isSubmitted ? 'success' : 'warning'}
+                    />
+                </Stack>
+                <Button
+                    component={Link}
+                    href={`/incidents/investigations/${investigation.id}`}
+                    size="small"
+                    endIcon={<OpenIcon />}
+                >
+                    Open Investigation
+                </Button>
+            </Stack>
+
             {/* Investigators */}
             <Typography variant="subtitle2" gutterBottom sx={{
                 color: "text.secondary"
             }}>
                 Investigators
             </Typography>
-            <Stack
-                direction="row"
-                spacing={1}
-                useFlexGap
-                sx={{
-                    flexWrap: "wrap",
-                    mb: 2
-                }}>
-                {investigators.length > 0 ? (
-                    investigators.map((investigator) => (
-                        <Chip
-                            key={investigator.id}
-                            avatar={
-                                <Avatar
-                                    src={investigator.profilePicture || undefined}
-                                    sx={{ width: 24, height: 24 }}
-                                >
-                                    {investigator.firstName?.[0] || '?'}
-                                </Avatar>
-                            }
-                            label={`${investigator.firstName || ''} ${investigator.lastName || ''}`.trim() || investigator.email}
-                            size="small"
-                            variant="outlined"
-                        />
-                    ))
-                ) : (
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
-                        No investigators assigned
-                    </Typography>
-                )}
-            </Stack>
+            <Chip
+                label={`${investigation.investigatorCount || investigation.investigators?.length || 0} assigned`}
+                size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
+            />
 
             {/* Findings snippet (if submitted) */}
             {isSubmitted && investigation.findings && (
@@ -175,17 +153,8 @@ function InvestigationItem({ investigation }: { investigation: InvestigationWith
                 </Box>
             )}
 
-            {/* Link to full investigation */}
-            {/* <Button
-                component={Link}
-                href={`/incidents/investigations/${investigation.id}`}
-                size="small"
-                endIcon={<OpenIcon />}
-                sx={{ mt: 1 }}
-            >
-                View Full Investigation
-            </Button> */}
         </Box>
+
     );
 }
 
@@ -196,23 +165,28 @@ function InvestigationItem({ investigation }: { investigation: InvestigationWith
  */
 export function InvestigationManagement({
     incidentId,
-    investigationId,
+    incidentStatus,
     onInvestigationCreated,
 }: InvestigationManagementProps) {
+    const router = useRouter();
     const { data: session } = useSession();
     const canManage = ACCESS_CONTROL.ui.incidentForm.canManageInvestigations(session?.user?.roles || []);
+    const canCreateInvestigation = canManage && ['qi_review', 'investigating', 'qi_final_actions'].includes(incidentStatus || '');
 
-    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-    const [inviteEmail, setInviteEmail] = useState('');
-    const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-
-    const { investigation, sharedAccess, mutate } = useInvestigation(investigationId || null);
-    const { createInvitation, revokeAccess } = useSharedAccess('investigation', investigationId || null);
+    const [creating, setCreating] = useState(false);
+    const { investigations, isLoading, error, mutate } = useInvestigations({
+        ovrReportId: incidentId,
+        status: 'all',
+        limit: 100,
+    });
     const { showError, ErrorDialogComponent } = useErrorDialog();
 
-    // Create investigation if doesn't exist
+    const investigationCount = investigations?.length || 0;
+
+    // Create investigation
     const handleCreateInvestigation = async () => {
         try {
+            setCreating(true);
             const response = await secureFetch('/api/investigations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -224,89 +198,15 @@ export function InvestigationManagement({
             const data = await response.json();
             onInvestigationCreated?.(data.investigation.id);
             await mutate();
+            router.push(`/incidents/investigations/${data.investigation.id}?invite=` + ACCESS_CONTROL.ui.incidentForm.canManageInvestigations(session?.user?.roles || []));
         } catch (error) {
             showError(error);
+        } finally {
+            setCreating(false);
         }
     };
 
-    // Invite investigator
-    const handleInvite = async () => {
-        if (!investigationId) return;
-
-        try {
-            const result = await createInvitation({
-                resourceType: 'investigation',
-                resourceId: investigationId,
-                ovrReportId: incidentId,
-                email: inviteEmail.trim(),
-                role: 'investigator',
-            });
-
-            // Copy URL to clipboard
-            await navigator.clipboard.writeText(result.accessUrl);
-            setCopiedUrl(result.accessUrl);
-
-            // Reset form
-            setInviteEmail('');
-            setInviteDialogOpen(false);
-            await mutate();
-
-            // Show success
-            setTimeout(() => setCopiedUrl(null), 3000);
-        } catch (error) {
-            showError(error);
-        }
-    };
-
-    // Revoke access
-    const handleRevoke = async (accessId: number) => {
-        try {
-            await revokeAccess(accessId);
-            await mutate();
-        } catch (error) {
-            showError(error);
-        }
-    };
-
-    // Copy link to clipboard
-    const handleCopyLink = async (url: string) => {
-        try {
-            await navigator.clipboard.writeText(url);
-            setCopiedUrl(url);
-            setTimeout(() => setCopiedUrl(null), 2000);
-        } catch (error) {
-            showError(error);
-        }
-    };
-
-    // Status color mapping
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'accepted':
-                return 'success';
-            case 'pending':
-                return 'warning';
-            case 'revoked':
-                return 'error';
-            default:
-                return 'default';
-        }
-    };
-
-    // if (!canManage) {
-    //     return (
-    //         <Alert severity="info" sx={{ mt: 1 }}>
-    //             <Typography variant="subtitle2" fontWeight={600}>
-    //                 Investigation In Progress
-    //             </Typography>
-    //             <Typography variant="body2">
-    //                 Investigation management is restricted to authorized QI roles.
-    //             </Typography>
-    //         </Alert>
-    //     );
-    // }
-
-    if (!investigationId && !canManage) {
+    if (!canManage && investigationCount === 0) {
         return (
             <Alert severity="info" sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" sx={{
@@ -321,187 +221,58 @@ export function InvestigationManagement({
         );
     }
 
-    // If no investigation yet, show create button
-    if (!investigationId && canManage) {
-        return (
-            <>
-                <Section
-                    container="card"
-                    title="Investigation"
-                    subtitle="Create investigation to begin assigning investigators"
-                    tone="primary"
-                >
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                        No investigation has been created for this incident yet.
-                    </Alert>
-                    <Button
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        onClick={handleCreateInvestigation}
-                        startIcon={<AddIcon />}
-                    >
-                        Create Investigation
-                    </Button>
-                </Section>
-                {ErrorDialogComponent}
-            </>
-        );
-    }
-
     return (
         <>
             <Section
                 container="card"
                 title="Investigation Management"
-                subtitle="Manage investigators and their access"
+                subtitle="Create and review investigations for this incident"
                 tone="primary"
                 action={
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => setInviteDialogOpen(true)}
-                        startIcon={<PersonAddIcon />}
-                    >
-                        Invite Investigator
-                    </Button>
+                    canCreateInvestigation ? (
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={handleCreateInvestigation}
+                            startIcon={<AddIcon />}
+                            disabled={creating}
+                        >
+                            {creating ? 'Creating...' : 'Create Investigation'}
+                        </Button>
+                    ) : undefined
                 }
             >
-                {/* Investigation Info & Link */}
-                <Box sx={{ mb: 2, p: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), borderRadius: 1 }}>
-                    <Stack
-                        direction="row"
-                        sx={{
-                            justifyContent: "space-between",
-                            alignItems: "center"
-                        }}>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Investigation ID: <strong>INV-{investigationId}</strong>
-                        </Typography>
-                        <Button
-                            component={Link}
-                            href={`/incidents/investigations/${investigationId}`}
-                            size="small"
-                            endIcon={<OpenIcon />}
-                        >
-                            Open Investigation
-                        </Button>
-                    </Stack>
+                {isLoading ? (
+                    <LinearProgress sx={{ mb: 1 }} />
+                ) : null}
 
-                    {investigation && <InvestigationItem investigation={investigation} />}
-                </Box>
+                {error ? (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                        Could not load investigations right now.
+                    </Alert>
+                ) : null}
 
-                {/* Investigators List — Disabled as its rendered within investigation page. */}
-                {/* {sharedAccess.length === 0 ? (
-                    <Alert severity="info">
-                        No investigators invited yet. Click "Invite Investigator" to begin.
+                {!isLoading && investigationCount === 0 ? (
+                    <Alert severity="info" sx={{ mb: 0 }}>
+                        No investigation has been created for this incident yet.
                     </Alert>
                 ) : (
-                    <List>
-                        {sharedAccess.map((access) => (
-                            <ListItem
-                                key={access.id}
-                                secondaryAction={
-                                    <Stack direction="row" spacing={1}>
-                                        {access.status !== 'revoked' && (
-                                            <>
-                                                <Tooltip title="Copy Access Link">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() =>
-                                                            handleCopyLink(
-                                                                `${window.location.origin}/incidents/investigations/${investigationId}?token=${access.accessToken || ''}`
-                                                            )
-                                                        }
-                                                    >
-                                                        <CopyIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Revoke Access">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleRevoke(access.id)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </>
-                                        )}
-                                    </Stack>
-                                }
+                    <Stack spacing={2}>
+                        {(investigations || []).map((investigation) => (
+                            <Box
+                                key={investigation.id}
+                                sx={{
+                                    p: 2,
+                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                                    borderRadius: 1,
+                                }}
                             >
-                                <ListItemText
-                                    primary={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
-                                                {access.email[0].toUpperCase()}
-                                            </Avatar>
-                                            <Typography variant="body1">{access.email}</Typography>
-                                            <Chip
-                                                label={access.status}
-                                                size="small"
-                                                color={getStatusColor(access.status)}
-                                            />
-                                        </Box>
-                                    }
-                                    secondary={
-                                        <>
-                                            Invited: {new Date(access.invitedAt).toLocaleString()}
-                                            {access.lastAccessedAt && (
-                                                <> • Last accessed: {new Date(access.lastAccessedAt).toLocaleString()}</>
-                                            )}
-                                        </>
-                                    }
-                                />
-                            </ListItem>
+                                <InvestigationItem investigation={investigation} />
+                            </Box>
                         ))}
-                    </List>
-                )} */}
-
-                {/* Success message when link copied */}
-                {copiedUrl && (
-                    <Alert severity="success" sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <LinkIcon />
-                            <Typography variant="body2">
-                                Invitation email sent automatically. Access link was also copied to clipboard as backup.
-                            </Typography>
-                        </Box>
-                    </Alert>
+                    </Stack>
                 )}
             </Section>
-            {/* Invite Dialog */}
-            <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Invite Investigator</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Email Address"
-                        type="email"
-                        fullWidth
-                        required
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="investigator@example.com"
-                        helperText="A secure invitation email is sent automatically; the link is also copied as backup"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
-                    <Button
-                        onClick={handleInvite}
-                        variant="contained"
-                        disabled={!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)}
-                        startIcon={<EmailIcon />}
-                    >
-                        Send Invitation
-                    </Button>
-                </DialogActions>
-            </Dialog>
             {ErrorDialogComponent}
         </>
     );

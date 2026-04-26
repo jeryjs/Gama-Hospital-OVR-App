@@ -75,7 +75,7 @@ export async function GET(
 
         // Also fetch shared access list if user has permission
         let sharedAccess: any[] = [];
-        if (session && ACCESS_CONTROL.api.investigations.canCreate(session.user.roles)) {
+        if (session && ACCESS_CONTROL.api.investigations.canUpdate(session.user.roles, false)) {
             sharedAccess = await db
                 .select()
                 .from(ovrSharedAccess)
@@ -134,7 +134,7 @@ export async function PATCH(
 
         const isPrivileged = Boolean(
             userContext &&
-            ACCESS_CONTROL.api.investigations.canCreate(userContext.roles)
+            ACCESS_CONTROL.api.investigations.canUpdate(userContext.roles, false)
         );
 
         if (!isPrivileged) {

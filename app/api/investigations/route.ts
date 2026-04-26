@@ -163,7 +163,11 @@ export async function POST(request: NextRequest) {
             email: session.user.email,
         });
 
-        if (incident.status !== 'investigating' && incident.status !== 'qi_review') {
+        if (
+            incident.status !== 'investigating' &&
+            incident.status !== 'qi_review' &&
+            incident.status !== 'qi_final_actions'
+        ) {
             throw new AuthorizationError(
                 `Cannot create investigation for incident in status: ${incident.status}`
             );
@@ -181,7 +185,7 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
-        // Mark incident as actively under investigation
+        // Mark incident as actively under investigation (also re-open from final actions)
         if (incident.status !== 'investigating') {
             await db
                 .update(ovrReports)

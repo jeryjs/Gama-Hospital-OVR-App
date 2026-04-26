@@ -98,9 +98,8 @@ export function WorkflowSection({
                 <Divider sx={{ my: 3 }} />
                 <InvestigationManagement
                     incidentId={incident.id}
-                    investigationId={investigationId}
-                    onInvestigationCreated={(id) => {
-                        setInvestigationId(id);
+                    incidentStatus={incident.status}
+                    onInvestigationCreated={() => {
                         onUpdate();
                     }}
                 />
@@ -127,9 +126,8 @@ export function WorkflowSection({
 
                 <InvestigationManagement
                     incidentId={incident.id}
-                    investigationId={investigationId}
-                    onInvestigationCreated={(id) => {
-                        setInvestigationId(id);
+                    incidentStatus={incident.status}
+                    onInvestigationCreated={() => {
                         onUpdate();
                     }}
                 />
@@ -157,13 +155,13 @@ export function WorkflowSection({
             <Box sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
-                {/* Investigation Summary (read-only) */}
-                {incident.investigation && (
-                    <InvestigationSummary
-                        investigation={incident.investigation}
-                        incidentId={incident.id}
-                    />
-                )}
+                <InvestigationManagement
+                    incidentId={incident.id}
+                    incidentStatus={incident.status}
+                    onInvestigationCreated={() => {
+                        onUpdate();
+                    }}
+                />
 
                 {/* Corrective Actions Management */}
                 <CorrectiveActionsManagement

@@ -22,7 +22,7 @@ import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -79,65 +79,82 @@ export async function POST(
             }
         }
 
-        const [existingInvestigation] = await db
-            .select()
-            .from(ovrInvestigations)
-            .where(eq(ovrInvestigations.id, investigationId))
-            .limit(1);
-
-        if (!existingInvestigation) {
-            throw new NotFoundError('Investigation');
-        }
-
-        if (existingInvestigation.submittedAt) {
-            throw new ValidationError('Investigation is already submitted');
-        }
-
-        const [incident] = await db
-            .select({ status: ovrReports.status })
-            .from(ovrReports)
-            .where(eq(ovrReports.id, existingInvestigation.ovrReportId))
-            .limit(1);
-
-        if (!incident) {
-            throw new NotFoundError('Incident');
-        }
-
-        if (incident.status !== 'investigating' && incident.status !== 'qi_review') {
-            throw new AuthorizationError(
-                `Cannot submit investigation while incident is in status: ${incident.status}`
-            );
-        }
-
         // Validate submission data
         const body = await validateBody(request, submitInvestigationSchema);
 
-        // Update investigation with submitted data
-        const [updated] = await db
-            .update(ovrInvestigations)
-            .set({
-                findings: body.findings,
-                problemsIdentified: body.problemsIdentified,
-                causeClassification: body.causeClassification,
-                causeDetails: body.causeDetails,
-                submittedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(ovrInvestigations.id, investigationId))
-            .returning();
+        const workflowResult = await db.transaction(async (tx) => {
+            const [investigationWithIncident] = await tx
+                .select({
+                    ovrReportId: ovrInvestigations.ovrReportId,
+                    submittedAt: ovrInvestigations.submittedAt,
+                    incidentStatus: ovrReports.status,
+                })
+                .from(ovrInvestigations)
+                .innerJoin(ovrReports, eq(ovrReports.id, ovrInvestigations.ovrReportId))
+                .where(eq(ovrInvestigations.id, investigationId))
+                .limit(1);
 
-        // Update incident status to qi_final_actions
-        await db
-            .update(ovrReports)
-            .set({
-                status: 'qi_final_actions',
-                updatedAt: new Date(),
-            })
-            .where(eq(ovrReports.id, existingInvestigation.ovrReportId));
+            if (!investigationWithIncident) {
+                throw new NotFoundError('Investigation');
+            }
+
+            if (investigationWithIncident.submittedAt) {
+                throw new ValidationError('Investigation is already submitted');
+            }
+
+            if (
+                investigationWithIncident.incidentStatus !== 'investigating' &&
+                investigationWithIncident.incidentStatus !== 'qi_review' &&
+                investigationWithIncident.incidentStatus !== 'qi_final_actions'
+            ) {
+                throw new AuthorizationError(
+                    `Cannot submit investigation while incident is in status: ${investigationWithIncident.incidentStatus}`
+                );
+            }
+
+            const [updatedInvestigation] = await tx
+                .update(ovrInvestigations)
+                .set({
+                    findings: body.findings,
+                    problemsIdentified: body.problemsIdentified,
+                    causeClassification: body.causeClassification,
+                    causeDetails: body.causeDetails,
+                    submittedAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(ovrInvestigations.id, investigationId))
+                .returning();
+
+            const [remainingOpenInvestigation] = await tx
+                .select({ id: ovrInvestigations.id })
+                .from(ovrInvestigations)
+                .where(
+                    and(
+                        eq(ovrInvestigations.ovrReportId, investigationWithIncident.ovrReportId),
+                        isNull(ovrInvestigations.submittedAt)
+                    )
+                )
+                .limit(1);
+
+            const nextIncidentStatus = remainingOpenInvestigation ? 'investigating' : 'qi_final_actions';
+
+            await tx
+                .update(ovrReports)
+                .set({
+                    status: nextIncidentStatus,
+                    updatedAt: new Date(),
+                })
+                .where(eq(ovrReports.id, investigationWithIncident.ovrReportId));
+
+            return {
+                investigation: updatedInvestigation,
+                incidentId: investigationWithIncident.ovrReportId,
+            };
+        });
 
         if (session) {
             await sendWorkflowMailSafely(request, session.user, 'investigation_submitted', {
-                incidentId: existingInvestigation.ovrReportId,
+                incidentId: workflowResult.incidentId,
                 investigationId,
             });
         }
@@ -145,7 +162,7 @@ export async function POST(
         return NextResponse.json({
             success: true,
             message: 'Investigation submitted successfully',
-            investigation: updated,
+            investigation: workflowResult.investigation,
         });
     } catch (error) {
         return handleApiError(error);
