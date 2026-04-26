@@ -7,7 +7,7 @@
 
 'use client';
 
-import { Alert, Box, Divider, Typography } from '@mui/material';
+import { Alert, Box, Divider, Stack, Typography } from '@mui/material';
 import { RichTextPreview } from '@/components/editor';
 import { CaseReviewSection } from '@/components/incident-form/CaseReviewSection';
 import { CorrectiveActionsManagement } from '@/components/incident-form/CorrectiveActionsManagement';
@@ -110,7 +110,7 @@ export function WorkflowSection({
      */
     if (incident.status === 'investigating') {
         return (
-            <Box sx={{ my: 3 }}>
+            <Stack spacing={3} sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
                 <InvestigationManagement
@@ -131,7 +131,7 @@ export function WorkflowSection({
                         }}
                     />
                 )}
-            </Box>
+            </Stack>
         );
     }
 
@@ -141,7 +141,7 @@ export function WorkflowSection({
      */
     if (incident.status === 'qi_final_actions') {
         return (
-            <Box sx={{ my: 3 }}>
+            <Stack spacing={3} sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
                 <InvestigationManagement
@@ -163,14 +163,12 @@ export function WorkflowSection({
                 />
 
                 {/* Case Review & Close (only after all actions closed) */}
-                <Box sx={{ mt: 3 }}>
-                    <CaseReviewSection
-                        incidentId={incident.id}
-                        allActionsClosed={allActionsClosed}
-                        onSuccess={onClosureSuccess}
-                    />
-                </Box>
-            </Box>
+                <CaseReviewSection
+                    incidentId={incident.id}
+                    allActionsClosed={allActionsClosed}
+                    onSuccess={onClosureSuccess}
+                />
+            </Stack>
         );
     }
 
@@ -180,21 +178,19 @@ export function WorkflowSection({
      */
     if (incident.status === 'closed') {
         return (
-            <Box sx={{ my: 3 }}>
+            <Stack spacing={3} sx={{ my: 3 }}>
                 <Divider sx={{ my: 3 }} />
 
                 {/* Investigation Summaries */}
                 {(incident.investigations || []).length > 0 && (
-                    <Box sx={{ mb: 3 }}>
+                    <Stack spacing={2} sx={{ mb: 3 }}>
                         {(incident.investigations || []).map((investigation) => (
-                            <Box key={investigation.id} sx={{ mb: 2 }}>
-                                <InvestigationSummary
-                                    investigation={investigation}
-                                    incidentId={incident.id}
-                                />
-                            </Box>
+                            <InvestigationSummary
+                                investigation={investigation}
+                                incidentId={incident.id}
+                            />
                         ))}
-                    </Box>
+                    </Stack>
                 )}
 
                 {/* Corrective Actions Summary */}
@@ -204,23 +200,19 @@ export function WorkflowSection({
 
                 {/* QI Feedback (legacy section) */}
                 {(incident.qiFeedback || incident.severityLevel) && (
-                    <Box sx={{ mb: 3 }}>
-                        <QIFeedbackSection incident={incident} onUpdate={onUpdate} />
-                    </Box>
+                    <QIFeedbackSection incident={incident} onUpdate={onUpdate} />
                 )}
 
                 {/* Case Review & Reporter Feedback (read-only) */}
                 {(incident.caseReview || incident.reporterFeedback) && (
-                    <Box sx={{ mb: 3 }}>
-                        <CaseReviewSummary
-                            caseReview={incident.caseReview}
-                            reporterFeedback={incident.reporterFeedback}
-                            closedBy={incident.closedBy}
-                            closedAt={incident.closedAt}
-                        />
-                    </Box>
+                    <CaseReviewSummary
+                        caseReview={incident.caseReview}
+                        reporterFeedback={incident.reporterFeedback}
+                        closedBy={incident.closedBy}
+                        closedAt={incident.closedAt}
+                    />
                 )}
-            </Box>
+            </Stack>
         );
     }
 

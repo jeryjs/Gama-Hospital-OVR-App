@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
                 ovrReportId: body.ovrReportId,
                 investigators: body.investigators && body.investigators.length > 0
                     ? body.investigators
-                    : [parseInt(session.user.id)],
+                    : [],
                 createdBy: parseInt(session.user.id),
             })
             .returning();
@@ -196,7 +196,8 @@ export async function POST(request: NextRequest) {
                 .where(eq(ovrReports.id, body.ovrReportId));
         }
 
-        await sendWorkflowMailSafely(request, session.user, 'investigation_created', {
+        // Dont await to send email - if it fails we still want to return success response for the investigation creation
+        sendWorkflowMailSafely(request, session.user, 'investigation_created', {
             incidentId: body.ovrReportId,
             investigationId: investigation.id,
             investigatorIds: investigation.investigators || [],

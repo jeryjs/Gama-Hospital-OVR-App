@@ -42,6 +42,7 @@ export function InvestigationSummary({ investigation, incidentId }: Investigatio
 
     return (
         <Section
+            key={investigation.id}
             title={
                 <Stack
                     direction="row"

@@ -205,7 +205,7 @@ export default function InvestigationDetailPage() {
                 causeDetails,
             });
 
-            router.push('/incidents/view/' + investigation?.ovrReportId + '#Investigation-Summary');
+            router.push('/incidents/view/' + investigation?.ovrReportId + '#Investigation-Management');
         } catch (error) {
             await showError(error);
         } finally {
@@ -251,7 +251,7 @@ export default function InvestigationDetailPage() {
                     }}>
                         <IconButton
                             component={Link}
-                            href={`/incidents/view/${investigation.ovrReportId}#Investigation-Summary`}
+                            href={`/incidents/view/${investigation.ovrReportId}#Investigation-Management`}
                             size="small"
                         >
                             <ArrowBack />

@@ -12,6 +12,7 @@ import {
     alpha,
     Box,
     Button,
+    Paper,
     Chip,
     LinearProgress,
     Stack,
@@ -47,7 +48,7 @@ function InvestigationItem({ investigation }: { investigation: InvestigationList
     const isSubmitted = Boolean(investigation.submittedAt);
 
     return (
-        <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+        <Paper key={investigation.id} sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -153,7 +154,7 @@ function InvestigationItem({ investigation }: { investigation: InvestigationList
                 </Box>
             )}
 
-        </Box>
+        </Paper>
 
     );
 }
@@ -259,16 +260,7 @@ export function InvestigationManagement({
                 ) : (
                     <Stack spacing={2}>
                         {(investigations || []).map((investigation) => (
-                            <Box
-                                key={investigation.id}
-                                sx={{
-                                    p: 2,
-                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                                    borderRadius: 1,
-                                }}
-                            >
-                                <InvestigationItem investigation={investigation} />
-                            </Box>
+                            <InvestigationItem investigation={investigation} />
                         ))}
                     </Stack>
                 )}
