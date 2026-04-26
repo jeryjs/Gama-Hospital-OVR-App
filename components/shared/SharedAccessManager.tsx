@@ -34,12 +34,13 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import { useSharedAccess } from '@/lib/hooks';
 import type { SharedAccessInvitation } from '@/lib/hooks/useSharedAccess';
 import { buildSharedAccessUrl } from '@/lib/utils/shared-access';
 import { Section } from './Section';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export interface SharedAccessManagerProps {
   resourceType: 'investigation' | 'corrective_action';
@@ -77,17 +78,30 @@ export function SharedAccessManager({
   invitations,
   onUpdate,
 }: SharedAccessManagerProps) {
+  const router = useRouter();
+  const inviteParam = useSearchParams().get('invite');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { showError, ErrorDialogComponent } = useErrorDialog();
 
+  const { showError, ErrorDialogComponent } = useErrorDialog();
   const { createInvitation, revokeAccess } = useSharedAccess(resourceType, resourceId);
 
   // Determine role based on resource type
   const role = resourceType === 'investigation' ? 'investigator' : 'action_handler';
   const roleLabel = resourceType === 'investigation' ? 'Investigator' : 'Action Handler';
+
+  // Consume 'invite' param to auto show invite dialog
+  useEffect(() => {
+    if (inviteParam) {
+      setInviteDialogOpen(inviteParam === 'true');
+      // Clean up URL to prevent repeated dialog on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('invite');
+      router.replace(url.href);
+    }
+  }, [inviteParam, router]);
 
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !isValidEmail(inviteEmail)) {
