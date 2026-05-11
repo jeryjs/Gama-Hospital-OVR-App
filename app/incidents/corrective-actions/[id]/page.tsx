@@ -11,7 +11,7 @@
 'use client';
 
 import { AppLayout } from '@/components/AppLayout';
-import { CollaborationPanel, Section, SharedAccessManager } from '@/components/shared';
+import { CollaborationPanel, ErrorLayout, Section, SharedAccessManager } from '@/components/shared';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { ACCESS_CONTROL } from '@/lib/access-control';
@@ -247,9 +247,7 @@ export default function CorrectiveActionDetailPage() {
     if (error) {
         return (
             <AppLayout>
-                <Alert severity="error" sx={{ mt: 4 }}>
-                    Failed to load action. {formatErrorForAlert(error)}
-                </Alert>
+                <ErrorLayout error={error} />
             </AppLayout>
         );
     }

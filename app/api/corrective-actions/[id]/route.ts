@@ -53,7 +53,7 @@ export async function GET(
         );
 
         if (!hasAccess) {
-            throw new NotFoundError('Corrective Action');
+            throw new AuthorizationError('You do not have permission to access this corrective action');
         }
 
         const [action] = await db
@@ -120,7 +120,7 @@ export async function PATCH(
         );
 
         if (!hasAccess) {
-            throw new NotFoundError('Corrective Action');
+            throw new AuthorizationError('You do not have permission to update this corrective action');
         }
 
         const isPrivileged = Boolean(
