@@ -470,7 +470,9 @@ export const ovrInvestigationsRelations = relations(ovrInvestigations, ({ one, m
     fields: [ovrInvestigations.createdBy],
     references: [users.id],
   }),
-  sharedAccess: many(ovrSharedAccess),
+  sharedAccess: many(ovrSharedAccess, {
+    relationName: 'shared_access_investigation'
+  }),
 }));
 
 export const ovrCorrectiveActionsRelations = relations(ovrCorrectiveActions, ({ one, many }) => ({
@@ -488,7 +490,9 @@ export const ovrCorrectiveActionsRelations = relations(ovrCorrectiveActions, ({ 
     references: [users.id],
     relationName: 'action_closer',
   }),
-  sharedAccess: many(ovrSharedAccess),
+  sharedAccess: many(ovrSharedAccess, {
+    relationName: 'shared_access_corrective_action'
+  }),
 }));
 
 export const ovrSharedAccessRelations = relations(ovrSharedAccess, ({ one }) => ({
@@ -510,6 +514,16 @@ export const ovrSharedAccessRelations = relations(ovrSharedAccess, ({ one }) => 
     fields: [ovrSharedAccess.revokedBy],
     references: [users.id],
     relationName: 'revoker',
+  }),
+  investigation: one(ovrInvestigations, {
+    fields: [ovrSharedAccess.resourceId],
+    references: [ovrInvestigations.id],
+    relationName: 'shared_access_investigation',
+  }),
+  correctiveAction: one(ovrCorrectiveActions, {
+    fields: [ovrSharedAccess.resourceId],
+    references: [ovrCorrectiveActions.id],
+    relationName: 'shared_access_corrective_action',
   }),
 }));
 

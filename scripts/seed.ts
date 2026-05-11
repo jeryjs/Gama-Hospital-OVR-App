@@ -10,15 +10,15 @@
  * - Real hospital scenarios
  */
 
-import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
-import { drizzle } from 'drizzle-orm/neon-http';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from '../db/schema';
 
 dotenv.config({ path: ['.env'] });
 
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql, { schema });
+const client = postgres(process.env.DATABASE_URL!);
+const db = drizzle(client, { schema });
 
 async function seed() {
     console.log('🌱 Seeding production-ready data...\n');
@@ -888,6 +888,8 @@ Training materials being developed by Pharmacy Education team.`,
     } catch (error) {
         console.error('❌ Error seeding database:', error);
         throw error;
+    } finally {
+        await client.end();
     }
 }
 
@@ -895,7 +897,4 @@ seed()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(() => {
-        process.exit(0);
     });
