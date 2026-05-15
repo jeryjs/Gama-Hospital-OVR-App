@@ -142,6 +142,27 @@ function getEmptyFormData(): FormData {
  * Parses localStorage draft with Dayjs conversion
  */
 function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
+  const parseTimeHHMMSS = (value: unknown): Dayjs | undefined => {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+
+    // Stored as HH:mm:ss. Avoid relying on Dayjs custom parse plugins.
+    const parts = trimmed.split(':');
+    if (parts.length < 2 || parts.length > 3) return undefined;
+
+    const [hh, mm, ss = '0'] = parts;
+    if (!hh || !mm) return undefined;
+    const h = Number(hh);
+    const m = Number(mm);
+    const s = Number(ss);
+
+    if (!Number.isInteger(h) || !Number.isInteger(m) || !Number.isInteger(s)) return undefined;
+    if (h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 59) return undefined;
+
+    return dayjs().hour(h).minute(m).second(s).millisecond(0);
+  };
+
   const {
     id: _id,
     reporterId: _reporterId,
@@ -151,9 +172,7 @@ function parseDraftFromLocalStorage(draft: LocalDraft): FormData {
     ...draftFields
   } = draft as LocalDraft & Record<string, unknown>;
 
-  const parsedTime = draftFields.occurrenceTime
-    ? dayjs(draftFields.occurrenceTime as string, 'HH:mm:ss')
-    : undefined;
+  const parsedTime = parseTimeHHMMSS(draftFields.occurrenceTime);
 
   return {
     ...getEmptyFormData(),
@@ -1464,6 +1483,37 @@ export default function NewIncidentPage() {
   const didLoadDraftRef = useRef(false);
   const canEditAsQI = ACCESS_CONTROL.ui.incidentForm.canEditQISection(session?.user?.roles || []);
 
+  const persistLocalDraftSnapshot = useCallback(
+    (opts?: { silent?: boolean }) => {
+      if (!draftLoaded || !session?.user || !draftId || serverDraftIncidentId) return;
+      if (!didLoadDraftRef.current) return;
+
+      const userId = parseInt(session.user.id);
+      if (!Number.isFinite(userId) || userId <= 0) return;
+
+      const draft = prepareLocalDraft(
+        formData,
+        draftId,
+        userId,
+        session.user.email || '',
+        existingDraftCreatedAt
+      );
+
+      saveDraft(draft);
+
+      if (!opts?.silent) {
+        setHasDraftSnapshot(true);
+        setDraftUpdatedAt(draft.updatedAt);
+      }
+    },
+    [draftId, draftLoaded, existingDraftCreatedAt, formData, serverDraftIncidentId, session?.user]
+  );
+
+  const persistLocalDraftSnapshotRef = useRef(persistLocalDraftSnapshot);
+  useEffect(() => {
+    persistLocalDraftSnapshotRef.current = persistLocalDraftSnapshot;
+  }, [persistLocalDraftSnapshot]);
+
   // Initialize draft once session state is ready
   useEffect(() => {
     if (typeof window === 'undefined' || draftLoaded || sessionStatus === 'loading') return;
@@ -1471,17 +1521,56 @@ export default function NewIncidentPage() {
     const params = new URLSearchParams(window.location.search);
     const draftParam = params.get('draft');
 
+    const currentUserId = Number(session?.user?.id);
+    const hasValidUserId = Number.isFinite(currentUserId) && currentUserId > 0;
+
     // Explicit draft request – load local draft or backend draft incident
     if (draftParam && isDraftId(draftParam)) {
       const existingDraft = getDraftById(draftParam);
-      if (existingDraft) {
+      const isOwnedByCurrentUser =
+        !!existingDraft && (!hasValidUserId || existingDraft.reporterId === currentUserId);
+
+      if (existingDraft && isOwnedByCurrentUser) {
         setFormData(parseDraftFromLocalStorage(existingDraft));
         setDescriptionEditorSeed((seed) => seed + 1);
         setExistingDraftCreatedAt(existingDraft.createdAt);
         setHasDraftSnapshot(true);
         setDraftUpdatedAt(existingDraft.updatedAt);
+        setDraftId(draftParam);
+      } else {
+        // Draft is missing or belongs to a different user on this browser.
+        void showError(
+          new Error(
+            existingDraft
+              ? 'This draft belongs to a different user on this device.'
+              : 'Draft not found (it may have been deleted or cleared from this browser).'
+          )
+        );
+
+        if (hasValidUserId) {
+          const autoDraftId = `auto-${currentUserId}`;
+          const existingAutoDraft = getDraftById(autoDraftId);
+          if (existingAutoDraft) {
+            setFormData(parseDraftFromLocalStorage(existingAutoDraft));
+            setDescriptionEditorSeed((seed) => seed + 1);
+            setExistingDraftCreatedAt(existingAutoDraft.createdAt);
+            setHasDraftSnapshot(true);
+            setDraftUpdatedAt(existingAutoDraft.updatedAt);
+          } else {
+            setFormData(getEmptyFormData());
+            setExistingDraftCreatedAt(undefined);
+            setHasDraftSnapshot(false);
+            setDraftUpdatedAt(undefined);
+          }
+          setDraftId(autoDraftId);
+        } else {
+          setFormData(getEmptyFormData());
+          setExistingDraftCreatedAt(undefined);
+          setHasDraftSnapshot(false);
+          setDraftUpdatedAt(undefined);
+          setDraftId(generateDraftId());
+        }
       }
-      setDraftId(draftParam);
       setServerDraftIncidentId(null);
       setServerIncidentStatus(null);
       setRequiresEditComment(false);
@@ -1547,9 +1636,8 @@ export default function NewIncidentPage() {
     }
 
     // /new: load the auto-save draft only (don't load other saved drafts)
-    const userId = Number(session?.user?.id);
-    if (Number.isFinite(userId) && userId > 0) {
-      const autoDraftId = `auto-${userId}`;
+    if (hasValidUserId) {
+      const autoDraftId = `auto-${currentUserId}`;
       const existingAutoDraft = getDraftById(autoDraftId);
       if (existingAutoDraft) {
         setFormData(parseDraftFromLocalStorage(existingAutoDraft));
@@ -1587,21 +1675,34 @@ export default function NewIncidentPage() {
     }
 
     const timer = setTimeout(() => {
-      const userId = parseInt(session.user.id);
-      const draft = prepareLocalDraft(
-        formData,
-        draftId,
-        userId,
-        session.user.email || '',
-        existingDraftCreatedAt
-      );
-      saveDraft(draft);
-      setHasDraftSnapshot(true);
-      setDraftUpdatedAt(draft.updatedAt);
+      persistLocalDraftSnapshot();
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [formData, draftLoaded, draftId, session?.user, existingDraftCreatedAt, serverDraftIncidentId]);
+  }, [draftLoaded, draftId, existingDraftCreatedAt, formData, persistLocalDraftSnapshot, serverDraftIncidentId, session?.user]);
+
+  // Flush debounced draft changes when leaving the page or hiding the tab.
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      persistLocalDraftSnapshotRef.current({ silent: true });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        persistLocalDraftSnapshotRef.current({ silent: true });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      // On route changes/unmount, persist once more.
+      persistLocalDraftSnapshotRef.current({ silent: true });
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Handle field changes
   const handleChange = useCallback((key: keyof FormData, value: unknown) => {
