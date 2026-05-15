@@ -2,14 +2,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { SWRProvider } from "@/components/SWRProvider";
 import { ThemeRegistry } from "@/components/ThemeRegistry";
 import type { Metadata } from "next";
-import { Inter } from 'next/font/google';
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: "OVR System - Gama Hospital",
@@ -26,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.variable}>
+      <body>
         <ThemeRegistry>
           <AuthProvider>
             <SWRProvider>
