@@ -78,6 +78,12 @@ export const departments = pgTable('departments', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   code: varchar('code', { length: 20 }).notNull().unique(),
+  /**
+   * Department hierarchy:
+   * - NULL = top-level Department
+   * - NOT NULL = Unit (child department)
+   */
+  parentDepartmentId: integer('parent_department_id').references(() => departments.id),
   headOfDepartment: integer('head_of_department').references(() => users.id),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -402,6 +408,14 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 
 export const departmentsRelations = relations(departments, ({ many, one }) => ({
   locations: many(locations),
+  parentDepartment: one(departments, {
+    fields: [departments.parentDepartmentId],
+    references: [departments.id],
+    relationName: 'department_parent',
+  }),
+  units: many(departments, {
+    relationName: 'department_parent',
+  }),
   headOfDepartment: one(users, {
     fields: [departments.headOfDepartment],
     references: [users.id],

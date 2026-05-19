@@ -60,7 +60,7 @@ type InvitationWithPerson = SharedAccessInvitation & {
 };
 
 type RecommendationReason =
-  | 'department_head'
+  | 'unit_head'
   | 'reporter'
   | 'involved_person'
   | 'resource_member'
@@ -243,7 +243,7 @@ export function SharedAccessManager({
 
   const getRecommendedReasonLabel = (reason: RecommendationReason) => {
     switch (reason) {
-      case 'department_head': return 'Dept Head';
+      case 'unit_head': return 'Unit Head';
       case 'reporter': return 'Reporter';
       case 'involved_person': return 'Involved Staff';
       case 'resource_member': return resourceType === 'investigation' ? 'Investigator' : 'Assignee';

@@ -42,6 +42,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
             throw new NotFoundError('Department');
         }
 
+        // Locations must belong to a Unit (child department), not a top-level Department.
+        if (!department.parentDepartmentId) {
+            throw new ValidationError('Locations can only be managed under a Unit');
+        }
+
         // Fetch locations for this department, sorted by displayOrder
         const departmentLocations = await db
             .select({
@@ -91,6 +96,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
         if (!department) {
             throw new NotFoundError('Department');
+        }
+
+        // Locations must belong to a Unit (child department), not a top-level Department.
+        if (!department.parentDepartmentId) {
+            throw new ValidationError('Locations can only be managed under a Unit');
         }
 
         // Schema without departmentId (we get it from URL)
@@ -163,6 +173,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
             throw new NotFoundError('Location not found in this department');
         }
 
+        // Guard against legacy/incorrect calls that try to update locations under a top-level department.
+        const unit = await db.query.departments.findFirst({
+            where: eq(departments.id, departmentId),
+            columns: { parentDepartmentId: true },
+        });
+
+        if (!unit?.parentDepartmentId) {
+            throw new ValidationError('Locations can only be managed under a Unit');
+        }
+
         const [updatedLocation] = await db
             .update(locations)
             .set(updateData)
@@ -225,6 +245,16 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
         if (!existing) {
             throw new NotFoundError('Location not found in this department');
+        }
+
+        // Guard against legacy/incorrect calls that try to delete locations under a top-level department.
+        const unit = await db.query.departments.findFirst({
+            where: eq(departments.id, departmentId),
+            columns: { parentDepartmentId: true },
+        });
+
+        if (!unit?.parentDepartmentId) {
+            throw new ValidationError('Locations can only be managed under a Unit');
         }
 
         // Check if location has any incidents

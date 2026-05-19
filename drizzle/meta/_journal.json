@@ -15,6 +15,13 @@
       "when": 1776833987044,
       "tag": "0001_shared_access_unique_person_role",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779148800000,
+      "tag": "0002_department_units",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,14 @@ export type {
   Location,
   LocationMinimal,
 
+  // Department / Unit types
+  Department,
+  DepartmentCreate,
+  DepartmentUpdate,
+  DepartmentWithLocations,
+  UnitWithLocations,
+  DepartmentWithUnits,
+
   // Comment types
   Comment,
   CommentWithUser,

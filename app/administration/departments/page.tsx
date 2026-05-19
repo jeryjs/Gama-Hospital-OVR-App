@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AppLayout } from '@/components/AppLayout';
 import { useDepartmentManagement, useDepartmentsWithLocations } from '@/lib/hooks';
-import type { DepartmentWithLocations, DepartmentCreate, DepartmentUpdate, LocationForDepartment, LocationCreate, UserSearchResult } from '@/lib/api/schemas';
+import type { DepartmentCreate, DepartmentUpdate, DepartmentWithUnits, LocationCreate, LocationForDepartment, UnitWithLocations, UserSearchResult } from '@/lib/api/schemas';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { LOCATION_OPTIONS } from '@/lib/constants';
 import { PeoplePicker } from '@/components/shared/PeoplePicker';
@@ -63,11 +63,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ============================================
 interface CreateDepartmentDialogProps {
     open: boolean;
+    parentDepartment?: DepartmentWithUnits | null;
     onClose: () => void;
     onSave: (data: DepartmentCreate) => Promise<void>;
 }
 
-function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialogProps) {
+function CreateDepartmentDialog({ open, parentDepartment, onClose, onSave }: CreateDepartmentDialogProps) {
     const [formData, setFormData] = useState<DepartmentCreate>({
         name: '',
         code: undefined,
@@ -77,10 +78,11 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
     const [selectedHead, setSelectedHead] = useState<UserSearchResult | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const isUnit = !!parentDepartment;
 
     const handleSave = async () => {
         if (!formData.name.trim()) {
-            setError('Department name is required');
+            setError(`${isUnit ? 'Unit' : 'Department'} name is required`);
             return;
         }
 
@@ -89,6 +91,7 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
         try {
             await onSave({
                 ...formData,
+                parentDepartmentId: parentDepartment?.id,
                 headId: selectedHead?.id,
             });
             setFormData({ name: '', code: undefined, headId: undefined, isActive: true });
@@ -110,7 +113,7 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Create New Department</DialogTitle>
+            <DialogTitle>{isUnit ? `Create Unit in ${parentDepartment.name}` : 'Create New Department'}</DialogTitle>
             <DialogContent>
                 {error && (
                     <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
@@ -119,18 +122,18 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
                 )}
                 <Stack spacing={2} sx={{ mt: 1 }}>
                     <TextField
-                        label="Department Name"
+                        label={isUnit ? 'Unit Name' : 'Department Name'}
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         fullWidth
                         required
-                        placeholder="e.g., Emergency Medicine"
+                        placeholder={isUnit ? 'e.g., Emergency Unit' : 'e.g., Emergency Medicine'}
                     />
                     <PeoplePicker
                         value={selectedHead}
                         onChange={(val) => setSelectedHead(val as UserSearchResult | null)}
-                        label="Department Head (Optional)"
-                        placeholder="Search for department head..."
+                        label={`${isUnit ? 'Unit' : 'Dept'} Head (Optional)`}
+                        placeholder={`Search for ${isUnit ? 'unit' : 'department'} head...`}
                         filterByRoles={['supervisor', 'quality_manager', 'executive', 'facility_manager']}
                         variant="ms-modern"
                     />
@@ -150,7 +153,7 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
                     Cancel
                 </Button>
                 <Button onClick={handleSave} variant="contained" disabled={saving}>
-                    {saving ? 'Creating...' : 'Create Department'}
+                    {saving ? 'Creating...' : `Create ${isUnit ? 'Unit' : 'Department'}`}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -162,7 +165,7 @@ function CreateDepartmentDialog({ open, onClose, onSave }: CreateDepartmentDialo
 // ============================================
 interface AddLocationDialogProps {
     open: boolean;
-    department: DepartmentWithLocations | null;
+    department: UnitWithLocations | null;
     onClose: () => void;
     onSave: (departmentId: number, data: Omit<LocationCreate, 'departmentId'>) => Promise<void>;
 }
@@ -290,7 +293,7 @@ function AddLocationDialog({ open, department, onClose, onSave }: AddLocationDia
 // ============================================
 interface DeleteDepartmentDialogProps {
     open: boolean;
-    department: DepartmentWithLocations | null;
+    department: DepartmentWithUnits | UnitWithLocations | null;
     onClose: () => void;
     onConfirm: (id: number) => Promise<void>;
 }
@@ -299,8 +302,10 @@ function DeleteDepartmentDialog({ open, department, onClose, onConfirm }: Delete
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
 
-    const locationCount = department?.locations?.length || 0;
-    const canDelete = locationCount === 0;
+    const locationCount = department && 'locations' in department ? department.locations?.length || 0 : 0;
+    const unitCount = department && 'units' in department ? department.units?.length || 0 : 0;
+    const canDelete = locationCount === 0 && unitCount === 0;
+    const entityLabel = department?.parentDepartmentId ? 'Unit' : 'Department';
 
     const handleDelete = async () => {
         if (!department || !canDelete) return;
@@ -323,7 +328,7 @@ function DeleteDepartmentDialog({ open, department, onClose, onConfirm }: Delete
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Warning color="warning" />
-                Delete Department
+                Delete {entityLabel}
             </DialogTitle>
             <DialogContent>
                 {error && (
@@ -336,8 +341,10 @@ function DeleteDepartmentDialog({ open, department, onClose, onConfirm }: Delete
                 </Typography>
                 {!canDelete ? (
                     <Alert severity="error" sx={{ mt: 2 }}>
-                        Cannot delete: {locationCount} location{locationCount !== 1 ? 's' : ''} exist in this department.
-                        Delete all locations first.
+                        Cannot delete: {unitCount > 0 && `${unitCount} unit${unitCount !== 1 ? 's' : ''}`}
+                        {unitCount > 0 && locationCount > 0 && ' and '}
+                        {locationCount > 0 && `${locationCount} location${locationCount !== 1 ? 's' : ''}`} exist under this {entityLabel.toLowerCase()}.
+                        Delete them first.
                     </Alert>
                 ) : (
                     <Alert severity="warning" sx={{ mt: 2 }}>
@@ -636,7 +643,7 @@ function EditLocationDialog({ open, location, departmentId, onClose, onSave }: E
 // ============================================
 interface EditDepartmentDialogProps {
     open: boolean;
-    department: DepartmentWithLocations | null;
+    department: DepartmentWithUnits | UnitWithLocations | null;
     onClose: () => void;
     onSave: (id: number, data: DepartmentUpdate) => Promise<void>;
 }
@@ -646,6 +653,7 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
     const [selectedHead, setSelectedHead] = useState<UserSearchResult | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const isUnit = !!department?.parentDepartmentId;
 
     useEffect(() => {
         if (department) {
@@ -675,7 +683,7 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
     const handleSave = async () => {
         if (!department) return;
         if (!formData.name?.trim()) {
-            setError('Department name is required');
+            setError(`${isUnit ? 'Unit' : 'Department'} name is required`);
             return;
         }
 
@@ -698,7 +706,7 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Edit Department</DialogTitle>
+            <DialogTitle>Edit {isUnit ? 'Unit' : 'Department'}</DialogTitle>
             <DialogContent>
                 {error && (
                     <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
@@ -707,7 +715,7 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
                 )}
                 <Stack spacing={2} sx={{ mt: 1 }}>
                     <TextField
-                        label="Department Name"
+                        label={isUnit ? 'Unit Name' : 'Dept Name'}
                         value={formData.name || ''}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         fullWidth
@@ -716,8 +724,8 @@ function EditDepartmentDialog({ open, department, onClose, onSave }: EditDepartm
                     <PeoplePicker
                         value={selectedHead}
                         onChange={(val) => setSelectedHead(val as UserSearchResult | null)}
-                        label="Department Head"
-                        placeholder="Search for department head..."
+                        label={`${isUnit ? 'Unit' : 'Dept'} Head`}
+                        placeholder={`Search for ${isUnit ? 'unit' : 'department'} head...`}
                         filterByRoles={['supervisor', 'quality_manager', 'executive', 'facility_manager']}
                         variant="ms-modern"
                     />
@@ -753,15 +761,16 @@ export default function DepartmentsManagementPage() {
 
     // State
     const [search, setSearch] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState<DepartmentWithLocations | null>(null);
+    const [selectedDepartment, setSelectedDepartment] = useState<DepartmentWithUnits | null>(null);
 
     // Dialogs
     const [createDeptDialogOpen, setCreateDeptDialogOpen] = useState(false);
-    const [editDepartment, setEditDepartment] = useState<DepartmentWithLocations | null>(null);
-    const [deleteDepartment, setDeleteDepartment] = useState<DepartmentWithLocations | null>(null);
-    const [addLocationDialogOpen, setAddLocationDialogOpen] = useState(false);
-    const [editLocation, setEditLocation] = useState<LocationForDepartment | null>(null);
-    const [deleteLocation, setDeleteLocation] = useState<LocationForDepartment | null>(null);
+    const [createUnitDialogOpen, setCreateUnitDialogOpen] = useState(false);
+    const [editDepartment, setEditDepartment] = useState<DepartmentWithUnits | UnitWithLocations | null>(null);
+    const [deleteDepartment, setDeleteDepartment] = useState<DepartmentWithUnits | UnitWithLocations | null>(null);
+    const [addLocationUnit, setAddLocationUnit] = useState<UnitWithLocations | null>(null);
+    const [editLocationContext, setEditLocationContext] = useState<{ unitId: number; location: LocationForDepartment } | null>(null);
+    const [deleteLocationContext, setDeleteLocationContext] = useState<{ unitId: number; location: LocationForDepartment } | null>(null);
 
     // Hooks
     const {
@@ -794,11 +803,16 @@ export default function DepartmentsManagementPage() {
         }
     }, [session, canAccess, router]);
 
-    const activeDepartment = useMemo<DepartmentWithLocations | null>(() => {
+    const activeDepartment = useMemo<DepartmentWithUnits | null>(() => {
         if (departments.length === 0) return null;
         if (!selectedDepartment) return departments[0];
         return departments.find((d) => d.id === selectedDepartment.id) || departments[0];
     }, [departments, selectedDepartment]);
+
+    const activeLocationCount = useMemo(
+        () => (activeDepartment?.units || []).reduce((total, unit) => total + (unit.locations?.length || 0), 0),
+        [activeDepartment]
+    );
 
     // Filter departments by search (name only, code is internal)
     const filteredDepartments = useMemo(() => {
@@ -818,6 +832,12 @@ export default function DepartmentsManagementPage() {
             const found = departments.find(d => d.id === newDept.id);
             if (found) setSelectedDepartment(found);
         }, 500);
+    };
+
+    const handleCreateUnit = async (data: DepartmentCreate) => {
+        if (!activeDepartment) return;
+        await createDepartment({ ...data, parentDepartmentId: activeDepartment.id });
+        mutate();
     };
 
     const handleUpdateDepartment = async (id: number, data: DepartmentUpdate) => {
@@ -841,12 +861,12 @@ export default function DepartmentsManagementPage() {
 
     const handleUpdateLocation = async (departmentId: number, locationId: number, data: Partial<LocationCreate>) => {
         await updateLocation(departmentId, locationId, data);
-        setEditLocation(null);
+        setEditLocationContext(null);
     };
 
     const handleDeleteLocation = async (departmentId: number, locationId: number) => {
         await removeLocation(departmentId, locationId);
-        setDeleteLocation(null);
+        setDeleteLocationContext(null);
     };
 
     if (session === null) return null;
@@ -989,7 +1009,7 @@ export default function DepartmentsManagementPage() {
                                                         <Typography variant="caption" sx={{
                                                             color: "text.secondary"
                                                         }}>
-                                                            {dept.locations?.length || 0} location{(dept.locations?.length || 0) !== 1 ? 's' : ''}
+                                                            {dept.units?.length || 0} unit{(dept.units?.length || 0) !== 1 ? 's' : ''} • {(dept.units || []).reduce((total, unit) => total + (unit.locations?.length || 0), 0)} location{(dept.units || []).reduce((total, unit) => total + (unit.locations?.length || 0), 0) !== 1 ? 's' : ''}
                                                             {dept.head && <> • {dept.head.firstName} {dept.head.lastName}</>}
                                                         </Typography>
                                                     }
@@ -1002,7 +1022,7 @@ export default function DepartmentsManagementPage() {
                             </List>
                         </Box>
 
-                        {/* Right Pane - Selected Department's Locations */}
+                        {/* Right Pane - Selected Department's Units and Locations */}
                         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                             {activeDepartment ? (
                                 <>
@@ -1060,9 +1080,9 @@ export default function DepartmentsManagementPage() {
                                                     <Typography variant="body2" sx={{
                                                         color: "text.secondary"
                                                     }}>
-                                                        {activeDepartment.locations?.length || 0} location{(activeDepartment.locations?.length || 0) !== 1 ? 's' : ''}
+                                                        {activeDepartment.units?.length || 0} unit{(activeDepartment.units?.length || 0) !== 1 ? 's' : ''} • {activeLocationCount} location{activeLocationCount !== 1 ? 's' : ''}
                                                         {activeDepartment.head && (
-                                                            <> • Head: {activeDepartment.head.firstName} {activeDepartment.head.lastName}</>
+                                                            <> • Dept Head: {activeDepartment.head.firstName} {activeDepartment.head.lastName}</>
                                                         )}
                                                     </Typography>
                                                 </Box>
@@ -1083,7 +1103,7 @@ export default function DepartmentsManagementPage() {
                                                         color="error"
                                                         startIcon={<Delete />}
                                                         onClick={() => setDeleteDepartment(activeDepartment)}
-                                                        disabled={(activeDepartment.locations?.length || 0) > 0}
+                                                        disabled={(activeDepartment.units?.length || 0) > 0 || activeLocationCount > 0}
                                                     >
                                                         Delete
                                                     </Button>
@@ -1093,18 +1113,18 @@ export default function DepartmentsManagementPage() {
                                                         size="small"
                                                         variant="contained"
                                                         startIcon={<Add />}
-                                                        onClick={() => setAddLocationDialogOpen(true)}
+                                                        onClick={() => setCreateUnitDialogOpen(true)}
                                                     >
-                                                        Add Location
+                                                        Add Unit
                                                     </Button>
                                                 )}
                                             </Stack>
                                         </Stack>
                                     </Box>
 
-                                    {/* Locations Grid */}
+                                    {/* Units and Locations */}
                                     <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-                                        {(activeDepartment.locations?.length || 0) === 0 ? (
+                                        {(activeDepartment.units?.length || 0) === 0 ? (
                                             <Box
                                                 sx={{
                                                     height: '100%',
@@ -1115,9 +1135,9 @@ export default function DepartmentsManagementPage() {
                                                     color: 'text.secondary',
                                                 }}
                                             >
-                                                <LocationOn sx={{ fontSize: 64, opacity: 0.3, mb: 2 }} />
+                                                <FolderOff sx={{ fontSize: 64, opacity: 0.3, mb: 2 }} />
                                                 <Typography variant="h6" gutterBottom>
-                                                    No locations yet
+                                                    No units yet
                                                 </Typography>
                                                 <Typography
                                                     variant="body2"
@@ -1125,41 +1145,131 @@ export default function DepartmentsManagementPage() {
                                                         color: "text.secondary",
                                                         mb: 2
                                                     }}>
-                                                    Add locations to this department to organize your facility.
+                                                    Add units under this department before assigning locations.
                                                 </Typography>
                                                 {canCreate && (
                                                     <Button
                                                         variant="outlined"
                                                         startIcon={<Add />}
-                                                        onClick={() => setAddLocationDialogOpen(true)}
+                                                        onClick={() => setCreateUnitDialogOpen(true)}
                                                     >
-                                                        Add First Location
+                                                        Add First Unit
                                                     </Button>
                                                 )}
                                             </Box>
                                         ) : (
-                                            <Grid container spacing={1.5}>
-                                                <AnimatePresence>
-                                                    {activeDepartment.locations?.map((location, index) => (
-                                                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={location.id}>
-                                                            <motion.div
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                exit={{ opacity: 0, y: -10 }}
-                                                                transition={{ delay: index * 0.05 }}
-                                                            >
-                                                                <LocationCard
-                                                                    location={location}
-                                                                    canEdit={canEdit}
-                                                                    canDelete={canDelete}
-                                                                    onEdit={() => setEditLocation(location)}
-                                                                    onDelete={() => setDeleteLocation(location)}
-                                                                />
-                                                            </motion.div>
-                                                        </Grid>
-                                                    ))}
-                                                </AnimatePresence>
-                                            </Grid>
+                                            <Stack spacing={2}>
+                                                {activeDepartment.units?.map((unit) => {
+                                                    const unitLocations = unit.locations || [];
+
+                                                    return (
+                                                        <Paper key={unit.id} variant="outlined" sx={{ p: 2 }}>
+                                                            <Stack spacing={2}>
+                                                                <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                                                                        <Box
+                                                                            sx={{
+                                                                                width: 40,
+                                                                                height: 40,
+                                                                                borderRadius: 2,
+                                                                                bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1),
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                            }}
+                                                                        >
+                                                                            <Apartment color="secondary" />
+                                                                        </Box>
+                                                                        <Box>
+                                                                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                                                                                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                                                                                    {unit.name}
+                                                                                </Typography>
+                                                                                {!unit.isActive && (
+                                                                                    <Chip
+                                                                                        label="Inactive"
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            bgcolor: alpha('#EF4444', 0.15),
+                                                                                            color: '#EF4444',
+                                                                                            fontWeight: 600,
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            </Stack>
+                                                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                                                {unitLocations.length} location{unitLocations.length !== 1 ? 's' : ''}
+                                                                                {unit.head && <> • Unit Head: {unit.head.firstName} {unit.head.lastName}</>}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </Stack>
+                                                                    <Stack direction="row" spacing={1}>
+                                                                        {canEdit && (
+                                                                            <Button
+                                                                                size="small"
+                                                                                startIcon={<Edit />}
+                                                                                onClick={() => setEditDepartment(unit)}
+                                                                            >
+                                                                                Edit
+                                                                            </Button>
+                                                                        )}
+                                                                        {canDelete && (
+                                                                            <Button
+                                                                                size="small"
+                                                                                color="error"
+                                                                                startIcon={<Delete />}
+                                                                                onClick={() => setDeleteDepartment(unit)}
+                                                                                disabled={unitLocations.length > 0}
+                                                                            >
+                                                                                Delete
+                                                                            </Button>
+                                                                        )}
+                                                                        {canCreate && (
+                                                                            <Button
+                                                                                size="small"
+                                                                                variant="contained"
+                                                                                startIcon={<Add />}
+                                                                                onClick={() => setAddLocationUnit(unit)}
+                                                                            >
+                                                                                Add Location
+                                                                            </Button>
+                                                                        )}
+                                                                    </Stack>
+                                                                </Stack>
+
+                                                                {unitLocations.length === 0 ? (
+                                                                    <Alert severity="info" icon={<LocationOn />}>
+                                                                        No locations in this unit yet.
+                                                                    </Alert>
+                                                                ) : (
+                                                                    <Grid container spacing={1.5}>
+                                                                        <AnimatePresence>
+                                                                            {unitLocations.map((location, index) => (
+                                                                                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={location.id}>
+                                                                                    <motion.div
+                                                                                        initial={{ opacity: 0, y: 10 }}
+                                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                                        exit={{ opacity: 0, y: -10 }}
+                                                                                        transition={{ delay: index * 0.05 }}
+                                                                                    >
+                                                                                        <LocationCard
+                                                                                            location={location}
+                                                                                            canEdit={canEdit}
+                                                                                            canDelete={canDelete}
+                                                                                            onEdit={() => setEditLocationContext({ unitId: unit.id, location })}
+                                                                                            onDelete={() => setDeleteLocationContext({ unitId: unit.id, location })}
+                                                                                        />
+                                                                                    </motion.div>
+                                                                                </Grid>
+                                                                            ))}
+                                                                        </AnimatePresence>
+                                                                    </Grid>
+                                                                )}
+                                                            </Stack>
+                                                        </Paper>
+                                                    );
+                                                })}
+                                            </Stack>
                                         )}
                                     </Box>
                                 </>
@@ -1195,6 +1305,12 @@ export default function DepartmentsManagementPage() {
                 onClose={() => setCreateDeptDialogOpen(false)}
                 onSave={handleCreateDepartment}
             />
+            <CreateDepartmentDialog
+                open={createUnitDialogOpen}
+                parentDepartment={activeDepartment}
+                onClose={() => setCreateUnitDialogOpen(false)}
+                onSave={handleCreateUnit}
+            />
             <EditDepartmentDialog
                 open={!!editDepartment}
                 department={editDepartment}
@@ -1208,23 +1324,23 @@ export default function DepartmentsManagementPage() {
                 onConfirm={handleDeleteDepartment}
             />
             <AddLocationDialog
-                open={addLocationDialogOpen}
-                department={activeDepartment}
-                onClose={() => setAddLocationDialogOpen(false)}
+                open={!!addLocationUnit}
+                department={addLocationUnit}
+                onClose={() => setAddLocationUnit(null)}
                 onSave={handleCreateLocation}
             />
             <EditLocationDialog
-                open={!!editLocation}
-                location={editLocation}
-                departmentId={activeDepartment?.id ?? null}
-                onClose={() => setEditLocation(null)}
+                open={!!editLocationContext}
+                location={editLocationContext?.location ?? null}
+                departmentId={editLocationContext?.unitId ?? null}
+                onClose={() => setEditLocationContext(null)}
                 onSave={handleUpdateLocation}
             />
             <DeleteLocationDialog
-                open={!!deleteLocation}
-                location={deleteLocation}
-                departmentId={activeDepartment?.id ?? null}
-                onClose={() => setDeleteLocation(null)}
+                open={!!deleteLocationContext}
+                location={deleteLocationContext?.location ?? null}
+                departmentId={deleteLocationContext?.unitId ?? null}
+                onClose={() => setDeleteLocationContext(null)}
                 onConfirm={handleDeleteLocation}
             />
         </AppLayout>

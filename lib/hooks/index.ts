@@ -66,6 +66,8 @@ export type {
     DepartmentCreate,
     DepartmentUpdate,
     DepartmentWithLocations,
+    UnitWithLocations,
+    DepartmentWithUnits,
 } from '@/lib/api/schemas';
 
 // User list management types

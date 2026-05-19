@@ -81,6 +81,7 @@ export const departmentInsertSchema = createInsertSchema(departments);
 export const departmentCreateSchema = z.object({
   name: z.string().min(1).max(100),
   code: z.string().max(20).optional(), // Optional - auto-generated if not provided
+  parentDepartmentId: z.number().int().positive().optional(),
   headId: z.number().int().positive().optional(),
   isActive: z.boolean().default(true),
 });
@@ -95,6 +96,20 @@ export const locationForDepartmentSchema = locationMinimalSchema.extend({
 
 export const departmentWithLocationsSchema = departmentSelectSchema.extend({
   locations: z.array(locationForDepartmentSchema).default([]),
+  head: userMinimalSchema.optional(),
+});
+
+/**
+ * Unit (child department) with its locations.
+ * Note: we model Units as child rows in the `departments` table.
+ */
+export const unitWithLocationsSchema = departmentWithLocationsSchema;
+
+/**
+ * Top-level Department with its Units (each unit includes its locations).
+ */
+export const departmentWithUnitsSchema = departmentSelectSchema.extend({
+  units: z.array(unitWithLocationsSchema).default([]),
   head: userMinimalSchema.optional(),
 });
 
@@ -298,6 +313,8 @@ export type DepartmentInsert = z.infer<typeof departmentInsertSchema>;
 export type DepartmentCreate = z.infer<typeof departmentCreateSchema>;
 export type DepartmentUpdate = z.infer<typeof departmentUpdateSchema>;
 export type DepartmentWithLocations = z.infer<typeof departmentWithLocationsSchema>;
+export type UnitWithLocations = z.infer<typeof unitWithLocationsSchema>;
+export type DepartmentWithUnits = z.infer<typeof departmentWithUnitsSchema>;
 
 export type Investigation = z.infer<typeof investigationSelectSchema>;
 export type InvestigationInsert = z.infer<typeof investigationInsertSchema>;

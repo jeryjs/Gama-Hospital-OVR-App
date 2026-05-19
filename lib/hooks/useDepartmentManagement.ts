@@ -7,7 +7,7 @@ import type {
     Department,
     DepartmentCreate,
     DepartmentUpdate,
-    DepartmentWithLocations,
+    DepartmentWithUnits,
     PaginationMeta,
 } from '@/lib/api/schemas';
 
@@ -22,12 +22,12 @@ interface UseDepartmentManagementParams {
 }
 
 interface DepartmentListResponse {
-    data: DepartmentWithLocations[];
+    data: DepartmentWithUnits[];
     pagination: PaginationMeta;
 }
 
 interface UseDepartmentManagementReturn {
-    departments: DepartmentWithLocations[];
+    departments: DepartmentWithUnits[];
     pagination: PaginationMeta;
     isLoading: boolean;
     error: string | null;
@@ -99,9 +99,9 @@ export function useDepartmentManagement(
             mutate(
                 (current) => {
                     if (!current) return current;
-                    const newItem: DepartmentWithLocations = {
+                    const newItem: DepartmentWithUnits = {
                         ...newDepartment!,
-                        locations: [],
+                        units: [],
                     };
                     return {
                         ...current,

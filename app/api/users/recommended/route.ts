@@ -20,7 +20,7 @@ const recommendedParamsSchema = z.object({
 });
 
 type RecommendationReason =
-    | 'department_head'
+    | 'unit_head'
     | 'reporter'
     | 'involved_person'
     | 'resource_member'
@@ -55,10 +55,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json([]);
         }
 
-        let departmentHeadId: number | null = null;
+        let unitHeadId: number | null = null;
 
         if (incident.locationId) {
-            const [locationWithDepartment] = await db
+            const [locationWithUnit] = await db
                 .select({
                     headOfDepartment: departments.headOfDepartment,
                 })
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
                 .where(eq(locations.id, incident.locationId))
                 .limit(1);
 
-            departmentHeadId = locationWithDepartment?.headOfDepartment ?? null;
+            unitHeadId = locationWithUnit?.headOfDepartment ?? null;
         }
 
         const recommendations = new Map<number, RecommendationReason>();
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
             recommendations.set(userId, reason);
         };
 
-        addRecommendation(departmentHeadId, 'department_head');
+        addRecommendation(unitHeadId, 'unit_head');
         addRecommendation(incident.reporterId, 'reporter');
         addRecommendation(incident.involvedStaffId, 'involved_person');
 
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
             .where(and(inArray(users.id, recommendedIds), eq(users.isActive, true)));
 
         const reasonRank: Record<RecommendationReason, number> = {
-            department_head: 0,
+            unit_head: 0,
             reporter: 1,
             involved_person: 2,
             resource_owner: 3,

@@ -2,7 +2,7 @@
 
 import useSWR from 'swr';
 import { apiCall } from '@/lib/client/error-handler';
-import type { DepartmentWithLocations, LocationForDepartment, LocationCreate, LocationUpdate } from '@/lib/api/schemas';
+import type { DepartmentWithUnits, LocationForDepartment, LocationCreate, LocationUpdate } from '@/lib/api/schemas';
 import { useCallback } from 'react';
 
 interface DepartmentSimple {
@@ -19,14 +19,14 @@ interface UseDepartmentsReturn {
 }
 
 interface UseDepartmentsWithLocationsReturn {
-    departments: DepartmentWithLocations[];
+    departments: DepartmentWithUnits[];
     isLoading: boolean;
     error: string | null;
     mutate: () => void;
     // Location CRUD operations
-    createLocation: (departmentId: number, data: Omit<LocationCreate, 'departmentId'>) => Promise<LocationForDepartment>;
-    updateLocation: (departmentId: number, locationId: number, data: LocationUpdate) => Promise<LocationForDepartment>;
-    deleteLocation: (departmentId: number, locationId: number) => Promise<void>;
+    createLocation: (unitId: number, data: Omit<LocationCreate, 'departmentId'>) => Promise<LocationForDepartment>;
+    updateLocation: (unitId: number, locationId: number, data: LocationUpdate) => Promise<LocationForDepartment>;
+    deleteLocation: (unitId: number, locationId: number) => Promise<void>;
 }
 
 const simpleFetcher = async (url: string): Promise<DepartmentSimple[]> => {
@@ -35,11 +35,37 @@ const simpleFetcher = async (url: string): Promise<DepartmentSimple[]> => {
     return data!;
 };
 
-const fullFetcher = async (url: string): Promise<{ data: DepartmentWithLocations[] }> => {
-    const { data, error } = await apiCall<{ data: DepartmentWithLocations[] }>(url);
+const fullFetcher = async (url: string): Promise<{ data: DepartmentWithUnits[] }> => {
+    const { data, error } = await apiCall<{ data: DepartmentWithUnits[] }>(url);
     if (error) throw new Error(error.message);
     return data!;
 };
+
+function updateNestedUnitLocations(
+    departments: DepartmentWithUnits[],
+    unitId: number,
+    updater: (currentLocations: LocationForDepartment[]) => LocationForDepartment[]
+): DepartmentWithUnits[] {
+    return departments.map((dept) => {
+        if (!Array.isArray((dept as any).units) || (dept.units || []).length === 0) {
+            return dept;
+        }
+
+        const nextUnits = (dept.units || []).map((unit) => {
+            if (unit.id !== unitId) return unit;
+            const currentLocations = (unit.locations || []) as LocationForDepartment[];
+            return {
+                ...unit,
+                locations: updater(currentLocations),
+            };
+        });
+
+        return {
+            ...dept,
+            units: nextUnits,
+        };
+    });
+}
 
 /**
  * Simple hook to fetch departments for dropdowns
@@ -74,7 +100,7 @@ export function useDepartments(): UseDepartmentsReturn {
  * const { departments, createLocation, updateLocation, deleteLocation } = useDepartmentsWithLocations();
  */
 export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn {
-    const { data, error, isLoading, mutate } = useSWR<{ data: DepartmentWithLocations[] }>(
+    const { data, error, isLoading, mutate } = useSWR<{ data: DepartmentWithUnits[] }>(
         '/api/departments?includeLocations=true&pageSize=100',
         fullFetcher,
         {
@@ -86,9 +112,9 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
     );
 
     const createLocation = useCallback(
-        async (departmentId: number, locationData: Omit<LocationCreate, 'departmentId'>): Promise<LocationForDepartment> => {
+        async (unitId: number, locationData: Omit<LocationCreate, 'departmentId'>): Promise<LocationForDepartment> => {
             const { data: newLocation, error } = await apiCall<LocationForDepartment>(
-                `/api/departments/${departmentId}/locations`,
+                `/api/departments/${unitId}/locations`,
                 {
                     method: 'POST',
                     body: JSON.stringify(locationData),
@@ -103,15 +129,10 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
                     if (!current) return current;
                     return {
                         ...current,
-                        data: current.data.map(dept =>
-                            dept.id === departmentId
-                                ? {
-                                    ...dept,
-                                    locations: [...(dept.locations || []), newLocation!].sort((a, b) =>
-                                        (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
-                                    ),
-                                }
-                                : dept
+                        data: updateNestedUnitLocations(current.data, unitId, (locations) =>
+                            [...locations, newLocation!].sort((a, b) =>
+                                (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+                            )
                         ),
                     };
                 },
@@ -124,9 +145,9 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
     );
 
     const updateLocation = useCallback(
-        async (departmentId: number, locationId: number, updateData: LocationUpdate): Promise<LocationForDepartment> => {
+        async (unitId: number, locationId: number, updateData: LocationUpdate): Promise<LocationForDepartment> => {
             const { data: updatedLocation, error } = await apiCall<LocationForDepartment>(
-                `/api/departments/${departmentId}/locations`,
+                `/api/departments/${unitId}/locations`,
                 {
                     method: 'PATCH',
                     body: JSON.stringify({ locationId, ...updateData }),
@@ -141,15 +162,10 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
                     if (!current) return current;
                     return {
                         ...current,
-                        data: current.data.map(dept =>
-                            dept.id === departmentId
-                                ? {
-                                    ...dept,
-                                    locations: (dept.locations || [])
-                                        .map(loc => loc.id === locationId ? { ...loc, ...updatedLocation } : loc)
-                                        .sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)),
-                                }
-                                : dept
+                        data: updateNestedUnitLocations(current.data, unitId, (locations) =>
+                            locations
+                                .map((loc) => loc.id === locationId ? { ...loc, ...updatedLocation } : loc)
+                                .sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999))
                         ),
                     };
                 },
@@ -162,9 +178,9 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
     );
 
     const deleteLocation = useCallback(
-        async (departmentId: number, locationId: number): Promise<void> => {
+        async (unitId: number, locationId: number): Promise<void> => {
             const { error } = await apiCall<{ success: boolean }>(
-                `/api/departments/${departmentId}/locations?locationId=${locationId}`,
+                `/api/departments/${unitId}/locations?locationId=${locationId}`,
                 {
                     method: 'DELETE',
                 }
@@ -178,13 +194,8 @@ export function useDepartmentsWithLocations(): UseDepartmentsWithLocationsReturn
                     if (!current) return current;
                     return {
                         ...current,
-                        data: current.data.map(dept =>
-                            dept.id === departmentId
-                                ? {
-                                    ...dept,
-                                    locations: (dept.locations || []).filter(loc => loc.id !== locationId),
-                                }
-                                : dept
+                        data: updateNestedUnitLocations(current.data, unitId, (locations) =>
+                            locations.filter((loc) => loc.id !== locationId)
                         ),
                     };
                 },

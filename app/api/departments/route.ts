@@ -12,7 +12,7 @@ import {
 } from '@/lib/api/middleware';
 import { departmentCreateSchema, departmentUpdateSchema } from '@/lib/api/schemas';
 import { generateDepartmentCode } from '@/lib/utils/departments';
-import { eq, count, asc, desc, and, ilike, or, SQL } from 'drizzle-orm';
+import { eq, count, asc, desc, and, ilike, or, isNull, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         const simple = searchParams.get('simple');
         if (simple === 'true') {
             const allDepartments = await db.query.departments.findMany({
-                where: eq(departments.isActive, true),
+                where: and(eq(departments.isActive, true), isNull(departments.parentDepartmentId)),
                 orderBy: [asc(departments.name)],
                 columns: {
                     id: true,
@@ -65,11 +65,17 @@ export async function GET(request: NextRequest) {
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+        // This API treats top-level rows as Departments and child rows as Units.
+        // Most consumers should only page/filter top-level Departments.
+        const topLevelWhereClause = whereClause
+            ? and(whereClause, isNull(departments.parentDepartmentId))
+            : isNull(departments.parentDepartmentId);
+
         // Get total count
         const [countResult] = await db
             .select({ count: count() })
             .from(departments)
-            .where(whereClause);
+            .where(topLevelWhereClause);
 
         const total = Number(countResult?.count || 0);
         const offset = (page - 1) * pageSize;
@@ -86,25 +92,11 @@ export async function GET(request: NextRequest) {
         // Fetch departments with optional relations
         if (includeLocations) {
             const data = await db.query.departments.findMany({
-                where: whereClause,
+                where: topLevelWhereClause,
                 orderBy: [orderByClause],
                 limit: pageSize,
                 offset,
                 with: {
-                    locations: {
-                        columns: {
-                            id: true,
-                            name: true,
-                            building: true,
-                            floor: true,
-                            displayOrder: true,
-                            isActive: true,
-                        },
-                        orderBy: (locations, { asc, sql }) => [
-                            asc(sql`COALESCE(${locations.displayOrder}, 999999)`),
-                            asc(locations.name),
-                        ],
-                    },
                     headOfDepartment: {
                         columns: {
                             id: true,
@@ -112,15 +104,56 @@ export async function GET(request: NextRequest) {
                             lastName: true,
                         },
                     },
+                    units: {
+                        orderBy: (departments, { asc }) => [asc(departments.name)],
+                        with: {
+                            locations: {
+                                columns: {
+                                    id: true,
+                                    name: true,
+                                    building: true,
+                                    floor: true,
+                                    displayOrder: true,
+                                    isActive: true,
+                                },
+                                orderBy: (locations, { asc, sql }) => [
+                                    asc(sql`COALESCE(${locations.displayOrder}, 999999)`),
+                                    asc(locations.name),
+                                ],
+                            },
+                            headOfDepartment: {
+                                columns: {
+                                    id: true,
+                                    firstName: true,
+                                    lastName: true,
+                                },
+                            },
+                        },
+                    },
                 },
             });
 
-            // Transform to match DepartmentWithLocations schema
-            const transformedData = data.map(dept => ({
-                ...dept,
-                head: dept.headOfDepartment,
-                locations: (dept as any).locations || [],
-            }));
+            // Transform to match DepartmentWithUnits schema: keep headOfDepartment as the scalar ID
+            // and expose the populated user relation through `head`.
+            const transformedData = data.map((dept: any) => {
+                const { headOfDepartment, units, ...department } = dept;
+
+                return {
+                    ...department,
+                    headOfDepartment: headOfDepartment?.id ?? null,
+                    head: headOfDepartment ?? undefined,
+                    units: (units || []).map((unit: any) => {
+                        const { headOfDepartment, ...unitData } = unit;
+
+                        return {
+                            ...unitData,
+                            headOfDepartment: headOfDepartment?.id ?? null,
+                            head: headOfDepartment ?? undefined,
+                            locations: unit.locations || [],
+                        };
+                    }),
+                };
+            });
 
             return NextResponse.json(
                 createPaginatedResponse(transformedData, total, { page, limit: pageSize, sortOrder })
@@ -131,7 +164,7 @@ export async function GET(request: NextRequest) {
         const data = await db
             .select()
             .from(departments)
-            .where(whereClause)
+            .where(topLevelWhereClause)
             .orderBy(orderByClause)
             .limit(pageSize)
             .offset(offset);
@@ -154,12 +187,27 @@ export async function POST(request: NextRequest) {
 
         const body = await validateBody(request, departmentCreateSchema);
 
+        // If parentDepartmentId is provided, we're creating a Unit.
+        if (body.parentDepartmentId) {
+            const parent = await db.query.departments.findFirst({
+                where: and(
+                    eq(departments.id, body.parentDepartmentId),
+                    isNull(departments.parentDepartmentId)
+                ),
+            });
+
+            if (!parent) {
+                throw new ValidationError('Invalid parent department for unit creation');
+            }
+        }
+
         // Always auto-generate internal code (never user-provided)
         const code = generateDepartmentCode(body.name);
 
         const [newDepartment] = await db.insert(departments).values({
             name: body.name,
             code,
+            parentDepartmentId: body.parentDepartmentId,
             headOfDepartment: body.headId,
             isActive: body.isActive ?? true,
         }).returning();
@@ -210,6 +258,24 @@ export async function PATCH(request: NextRequest) {
         const updateData: Record<string, unknown> = {};
         if (body.name !== undefined) updateData.name = body.name;
         if (body.code !== undefined) updateData.code = body.code;
+        if (body.parentDepartmentId !== undefined) {
+            const parent = await db.query.departments.findFirst({
+                where: and(
+                    eq(departments.id, body.parentDepartmentId),
+                    isNull(departments.parentDepartmentId)
+                ),
+            });
+
+            if (!parent) {
+                throw new ValidationError('Invalid parent department');
+            }
+
+            if (body.parentDepartmentId === departmentId) {
+                throw new ValidationError('A department cannot be its own parent');
+            }
+
+            updateData.parentDepartmentId = body.parentDepartmentId;
+        }
         if (body.headId !== undefined) updateData.headOfDepartment = body.headId;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
@@ -262,6 +328,17 @@ export async function DELETE(request: NextRequest) {
                 eq(locations.departmentId, departmentId),
                 eq(locations.isActive, true)
             ));
+
+        const [unitCount] = await db
+            .select({ count: count() })
+            .from(departments)
+            .where(eq(departments.parentDepartmentId, departmentId));
+
+        if (unitCount.count > 0) {
+            throw new ValidationError(
+                `Cannot delete department: ${unitCount.count} unit(s) are associated with this department`
+            );
+        }
 
         if (locationCount.count > 0) {
             throw new ValidationError(

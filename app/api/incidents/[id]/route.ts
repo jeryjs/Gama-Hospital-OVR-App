@@ -80,7 +80,9 @@ export async function GET(
     // Populate assignees in corrective actions
     if (fullIncident.correctiveActions?.length) {
       enrichedIncident.correctiveActions = await Promise.all(
-        fullIncident.correctiveActions.map(action => populateActionUsers(action))
+        fullIncident.correctiveActions.map(action =>
+          populateActionUsers(action as typeof action & { assignedTo: number[] | null })
+        )
       );
     }
 

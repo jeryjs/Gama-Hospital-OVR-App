@@ -8,7 +8,7 @@ import {
   RichTextEditor,
   getCharacterCount,
 } from '@/components/editor';
-import type { UserSearchResult, DepartmentWithLocations } from '@/lib/api/schemas';
+import type { UserSearchResult, DepartmentWithUnits } from '@/lib/api/schemas';
 import { useDepartmentsWithLocations } from '@/lib/hooks';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import {
@@ -249,6 +249,8 @@ function prepareLocalDraft(
 interface LocationOption {
   id: number;
   name: string;
+  unitId: number;
+  unitName: string;
   departmentId: number;
   departmentName: string;
 }
@@ -256,14 +258,18 @@ interface LocationOption {
 /**
  * Converts departments with locations to flat location options
  */
-function flattenLocations(departments: DepartmentWithLocations[]): LocationOption[] {
-  return departments.flatMap(dept =>
-    (dept.locations || []).map(loc => ({
-      id: loc.id,
-      name: loc.name,
-      departmentId: dept.id,
-      departmentName: dept.name,
-    }))
+function flattenLocations(departments: DepartmentWithUnits[]): LocationOption[] {
+  return departments.flatMap((dept) =>
+    (dept.units || []).flatMap((unit) =>
+      (unit.locations || []).map((loc) => ({
+        id: loc.id,
+        name: loc.name,
+        unitId: unit.id,
+        unitName: unit.name,
+        departmentId: dept.id,
+        departmentName: dept.name,
+      }))
+    )
   );
 }
 
@@ -276,7 +282,7 @@ function OccurrenceDetailsSection({
   onChange,
 }: {
   formData: FormData;
-  departments: DepartmentWithLocations[];
+  departments: DepartmentWithUnits[];
   onChange: (key: keyof FormData, value: unknown) => void;
 }) {
   const locations = flattenLocations(departments);
@@ -317,7 +323,7 @@ function OccurrenceDetailsSection({
           <Autocomplete
             options={locations}
             groupBy={(option) => option.departmentName}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={(option) => option.unitName ? `${option.unitName}/${option.name}` : option.name}
             value={selectedLocation}
             onChange={(_, value) => onChange('locationId', value?.id)}
             isOptionEqualToValue={(option, value) => option.id === value?.id}
@@ -2019,7 +2025,7 @@ export default function NewIncidentPage() {
               <Box sx={{ mb: 4 }}>
                 <Alert severity="warning" sx={{ mt: 2 }}>
                   <Typography variant="caption">
-                    Thank you for reporting! Upon submitting, this OVR will be sent to QI DEPARTMENT and from there, it will be sent to the concerned Department Head
+                    Thank you for reporting! Upon submitting, this OVR will be sent to QI DEPARTMENT and from there, it will be sent to the concerned Unit Head
                   </Typography>
                 </Alert>
               </Box>
