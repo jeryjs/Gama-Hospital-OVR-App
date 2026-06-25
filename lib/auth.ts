@@ -4,6 +4,8 @@ import { eq, sql } from 'drizzle-orm';
 import { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcrypt';
 import { APP_ROLES, AppRole } from './constants';
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com'])
@@ -13,6 +15,8 @@ const ALLOW_ALL_EMAIL_DOMAINS = ALLOWED_DOMAIN.includes('*');
 const AZURE_AD_AUTH_TENANT_ID = process.env.AZURE_AD_AUTH_TENANT_ID || process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common';
 const MAIL_SCOPE = 'openid profile email User.Read offline_access';
 const AVATAR_ROUTE = '/api/me/avatar';
+const AUTH_PROVIDER_AZURE = 'azure-ad';
+const AUTH_PROVIDER_CREDENTIALS = 'credentials';
 // const IS_DEV = process.env.NODE_ENV === 'development';
 
 function normalizeEmail(email: string | null | undefined): string | null {
@@ -88,6 +92,47 @@ export const authOptions: NextAuthOptions = {
     },
   },
   providers: [
+    CredentialsProvider({
+      name: 'Staff ID',
+      credentials: {
+        employeeId: { label: 'Staff ID', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        const employeeId = credentials?.employeeId?.trim();
+        const password = credentials?.password;
+
+        if (!employeeId || !password) {
+          return null;
+        }
+
+        const normalizedEmployeeId = employeeId.toLowerCase();
+        const dbUser = await db.query.users.findFirst({
+          where: sql`LOWER(${users.employeeId}) = ${normalizedEmployeeId}`,
+        });
+
+        if (!dbUser || !dbUser.isActive || !dbUser.passwordHash) {
+          return null;
+        }
+
+        const passwordOk = await bcrypt.compare(password, dbUser.passwordHash);
+        if (!passwordOk) {
+          return null;
+        }
+
+        return {
+          id: String(dbUser.id),
+          name: `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() || dbUser.employeeId || dbUser.email,
+          email: dbUser.email,
+          roles: dbUser.roles,
+          employeeId: dbUser.employeeId,
+          department: dbUser.department,
+          unit: dbUser.unit,
+          position: dbUser.position,
+          image: AVATAR_ROUTE,
+        } as any;
+      },
+    }),
     AzureADProvider({
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
@@ -188,6 +233,10 @@ export const authOptions: NextAuthOptions = {
     },
 
     async signIn({ user, account }) {
+      if (account?.provider === AUTH_PROVIDER_CREDENTIALS) {
+        return true;
+      }
+
       console.log('🔐 SignIn attempt:', {
         email: user.email,
         name: user.name,
@@ -289,6 +338,21 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (account && user) {
+        token.authProvider = account.provider;
+
+        if (account.provider === AUTH_PROVIDER_CREDENTIALS) {
+          token.id = user.id;
+          token.roles = (user as any).roles || [APP_ROLES.EMPLOYEE];
+          token.employeeId = (user as any).employeeId || null;
+          token.department = (user as any).department || null;
+          token.unit = (user as any).unit || null;
+          token.position = (user as any).position || null;
+          token.image = AVATAR_ROUTE;
+          (token as any).picture = AVATAR_ROUTE;
+          token.tokenError = undefined;
+          return token;
+        }
+
         token.image = AVATAR_ROUTE;
         (token as any).picture = AVATAR_ROUTE;
 
@@ -322,11 +386,16 @@ export const authOptions: NextAuthOptions = {
         token.roles = dbUser.roles;
         token.employeeId = dbUser.employeeId;
         token.department = dbUser.department;
+        token.unit = dbUser.unit;
         token.position = dbUser.position;
         token.image = AVATAR_ROUTE;
         (token as any).picture = AVATAR_ROUTE;
         token.tokenError = undefined;
 
+        return token;
+      }
+
+      if (token.authProvider !== AUTH_PROVIDER_AZURE) {
         return token;
       }
 
@@ -368,6 +437,7 @@ export const authOptions: NextAuthOptions = {
         session.user.roles = (token.roles as AppRole[]) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
+        session.user.unit = token.unit as string | null;
         session.user.position = token.position as string | null;
         session.user.image = token.image as string | undefined;
         session.user.mailScopeGranted = token.mailScopeGranted === true;

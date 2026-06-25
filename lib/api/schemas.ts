@@ -728,13 +728,14 @@ export const userListQuerySchema = z.object({
   search: z.string().nullish(),
   roles: z.array(z.string()).nullish(), // Changed from single 'role' to 'roles' array
   isActive: z.coerce.boolean().nullish(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'firstName', 'lastName', 'email', 'department']).default('createdAt').catch('createdAt'),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'firstName', 'lastName', 'email', 'department', 'unit']).default('createdAt').catch('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc').catch('desc'),
 });
 
 export const userUpdateSchema = userInsertSchema.pick({
   roles: true,
   department: true,
+  unit: true,
   position: true,
   isActive: true,
   employeeId: true,
@@ -746,6 +747,7 @@ export const userCreateSchema = z.object({
   lastName: z.string().trim().min(1, 'Last name is required').max(100),
   roles: z.array(z.string().min(1)).min(1, 'At least one role is required').default(['employee']),
   department: z.string().trim().max(100).optional().or(z.literal('')),
+  unit: z.string().trim().max(100).optional().or(z.literal('')),
   position: z.string().trim().max(100).optional().or(z.literal('')),
   employeeId: z.string().trim().max(50).optional().or(z.literal('')),
   isActive: z.boolean().default(true),

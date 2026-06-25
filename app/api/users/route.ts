@@ -9,6 +9,7 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 
 const VALID_ROLES = new Set(Object.values(APP_ROLES));
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',').map((d) => d.trim().toLowerCase()) || ['gamahospital.com']);
+const ALLOW_ALL_EMAIL_DOMAINS = ALLOWED_DOMAIN.includes('*');
 const MANAGEMENT_ROLES = [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN, APP_ROLES.DEVELOPER] as const;
 
 function normalizeEmail(email: string): string {
@@ -16,6 +17,10 @@ function normalizeEmail(email: string): string {
 }
 
 function isAllowedDomainEmail(email: string): boolean {
+  if (ALLOW_ALL_EMAIL_DOMAINS) {
+    return true;
+  }
+
   return ALLOWED_DOMAIN.includes(email.split('@')[1]);
 }
 
@@ -134,6 +139,7 @@ export async function GET(request: NextRequest) {
       lastName: users.lastName,
       email: users.email,
       department: users.department,
+      unit: users.unit,
     };
     const orderByColumn = columnMap[sortBy as keyof typeof columnMap] || users.createdAt;
     const orderByClause = sortOrder === 'asc' ? asc(orderByColumn) : desc(orderByColumn);
@@ -148,6 +154,7 @@ export async function GET(request: NextRequest) {
         lastName: users.lastName,
         roles: users.roles,
         department: users.department,
+        unit: users.unit,
         position: users.position,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -203,7 +210,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate allowed fields
-    const allowedFields = ['department', 'position', 'isActive', 'employeeId', 'roles'];
+    const allowedFields = ['department', 'unit', 'position', 'isActive', 'employeeId', 'roles'];
     const filteredUpdates: any = {};
 
     for (const key of allowedFields) {
@@ -293,6 +300,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     filteredUpdates.department = normalizeOptionalText(filteredUpdates.department);
+    filteredUpdates.unit = normalizeOptionalText(filteredUpdates.unit) ?? '';
     filteredUpdates.position = normalizeOptionalText(filteredUpdates.position);
     filteredUpdates.employeeId = normalizeOptionalText(filteredUpdates.employeeId);
 
@@ -308,7 +316,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const trackedKeys = ['roles', 'department', 'position', 'isActive', 'employeeId'] as const;
+    const trackedKeys = ['roles', 'department', 'unit', 'position', 'isActive', 'employeeId'] as const;
     const changes: Record<string, { from: unknown; to: unknown }> = {};
 
     for (const key of trackedKeys) {
@@ -429,6 +437,7 @@ export async function POST(request: NextRequest) {
         lastName: parsed.data.lastName.trim(),
         roles,
         department: normalizeOptionalText(parsed.data.department),
+        unit: normalizeOptionalText(parsed.data.unit) ?? '',
         position: normalizeOptionalText(parsed.data.position),
         employeeId: normalizeOptionalText(parsed.data.employeeId),
         isActive: parsed.data.isActive,
@@ -444,6 +453,7 @@ export async function POST(request: NextRequest) {
         email: createdUser.email,
         roles: createdUser.roles,
         department: createdUser.department,
+        unit: createdUser.unit,
         position: createdUser.position,
         employeeId: createdUser.employeeId,
         isActive: createdUser.isActive,

@@ -974,3 +974,62 @@ export async function processMailOutboxForActor(
 
     return processOutboxBatchForActor(actor, limit);
 }
+
+export async function sendStaffIdOtpEmail(email: string, code: string): Promise<void> {
+    const subject = `${MAIL_SUBJECT_PREFIX} Staff ID verification code`;
+    const html = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.5;color:#111827;">
+      <h2 style="margin:0 0 12px;">Verify your email</h2>
+      <p style="margin:0 0 12px;">Use the one-time code below to complete your Staff ID onboarding.</p>
+      <p style="margin:0 0 16px;font-size:28px;font-weight:700;letter-spacing:4px;">${code}</p>
+      <p style="margin:0;color:#6b7280;font-size:12px;">This code expires in 10 minutes.</p>
+    </div>
+  `;
+    const text = `Verify your email\n\nYour one-time code is: ${code}\n\nThis code expires in 10 minutes.`;
+
+    const recipient = normalizeEmail(email);
+    if (!recipient) {
+        throw new NonRetryableMailError('Valid recipient email is required');
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+        console.log('--- Staff ID OTP Email ---');
+        console.log('To:', recipient);
+        console.log('Subject:', subject);
+        console.log('Code:', code);
+        console.log('--- End Staff ID OTP Email ---');
+        return;
+    }
+
+    if (MAIL_TRANSPORT === 'resend') {
+        if (!RESEND_API_KEY) {
+            throw new NonRetryableMailError('RESEND_API_KEY is required when MAIL_TRANSPORT=resend');
+        }
+
+        if (!resendClient) {
+            resendClient = new Resend(RESEND_API_KEY);
+        }
+
+        await resendClient.emails.send({
+            from: MAIL_NO_REPLY_FROM,
+            replyTo: MAIL_NO_REPLY_REPLY_TO || undefined,
+            to: [recipient],
+            subject,
+            html,
+            text,
+        });
+
+        return;
+    }
+
+    const transport = getConfiguredTransport();
+
+    await transport.sendMail({
+        from: MAIL_NO_REPLY_FROM,
+        replyTo: MAIL_NO_REPLY_REPLY_TO || undefined,
+        to: [recipient],
+        subject,
+        html,
+        text,
+    });
+}
