@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
 import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib/utils/data-access';
+import { createWorkflowNotification } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
@@ -171,6 +172,19 @@ export async function POST(
                 incidentId: workflowResult.incidentId,
                 investigationId,
             });
+
+            void createWorkflowNotification(
+                'investigation_submitted',
+                {
+                    incidentId: workflowResult.incidentId,
+                    investigationId,
+                },
+                [],
+                {
+                    userId: parseInt(session.user.id),
+                    email: session.user.email,
+                }
+            );
         }
 
         return NextResponse.json({

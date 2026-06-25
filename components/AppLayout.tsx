@@ -2,7 +2,7 @@
 
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AppRole } from '@/lib/constants';
-import { useDashboardStats } from '@/lib/hooks';
+import { useDashboardStats, useNotifications } from '@/lib/hooks';
 import { getUserDrafts } from '@/lib/utils/draft-storage';
 import {
   AccountCircle,
@@ -13,11 +13,13 @@ import {
   ExpandLess,
   ExpandMore,
   Logout,
+  Notifications,
   Menu as MenuIcon
 } from '@mui/icons-material';
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Chip,
   Collapse,
@@ -59,6 +61,7 @@ interface NavItem {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status: sessionStatus, update: setSession } = useSession();
   const { stats, isLoading: isStatsLoading, error: statsError } = useDashboardStats();  // Used to populate nav badges
+  const { unreadCount, notifications } = useNotifications();
   const pathname = usePathname();
   const router = useRouter();
   const disableRouteAnimation = pathname.startsWith('/incidents/view/');
@@ -67,6 +70,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [navItemsOpen, setNavItemsOpen] = useState<Record<string, boolean>>(() => ({
     Incidents: pathname.startsWith('/incidents'),
     Administration: pathname.startsWith('/administration'),
@@ -375,6 +379,47 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </IconButton>
 
           <Box sx={{ flex: 1 }} />
+
+          <IconButton
+            color="inherit"
+            onClick={(e) => setNotificationAnchorEl(e.currentTarget)}
+            sx={{ mr: 1 }}
+          >
+            <Badge color="error" badgeContent={unreadCount} max={99} overlap="circular">
+              <Notifications />
+            </Badge>
+          </IconButton>
+
+          <Menu
+            anchorEl={notificationAnchorEl}
+            open={Boolean(notificationAnchorEl)}
+            onClose={() => setNotificationAnchorEl(null)}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  minWidth: 360,
+                  maxWidth: 420,
+                  borderRadius: 3,
+                  p: 1,
+                },
+              },
+            }}
+          >
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Notifications
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {unreadCount} unread · {notifications.length} recent
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 1 }} />
+            <MenuItem onClick={() => { setNotificationAnchorEl(null); router.push('/notifications'); }}>
+              View notification history
+            </MenuItem>
+          </Menu>
 
           <IconButton
             onClick={(e) => setAnchorEl(e.currentTarget)}

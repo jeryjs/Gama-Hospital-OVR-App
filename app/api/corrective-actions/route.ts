@@ -22,6 +22,7 @@ import {
     createCorrectiveActionSchema,
 } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { createWorkflowNotification } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -201,6 +202,21 @@ export async function POST(request: NextRequest) {
             title: action.title,
             assigneeIds: action.assignedTo || [],
         });
+
+        void createWorkflowNotification(
+            'corrective_action_created',
+            {
+                incidentId: body.ovrReportId,
+                actionId: action.id,
+                title: action.title,
+                assigneeIds: action.assignedTo || [],
+            },
+            action.assignedTo || [],
+            {
+                userId: Number(session.user.id),
+                email: session.user.email,
+            }
+        );
 
         return NextResponse.json(
             {

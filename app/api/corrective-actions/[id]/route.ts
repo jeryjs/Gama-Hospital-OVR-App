@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
 import { canAccessCorrectiveAction, getCorrectiveActionSharedAccessGrant } from '@/lib/utils/data-access';
+import { createWorkflowNotification } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -265,6 +266,20 @@ export async function POST(
             actionId,
             title: updated.title,
         });
+
+        void createWorkflowNotification(
+            'corrective_action_closed',
+            {
+                incidentId: updated.ovrReportId,
+                actionId,
+                title: updated.title,
+            },
+            [],
+            {
+                userId: Number(session.user.id),
+                email: session.user.email,
+            }
+        );
 
         return NextResponse.json({
             success: true,

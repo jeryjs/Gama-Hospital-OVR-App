@@ -23,6 +23,7 @@ import {
     bulkCreateSharedAccessSchema,
 } from '@/lib/api/schemas';
 import { buildSharedAccessUrl, generateSharedAccessToken } from '@/lib/utils';
+import { createWorkflowNotification } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -147,6 +148,23 @@ export async function POST(request: NextRequest) {
             accessUrl,
         });
 
+        void createWorkflowNotification(
+            'shared_access_invited',
+            {
+                incidentId: body.ovrReportId,
+                resourceType: body.resourceType,
+                resourceId: body.resourceId,
+                inviteeEmail: normalizedEmail,
+                role: body.role,
+                accessUrl,
+            },
+            [],
+            {
+                userId: Number(session.user.id),
+                email: session.user.email,
+            }
+        );
+
         return NextResponse.json(
             {
                 success: true,
@@ -194,6 +212,23 @@ export async function PUT(request: NextRequest) {
                 role: invite.role,
                 accessUrl,
             });
+
+            void createWorkflowNotification(
+                'shared_access_invited',
+                {
+                    incidentId: body.ovrReportId,
+                    resourceType: body.resourceType,
+                    resourceId: body.resourceId,
+                    inviteeEmail: normalizedEmail,
+                    role: invite.role,
+                    accessUrl,
+                },
+                [],
+                {
+                    userId: Number(session.user.id),
+                    email: session.user.email,
+                }
+            );
 
             invitations.push({
                 ...invitation,

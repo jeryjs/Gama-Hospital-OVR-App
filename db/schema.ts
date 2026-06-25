@@ -57,19 +57,43 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   azureId: varchar('azure_id', { length: 255 }).unique(),
   employeeId: varchar('employee_id', { length: 50 }).unique(),
-  firstName: varchar('first_name', { length: 100 }).notNull(),
-  lastName: varchar('last_name', { length: 100 }).notNull(),
+  firstName: varchar('first_name', { length: 100 }).notNull().default(''),
+  lastName: varchar('last_name', { length: 100 }).notNull().default(''),
+  passwordHash: text('password_hash'),
+  emailVerifiedAt: timestamp('email_verified_at'),
 
   // Multi-role support - roles are DB-managed and can be assigned independently
   roles: text('roles').array().notNull().default(sql`ARRAY['employee']::text[]`),
 
   department: varchar('department', { length: 100 }),
+  unit: varchar('unit', { length: 100 }).notNull().default(''),
   position: varchar('position', { length: 100 }),
   isActive: boolean('is_active').notNull().default(true),
   profilePicture: text('profile_picture'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
+
+// ============================================
+// STAFF ID ONBOARDING OTP
+// ============================================
+export const userEmailOtps = pgTable('user_email_otps', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  employeeId: varchar('employee_id', { length: 50 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  codeHash: text('code_hash').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  verifiedAt: timestamp('verified_at'),
+  attempts: integer('attempts').notNull().default(0),
+  sendCount: integer('send_count').notNull().default(1),
+  lastSentAt: timestamp('last_sent_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('user_email_otps_user_created_idx').on(table.userId, table.createdAt),
+  index('user_email_otps_employee_created_idx').on(table.employeeId, table.createdAt),
+]);
 
 // ============================================
 // DEPARTMENTS & LOCATIONS
@@ -343,6 +367,42 @@ export const ovrMailOutbox = pgTable('ovr_mail_outbox', {
 ]);
 
 // ============================================
+// NOTIFICATION HISTORY & PUSH SUBSCRIPTIONS
+// ============================================
+export const userNotifications = pgTable('user_notifications', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  event: varchar('event', { length: 64 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  body: text('body').notNull(),
+  url: text('url'),
+  actorUserId: integer('actor_user_id').references(() => users.id),
+  actorEmail: varchar('actor_email', { length: 255 }),
+  metadata: text('metadata'),
+  isRead: boolean('is_read').notNull().default(false),
+  readAt: timestamp('read_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('user_notifications_user_read_created_idx').on(table.userId, table.isRead, table.createdAt),
+  index('user_notifications_user_created_idx').on(table.userId, table.createdAt),
+]);
+
+export const userPushSubscriptions = pgTable('user_push_subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  expirationTime: timestamp('expiration_time'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('user_push_subscriptions_user_idx').on(table.userId),
+]);
+
+// ============================================
 // USER ADMIN AUDIT LOGS - Role/access management traceability
 // ============================================
 export const userAdminAuditLogs = pgTable('user_admin_audit_logs', {
@@ -398,11 +458,19 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   comments: many(ovrComments),
   attachments: many(ovrAttachments),
   mailOutbox: many(ovrMailOutbox),
+  emailOtps: many(userEmailOtps),
   userAdminActions: many(userAdminAuditLogs, { relationName: 'user_admin_actor' }),
   userAdminChanges: many(userAdminAuditLogs, { relationName: 'user_admin_target' }),
   headedDepartment: one(departments, {
     fields: [users.id],
     references: [departments.headOfDepartment],
+  }),
+}));
+
+export const userEmailOtpsRelations = relations(userEmailOtps, ({ one }) => ({
+  user: one(users, {
+    fields: [userEmailOtps.userId],
+    references: [users.id],
   }),
 }));
 

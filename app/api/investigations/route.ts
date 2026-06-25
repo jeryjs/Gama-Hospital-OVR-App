@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/middleware';
 import { createInvestigationSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
+import { createWorkflowNotification } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -206,12 +207,19 @@ export async function POST(request: NextRequest) {
                 .where(eq(ovrReports.id, body.ovrReportId));
         }
 
-        // Dont await to send email - if it fails we still want to return success response for the investigation creation
-        sendWorkflowMailSafely(request, session.user, 'investigation_created', {
-            incidentId: body.ovrReportId,
-            investigationId: investigation.id,
-            investigatorIds: investigation.investigators || [],
-        });
+        void createWorkflowNotification(
+            'investigation_created',
+            {
+                incidentId: body.ovrReportId,
+                investigationId: investigation.id,
+                investigatorIds: investigation.investigators || [],
+            },
+            investigation.investigators || [],
+            {
+                userId: Number(session.user.id),
+                email: session.user.email,
+            }
+        );
 
         return NextResponse.json(
             {
