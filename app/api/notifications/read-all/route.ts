@@ -1,4 +1,4 @@
-import { handleApiError, requireAuth, validateCsrfAndIdempotency } from '@/lib/api/middleware';
+import { handleApiError, validateCsrfAndIdempotency } from '@/lib/api/middleware';
 import { markAllNotificationsRead } from '@/lib/utils/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 

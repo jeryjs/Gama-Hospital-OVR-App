@@ -452,6 +452,9 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   reportedIncidents: many(ovrReports, { relationName: 'reporter' }),
   supervisedIncidents: many(ovrReports, { relationName: 'supervisor' }),
   qiReceivedIncidents: many(ovrReports, { relationName: 'qi_receiver' }),
+  notifications: many(userNotifications, { relationName: 'notification_user' }),
+  notificationActors: many(userNotifications, { relationName: 'notification_actor' }),
+  pushSubscriptions: many(userPushSubscriptions),
   investigations: many(ovrInvestigations),
   correctiveActions: many(ovrCorrectiveActions, { relationName: 'action_creator' }),
   sharedAccess: many(ovrSharedAccess, { relationName: 'shared_user' }),
@@ -634,6 +637,26 @@ export const ovrCommentsRelations = relations(ovrComments, ({ one }) => ({
 export const ovrMailOutboxRelations = relations(ovrMailOutbox, ({ one }) => ({
   actor: one(users, {
     fields: [ovrMailOutbox.actorUserId],
+    references: [users.id],
+  }),
+}));
+
+export const userNotificationsRelations = relations(userNotifications, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotifications.userId],
+    references: [users.id],
+    relationName: 'notification_user',
+  }),
+  actor: one(users, {
+    fields: [userNotifications.actorUserId],
+    references: [users.id],
+    relationName: 'notification_actor',
+  }),
+}));
+
+export const userPushSubscriptionsRelations = relations(userPushSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [userPushSubscriptions.userId],
     references: [users.id],
   }),
 }));

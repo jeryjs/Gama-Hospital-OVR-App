@@ -412,12 +412,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 Notifications
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {unreadCount} unread · {notifications.length} recent
+                {unreadCount} unread
               </Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
+            {notifications.length === 0 ? (
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography variant="body2" color="text.secondary">No notifications yet.</Typography>
+              </Box>
+            ) : notifications.slice(0, 3).map((n) => (
+              <MenuItem
+                key={n.id}
+                onClick={() => { setNotificationAnchorEl(null); if (n.url) router.push(n.url); }}
+                sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0.25, py: 1, opacity: n.isRead ? 0.65 : 1 }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: n.isRead ? 400 : 600 }}>{n.title}</Typography>
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 340 }}>{n.body}</Typography>
+              </MenuItem>
+            ))}
+            <Divider sx={{ my: 1 }} />
             <MenuItem onClick={() => { setNotificationAnchorEl(null); router.push('/notifications'); }}>
-              View notification history
+              <Typography variant="body2" color="primary">View all notifications</Typography>
             </MenuItem>
           </Menu>
 

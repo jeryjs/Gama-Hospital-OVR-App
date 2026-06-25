@@ -1,6 +1,16 @@
 import { db } from '@/db';
 import { userNotifications, userPushSubscriptions, users } from '@/db/schema';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
+import webpush from 'web-push';
+
+const WEB_PUSH_PUBLIC_KEY = (process.env.WEB_PUSH_PUBLIC_KEY || '').trim();
+const WEB_PUSH_PRIVATE_KEY = (process.env.WEB_PUSH_PRIVATE_KEY || '').trim();
+const WEB_PUSH_SUBJECT = (process.env.WEB_PUSH_SUBJECT || process.env.MAIL_NO_REPLY_REPLY_TO || 'mailto:admin@example.com').trim();
+const WEB_PUSH_ENABLED = Boolean(WEB_PUSH_PUBLIC_KEY && WEB_PUSH_PRIVATE_KEY && WEB_PUSH_SUBJECT);
+
+if (WEB_PUSH_ENABLED) {
+    webpush.setVapidDetails(WEB_PUSH_SUBJECT, WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY);
+}
 
 export type WorkflowNotificationEvent =
     | 'incident_submitted'
@@ -124,6 +134,24 @@ function notificationBody(event: WorkflowNotificationEvent, payload: WorkflowNot
     }
 }
 
+function notificationUrl(event: WorkflowNotificationEvent, payload: WorkflowNotificationPayloadMap[typeof event]): string | null {
+    switch (event) {
+        case 'investigation_created':
+        case 'investigation_submitted':
+            return `/incidents/investigations/${(payload as WorkflowNotificationPayloadMap['investigation_created'] | WorkflowNotificationPayloadMap['investigation_submitted']).investigationId}`;
+        case 'corrective_action_created':
+        case 'corrective_action_closed':
+            return `/incidents/corrective-actions/${(payload as WorkflowNotificationPayloadMap['corrective_action_created'] | WorkflowNotificationPayloadMap['corrective_action_closed']).actionId}`;
+        case 'shared_access_invited':
+            return (payload as WorkflowNotificationPayloadMap['shared_access_invited']).accessUrl;
+        case 'incident_submitted':
+        case 'incident_reviewed':
+        case 'incident_closed':
+        case 'incident_commented':
+            return `/incidents/view/${(payload as { incidentId: string }).incidentId}`;
+    }
+}
+
 export async function createWorkflowNotification<T extends WorkflowNotificationEvent>(
     event: T,
     payload: WorkflowNotificationPayloadMap[T],
@@ -136,7 +164,7 @@ export async function createWorkflowNotification<T extends WorkflowNotificationE
         actor,
         title: notificationTitle(event, payload),
         body: notificationBody(event, payload),
-        url: null,
+        url: notificationUrl(event, payload),
         metadata: payload as Record<string, unknown>,
     });
 }
@@ -165,6 +193,53 @@ async function createHistoryEntries(input: CreateNotificationsInput): Promise<vo
 
 export async function createInAppNotifications(input: CreateNotificationsInput): Promise<void> {
     await createHistoryEntries(input);
+    await sendPushNotifications(input);
+}
+
+async function sendPushNotifications(input: CreateNotificationsInput): Promise<void> {
+    if (!WEB_PUSH_ENABLED) return;
+
+    const recipientUserIds = toUniqueUserIds(input.recipientUserIds);
+    if (!recipientUserIds.length) return;
+
+    const subscriptions = await db.query.userPushSubscriptions.findMany({
+        where: inArray(userPushSubscriptions.userId, recipientUserIds),
+    });
+
+    if (!subscriptions.length) return;
+
+    const payload = JSON.stringify({
+        title: input.title,
+        body: input.body,
+        url: input.url || '/notifications',
+        event: input.event,
+    });
+
+    await Promise.allSettled(subscriptions.map(async (subscription) => {
+        try {
+            await webpush.sendNotification({
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: subscription.p256dh,
+                    auth: subscription.auth,
+                },
+            }, payload, { TTL: 60 * 60, urgency: 'normal' });
+        } catch (error) {
+            const statusCode = typeof error === 'object' && error && 'statusCode' in error
+                ? Number((error as { statusCode?: number }).statusCode)
+                : 0;
+
+            if (statusCode === 404 || statusCode === 410) {
+                await db.delete(userPushSubscriptions).where(eq(userPushSubscriptions.id, subscription.id));
+            } else {
+                console.error('Push notification failed:', error);
+            }
+        }
+    }));
+}
+
+export function getWebPushPublicKey(): string | null {
+    return WEB_PUSH_ENABLED ? WEB_PUSH_PUBLIC_KEY : null;
 }
 
 export async function getNotificationSummary(userId: number) {
