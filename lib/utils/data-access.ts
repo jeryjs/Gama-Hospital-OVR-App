@@ -27,6 +27,7 @@ import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
 import { NotFoundError, AuthorizationError } from '@/lib/api/middleware';
 import { isRejectedStatus } from './status';
+import { getDepartmentUnitLabelMap } from './users';
 
 /**
  * User context for access control
@@ -183,13 +184,18 @@ export async function getUsersByIds(userIds: number[]): Promise<Map<number, {
             firstName: users.firstName,
             lastName: users.lastName,
             email: users.email,
-            department: users.department,
+            departmentId: users.departmentId,
             profilePicture: users.profilePicture,
         })
         .from(users)
         .where(inArray(users.id, userIds));
 
-    return new Map(fetchedUsers.map(u => [u.id, u]));
+    const labelMap = await getDepartmentUnitLabelMap(fetchedUsers);
+
+    return new Map(fetchedUsers.map(u => [u.id, {
+        ...u,
+        department: u.departmentId ? labelMap.get(u.departmentId) ?? null : null,
+    }]));
 }
 
 /**

@@ -27,7 +27,8 @@ export const userPublicSchema = userSelectSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
-  department: true,
+  departmentId: true,
+  unitId: true,
 });
 
 export const userMinimalSchema = userSelectSchema.pick({
@@ -42,7 +43,8 @@ export const userSearchResultSchema = userSelectSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
-  department: true,
+  departmentId: true,
+  unitId: true,
   position: true,
   profilePicture: true,
   roles: true,
@@ -180,7 +182,7 @@ export const incidentRelations = {
       firstName: true,
       lastName: true,
       email: true,
-      department: true,
+      departmentId: true,
     },
   },
   location: {
@@ -237,7 +239,7 @@ export const investigatorSchema = userSelectSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
-  department: true,
+  departmentId: true,
   profilePicture: true,
 });
 
@@ -734,8 +736,8 @@ export const userListQuerySchema = z.object({
 
 export const userUpdateSchema = userInsertSchema.pick({
   roles: true,
-  department: true,
-  unit: true,
+  departmentId: true,
+  unitId: true,
   position: true,
   isActive: true,
   employeeId: true,
@@ -746,8 +748,8 @@ export const userCreateSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(100),
   lastName: z.string().trim().min(1, 'Last name is required').max(100),
   roles: z.array(z.string().min(1)).min(1, 'At least one role is required').default(['employee']),
-  department: z.string().trim().max(100).optional().or(z.literal('')),
-  unit: z.string().trim().max(100).optional().or(z.literal('')),
+  departmentId: z.number().int().positive().optional().nullable(),
+  unitId: z.number().int().positive().optional().nullable(),
   position: z.string().trim().max(100).optional().or(z.literal('')),
   employeeId: z.string().trim().max(50).optional().or(z.literal('')),
   isActive: z.boolean().default(true),

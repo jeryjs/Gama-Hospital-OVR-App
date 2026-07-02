@@ -1,8 +1,9 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { departments, users } from '@/db/schema';
 import { handleApiError, ValidationError } from '@/lib/api/middleware';
 import { canEditField, getDisplayName, normalizeEmployeeId } from '@/lib/utils/auth/staff-id';
-import { sql } from 'drizzle-orm';
+import { getDepartmentUnitLabels } from '@/lib/utils/users';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -43,6 +44,19 @@ export async function POST(request: NextRequest) {
         }
 
         const hasPassword = Boolean(user.passwordHash);
+        const labels = await getDepartmentUnitLabels(user.departmentId, user.unitId);
+        const departmentOptions = await db.query.departments.findMany({
+            where: and(eq(departments.isActive, true), isNull(departments.parentDepartmentId)),
+            orderBy: [asc(departments.name)],
+            columns: { id: true, name: true },
+            with: {
+                units: {
+                    where: eq(departments.isActive, true),
+                    orderBy: [asc(departments.name)],
+                    columns: { id: true, name: true, parentDepartmentId: true },
+                },
+            },
+        });
 
         return NextResponse.json({
             employeeId: user.employeeId,
@@ -52,8 +66,10 @@ export async function POST(request: NextRequest) {
                 name: getDisplayName(user.firstName, user.lastName),
                 firstName: user.firstName,
                 lastName: user.lastName,
-                department: user.department || '',
-                unit: user.unit || '',
+                department: labels.department || '',
+                departmentId: user.departmentId,
+                unit: labels.unit || '',
+                unitId: user.unitId,
                 position: user.position || '',
                 email: user.email || '',
                 emailVerified: Boolean(user.emailVerifiedAt),
@@ -61,10 +77,17 @@ export async function POST(request: NextRequest) {
             editable: {
                 firstName: canEditField(user.firstName),
                 lastName: canEditField(user.lastName),
-                department: canEditField(user.department),
-                unit: canEditField(user.unit),
+                department: !user.departmentId,
+                unit: !user.unitId,
                 position: canEditField(user.position),
                 email: !user.emailVerifiedAt,
+            },
+            options: {
+                departments: departmentOptions.map((department) => ({
+                    id: department.id,
+                    name: department.name,
+                    units: department.units || [],
+                })),
             },
         });
     } catch (error) {

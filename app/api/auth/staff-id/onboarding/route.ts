@@ -1,8 +1,8 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { departments, users } from '@/db/schema';
 import { handleApiError, ValidationError } from '@/lib/api/middleware';
 import { isBlankText, normalizeEmployeeId } from '@/lib/utils/auth/staff-id';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -12,8 +12,8 @@ const onboardingSchema = z.object({
     password: z.string().min(8).max(128),
     firstName: z.string().trim().max(100).optional(),
     lastName: z.string().trim().max(100).optional(),
-    department: z.string().trim().max(100).optional(),
-    unit: z.string().trim().max(100).optional(),
+    departmentId: z.number().int().positive().optional().nullable(),
+    unitId: z.number().int().positive().optional().nullable(),
     position: z.string().trim().max(100).optional(),
 });
 
@@ -30,6 +30,16 @@ function enforceLockedField(
     const incoming = incomingValue?.trim() || '';
 
     if (incoming !== current) {
+        throw new ValidationError(`${fieldLabel} cannot be changed because it is already set`);
+    }
+}
+
+function enforceLockedIdField(fieldLabel: string, currentValue: number | null | undefined, incomingValue: number | null | undefined): void {
+    if (!currentValue) {
+        return;
+    }
+
+    if (incomingValue !== currentValue) {
         throw new ValidationError(`${fieldLabel} cannot be changed because it is already set`);
     }
 }
@@ -69,8 +79,8 @@ export async function POST(request: NextRequest) {
 
         enforceLockedField('First name', user.firstName, parsed.data.firstName);
         enforceLockedField('Last name', user.lastName, parsed.data.lastName);
-        enforceLockedField('Department', user.department, parsed.data.department);
-        enforceLockedField('Unit', user.unit, parsed.data.unit);
+        enforceLockedIdField('Department', user.departmentId, parsed.data.departmentId);
+        enforceLockedIdField('Unit', user.unitId, parsed.data.unitId);
         enforceLockedField('Position', user.position, parsed.data.position);
 
         const nextFirstName = isBlankText(user.firstName)
@@ -81,13 +91,34 @@ export async function POST(request: NextRequest) {
             ? parsed.data.lastName?.trim() || ''
             : user.lastName;
 
-        const nextDepartment = isBlankText(user.department)
-            ? parsed.data.department?.trim() || null
-            : user.department;
+        const nextDepartmentId = user.departmentId || parsed.data.departmentId || null;
+        const nextUnitId = user.unitId || parsed.data.unitId || null;
 
-        const nextUnit = isBlankText(user.unit)
-            ? parsed.data.unit?.trim() || ''
-            : user.unit;
+        if (nextDepartmentId) {
+            const department = await db.query.departments.findFirst({
+                where: and(eq(departments.id, nextDepartmentId), isNull(departments.parentDepartmentId), eq(departments.isActive, true)),
+                columns: { id: true },
+            });
+
+            if (!department) {
+                throw new ValidationError('Invalid department selected');
+            }
+        }
+
+        if (nextUnitId) {
+            const unit = await db.query.departments.findFirst({
+                where: and(
+                    eq(departments.id, nextUnitId),
+                    isNotNull(departments.parentDepartmentId),
+                    eq(departments.isActive, true)
+                ),
+                columns: { id: true, parentDepartmentId: true },
+            });
+
+            if (!unit || (nextDepartmentId && unit.parentDepartmentId !== nextDepartmentId)) {
+                throw new ValidationError('Invalid unit selected for department');
+            }
+        }
 
         const nextPosition = isBlankText(user.position)
             ? parsed.data.position?.trim() || null
@@ -100,8 +131,8 @@ export async function POST(request: NextRequest) {
             .set({
                 firstName: nextFirstName,
                 lastName: nextLastName,
-                department: nextDepartment,
-                unit: nextUnit,
+                departmentId: nextDepartmentId,
+                unitId: nextUnitId,
                 position: nextPosition,
                 passwordHash,
                 updatedAt: new Date(),

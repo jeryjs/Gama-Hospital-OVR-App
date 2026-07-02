@@ -11,7 +11,9 @@ declare module 'next-auth' {
     roles: AppRole[];
     employeeId?: string | null;
     department?: string | null;
+    departmentId?: number | null;
     unit?: string | null;
+    unitId?: number | null;
     position?: string | null;
     mailScopeGranted?: boolean;
     tokenError?: string;
@@ -28,6 +30,7 @@ declare module 'next-auth/jwt' {
     refreshToken?: string;
     accessTokenExpiresAt?: number;
     authProvider?: string;
+    profileRefreshedAt?: number;
     mailScopeGranted?: boolean;
     tokenError?: string;
   }

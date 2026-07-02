@@ -8,6 +8,7 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
+import { getDepartmentUnitLabelMap } from '@/lib/utils/users';
 import { and, eq, ilike, or, sql, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -46,7 +47,6 @@ export async function GET(request: NextRequest) {
                     ilike(users.email, searchTerm),
                     ilike(users.employeeId, searchTerm),
                     ilike(users.position, searchTerm),
-                    ilike(users.department, searchTerm),
                     // Also search full name (firstName + lastName)
                     sql`CONCAT(${users.firstName}, ' ', ${users.lastName}) ILIKE ${searchTerm}`
                 )!
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
                 firstName: users.firstName,
                 lastName: users.lastName,
                 email: users.email,
-                department: users.department,
+                departmentId: users.departmentId,
                 position: users.position,
                 profilePicture: users.profilePicture,
                 roles: users.roles,
@@ -81,8 +81,14 @@ export async function GET(request: NextRequest) {
             .limit(params.limit)
             .orderBy(users.firstName, users.lastName);
 
+        const labelMap = await getDepartmentUnitLabelMap(results);
+        const data = results.map((user) => ({
+            ...user,
+            department: user.departmentId ? labelMap.get(user.departmentId) ?? null : null,
+        }));
+
         // Return with cache headers for 5 minutes
-        return NextResponse.json(results, {
+        return NextResponse.json(data, {
             headers: {
                 'Cache-Control': 'private, max-age=300, stale-while-revalidate=60',
             },

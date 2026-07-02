@@ -65,8 +65,8 @@ export const users = pgTable('users', {
   // Multi-role support - roles are DB-managed and can be assigned independently
   roles: text('roles').array().notNull().default(sql`ARRAY['employee']::text[]`),
 
-  department: varchar('department', { length: 100 }),
-  unit: varchar('unit', { length: 100 }).notNull().default(''),
+  departmentId: integer('department_id'),
+  unitId: integer('unit_id'),
   position: varchar('position', { length: 100 }),
   isActive: boolean('is_active').notNull().default(true),
   profilePicture: text('profile_picture'),
@@ -464,6 +464,16 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   emailOtps: many(userEmailOtps),
   userAdminActions: many(userAdminAuditLogs, { relationName: 'user_admin_actor' }),
   userAdminChanges: many(userAdminAuditLogs, { relationName: 'user_admin_target' }),
+  department: one(departments, {
+    fields: [users.departmentId],
+    references: [departments.id],
+    relationName: 'user_department',
+  }),
+  unit: one(departments, {
+    fields: [users.unitId],
+    references: [departments.id],
+    relationName: 'user_unit',
+  }),
   headedDepartment: one(departments, {
     fields: [users.id],
     references: [departments.headOfDepartment],
@@ -490,6 +500,12 @@ export const departmentsRelations = relations(departments, ({ many, one }) => ({
   headOfDepartment: one(users, {
     fields: [departments.headOfDepartment],
     references: [users.id],
+  }),
+  departmentUsers: many(users, {
+    relationName: 'user_department',
+  }),
+  unitUsers: many(users, {
+    relationName: 'user_unit',
   }),
 }));
 

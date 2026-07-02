@@ -9,6 +9,7 @@ import {
 } from '@/db/schema';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AuthorizationError, handleApiError, requireAuth } from '@/lib/api/middleware';
+import { getDepartmentUnitLabelMap } from '@/lib/utils/users';
 import { and, eq, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -145,13 +146,15 @@ export async function GET(request: NextRequest) {
                 firstName: users.firstName,
                 lastName: users.lastName,
                 email: users.email,
-                department: users.department,
+                departmentId: users.departmentId,
                 position: users.position,
                 profilePicture: users.profilePicture,
                 roles: users.roles,
             })
             .from(users)
             .where(and(inArray(users.id, recommendedIds), eq(users.isActive, true)));
+
+        const labelMap = await getDepartmentUnitLabelMap(foundUsers);
 
         const reasonRank: Record<RecommendationReason, number> = {
             unit_head: 0,
@@ -164,6 +167,7 @@ export async function GET(request: NextRequest) {
         const orderedUsers = foundUsers
             .map((user) => ({
                 ...user,
+                department: user.departmentId ? labelMap.get(user.departmentId) ?? null : null,
                 recommendationReason: recommendations.get(user.id)!,
             }))
             .sort((a, b) => {

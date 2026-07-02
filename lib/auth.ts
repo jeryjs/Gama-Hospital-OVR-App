@@ -1,12 +1,13 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { departments, users } from '@/db/schema';
+import { eq, isNull, sql } from 'drizzle-orm';
 import { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcrypt';
 import { APP_ROLES, AppRole } from './constants';
+import { getDepartmentUnitLabels } from './utils/users';
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN?.split(',') || ['gamahospital.com'])
   .map((d) => d.trim().toLowerCase())
@@ -17,6 +18,7 @@ const MAIL_SCOPE = 'openid profile email User.Read offline_access';
 const AVATAR_ROUTE = '/api/me/avatar';
 const AUTH_PROVIDER_AZURE = 'azure-ad';
 const AUTH_PROVIDER_CREDENTIALS = 'credentials';
+const PROFILE_REFRESH_INTERVAL_MS = 60_000;
 // const IS_DEV = process.env.NODE_ENV === 'development';
 
 function normalizeEmail(email: string | null | undefined): string | null {
@@ -78,6 +80,59 @@ async function refreshAzureAccessToken(token: JWT): Promise<JWT> {
   };
 }
 
+async function findDepartmentIdByName(name: string | null | undefined): Promise<number | null> {
+  const normalized = name?.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const department = await db.query.departments.findFirst({
+    where: sql`LOWER(${departments.name}) = ${normalized} AND ${departments.parentDepartmentId} IS NULL`,
+    columns: { id: true },
+  });
+
+  return department?.id ?? null;
+}
+
+async function refreshTokenProfile(token: JWT): Promise<JWT> {
+  if (!token.id) return token;
+
+  const lastRefresh = typeof token.profileRefreshedAt === 'number' ? token.profileRefreshedAt : 0;
+  if (Date.now() - lastRefresh < PROFILE_REFRESH_INTERVAL_MS) {
+    return token;
+  }
+
+  const userId = Number(token.id);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return token;
+  }
+
+  const dbUser = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!dbUser || !dbUser.isActive) {
+    return {
+      ...token,
+      roles: [],
+      tokenError: 'UserNotApproved',
+      profileRefreshedAt: Date.now(),
+    };
+  }
+
+  const labels = await getDepartmentUnitLabels(dbUser.departmentId, dbUser.unitId);
+
+  return {
+    ...token,
+    roles: dbUser.roles,
+    employeeId: dbUser.employeeId,
+    department: labels.department,
+    departmentId: dbUser.departmentId,
+    unit: labels.unit,
+    unitId: dbUser.unitId,
+    position: dbUser.position,
+    image: AVATAR_ROUTE,
+    picture: AVATAR_ROUTE,
+    tokenError: undefined,
+    profileRefreshedAt: Date.now(),
+  };
+}
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
@@ -120,14 +175,18 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        const labels = await getDepartmentUnitLabels(dbUser.departmentId, dbUser.unitId);
+
         return {
           id: String(dbUser.id),
           name: `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() || dbUser.employeeId || dbUser.email,
           email: dbUser.email,
           roles: dbUser.roles,
           employeeId: dbUser.employeeId,
-          department: dbUser.department,
-          unit: dbUser.unit,
+          department: labels.department,
+          departmentId: dbUser.departmentId,
+          unit: labels.unit,
+          unitId: dbUser.unitId,
           position: dbUser.position,
           image: AVATAR_ROUTE,
         } as any;
@@ -273,13 +332,15 @@ export const authOptions: NextAuthOptions = {
           const firstName = (user as any).givenName || nameParts[0] || 'New';
           const lastName = (user as any).surname || nameParts.slice(1).join(' ') || 'User';
 
+          const departmentId = await findDepartmentIdByName((user as any).department);
+
           await db.insert(users).values({
             email: normalizedEmail,
             azureId: account.providerAccountId,
             firstName,
             lastName,
             roles: [APP_ROLES.EMPLOYEE],
-            department: (user as any).department,
+            departmentId,
             position: (user as any).jobTitle,
             employeeId: (user as any).employeeId,
             profilePicture: user.image || undefined,
@@ -345,7 +406,9 @@ export const authOptions: NextAuthOptions = {
           token.roles = (user as any).roles || [APP_ROLES.EMPLOYEE];
           token.employeeId = (user as any).employeeId || null;
           token.department = (user as any).department || null;
+          token.departmentId = (user as any).departmentId || null;
           token.unit = (user as any).unit || null;
+          token.unitId = (user as any).unitId || null;
           token.position = (user as any).position || null;
           token.image = AVATAR_ROUTE;
           (token as any).picture = AVATAR_ROUTE;
@@ -385,8 +448,11 @@ export const authOptions: NextAuthOptions = {
         token.id = dbUser.id.toString();
         token.roles = dbUser.roles;
         token.employeeId = dbUser.employeeId;
-        token.department = dbUser.department;
-        token.unit = dbUser.unit;
+        const labels = await getDepartmentUnitLabels(dbUser.departmentId, dbUser.unitId);
+        token.department = labels.department;
+        token.departmentId = dbUser.departmentId;
+        token.unit = labels.unit;
+        token.unitId = dbUser.unitId;
         token.position = dbUser.position;
         token.image = AVATAR_ROUTE;
         (token as any).picture = AVATAR_ROUTE;
@@ -395,36 +461,38 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      if (token.authProvider !== AUTH_PROVIDER_AZURE) {
-        return token;
+      const refreshedProfileToken = await refreshTokenProfile(token);
+
+      if (refreshedProfileToken.authProvider !== AUTH_PROVIDER_AZURE) {
+        return refreshedProfileToken;
       }
 
       // Keep existing token if not yet close to expiry
-      if (typeof token.accessTokenExpiresAt === 'number' && Date.now() < token.accessTokenExpiresAt - 60_000) {
-        return token;
+      if (typeof refreshedProfileToken.accessTokenExpiresAt === 'number' && Date.now() < refreshedProfileToken.accessTokenExpiresAt - 60_000) {
+        return refreshedProfileToken;
       }
 
       // If we don't have refresh token, keep stale token and mark error
-      if (!token.refreshToken) {
+      if (!refreshedProfileToken.refreshToken) {
         return {
-          ...token,
+          ...refreshedProfileToken,
           tokenError: 'MissingRefreshToken',
         };
       }
 
       // Always return a token with the avatar route to prevent UI breakage, even if refresh fails
-      if (token.id) {
-        token.image = AVATAR_ROUTE;
-        (token as any).picture = AVATAR_ROUTE;
+      if (refreshedProfileToken.id) {
+        refreshedProfileToken.image = AVATAR_ROUTE;
+        (refreshedProfileToken as any).picture = AVATAR_ROUTE;
       }
 
       try {
 
-        return await refreshAzureAccessToken(token);
+        return await refreshAzureAccessToken(refreshedProfileToken);
       } catch (error) {
         console.error('Failed to refresh Azure access token:', error);
         return {
-          ...token,
+          ...refreshedProfileToken,
           image: AVATAR_ROUTE,
           picture: AVATAR_ROUTE,
           tokenError: 'RefreshAccessTokenError',
@@ -437,7 +505,9 @@ export const authOptions: NextAuthOptions = {
         session.user.roles = (token.roles as AppRole[]) || [APP_ROLES.EMPLOYEE];
         session.user.employeeId = token.employeeId as string | null;
         session.user.department = token.department as string | null;
+        session.user.departmentId = token.departmentId as number | null;
         session.user.unit = token.unit as string | null;
+        session.user.unitId = token.unitId as number | null;
         session.user.position = token.position as string | null;
         session.user.image = token.image as string | undefined;
         session.user.mailScopeGranted = token.mailScopeGranted === true;

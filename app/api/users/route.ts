@@ -1,9 +1,10 @@
 import { db } from '@/db';
-import { userAdminAuditLogs, users } from '@/db/schema';
+import { departments, userAdminAuditLogs, users } from '@/db/schema';
 import { handleApiError, requireAuth } from '@/lib/api/middleware';
 import { userCreateSchema, userUpdateSchema } from '@/lib/api/schemas';
 import { APP_ROLES } from '@/lib/constants';
 import { and, asc, count, desc, eq, ilike, or, SQL, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 
@@ -30,6 +31,13 @@ function normalizeOptionalText(value: unknown): string | null | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeOptionalId(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function validateRoles(roles: unknown): string[] | null {
@@ -99,7 +107,12 @@ export async function GET(request: NextRequest) {
           ilike(users.firstName, `%${search}%`),
           ilike(users.lastName, `%${search}%`),
           ilike(users.employeeId, `%${search}%`),
-          ilike(users.department, `%${search}%`)
+          ilike(users.position, `%${search}%`),
+          sql`EXISTS (
+            SELECT 1 FROM departments d
+            WHERE d.id IN (${users.departmentId}, ${users.unitId})
+              AND d.name ILIKE ${`%${search}%`}
+          )`
         )!
       );
     }
@@ -132,14 +145,17 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * pageSize;
 
     // Build ORDER BY clause - map string to actual column
+    const departmentAlias = alias(departments, 'user_department');
+    const unitAlias = alias(departments, 'user_unit');
+
     const columnMap = {
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       firstName: users.firstName,
       lastName: users.lastName,
       email: users.email,
-      department: users.department,
-      unit: users.unit,
+      department: departmentAlias.name,
+      unit: unitAlias.name,
     };
     const orderByColumn = columnMap[sortBy as keyof typeof columnMap] || users.createdAt;
     const orderByClause = sortOrder === 'asc' ? asc(orderByColumn) : desc(orderByColumn);
@@ -153,14 +169,18 @@ export async function GET(request: NextRequest) {
         firstName: users.firstName,
         lastName: users.lastName,
         roles: users.roles,
-        department: users.department,
-        unit: users.unit,
+        departmentId: users.departmentId,
+        department: departmentAlias.name,
+        unitId: users.unitId,
+        unit: unitAlias.name,
         position: users.position,
         isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
       .from(users)
+      .leftJoin(departmentAlias, eq(users.departmentId, departmentAlias.id))
+      .leftJoin(unitAlias, eq(users.unitId, unitAlias.id))
       .where(whereClause)
       .orderBy(orderByClause)
       .limit(pageSize)
@@ -210,7 +230,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate allowed fields
-    const allowedFields = ['department', 'unit', 'position', 'isActive', 'employeeId', 'roles'];
+    const allowedFields = ['departmentId', 'unitId', 'position', 'isActive', 'employeeId', 'roles'];
     const filteredUpdates: any = {};
 
     for (const key of allowedFields) {
@@ -299,10 +319,10 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    filteredUpdates.department = normalizeOptionalText(filteredUpdates.department);
-    filteredUpdates.unit = normalizeOptionalText(filteredUpdates.unit) ?? '';
-    filteredUpdates.position = normalizeOptionalText(filteredUpdates.position);
-    filteredUpdates.employeeId = normalizeOptionalText(filteredUpdates.employeeId);
+    if ('departmentId' in filteredUpdates) filteredUpdates.departmentId = normalizeOptionalId(filteredUpdates.departmentId);
+    if ('unitId' in filteredUpdates) filteredUpdates.unitId = normalizeOptionalId(filteredUpdates.unitId);
+    if ('position' in filteredUpdates) filteredUpdates.position = normalizeOptionalText(filteredUpdates.position);
+    if ('employeeId' in filteredUpdates) filteredUpdates.employeeId = normalizeOptionalText(filteredUpdates.employeeId);
 
     filteredUpdates.updatedAt = new Date();
 
@@ -316,7 +336,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const trackedKeys = ['roles', 'department', 'unit', 'position', 'isActive', 'employeeId'] as const;
+    const trackedKeys = ['roles', 'departmentId', 'unitId', 'position', 'isActive', 'employeeId'] as const;
     const changes: Record<string, { from: unknown; to: unknown }> = {};
 
     for (const key of trackedKeys) {
@@ -436,8 +456,8 @@ export async function POST(request: NextRequest) {
         firstName: parsed.data.firstName.trim(),
         lastName: parsed.data.lastName.trim(),
         roles,
-        department: normalizeOptionalText(parsed.data.department),
-        unit: normalizeOptionalText(parsed.data.unit) ?? '',
+        departmentId: normalizeOptionalId(parsed.data.departmentId) ?? null,
+        unitId: normalizeOptionalId(parsed.data.unitId) ?? null,
         position: normalizeOptionalText(parsed.data.position),
         employeeId: normalizeOptionalText(parsed.data.employeeId),
         isActive: parsed.data.isActive,
@@ -452,8 +472,8 @@ export async function POST(request: NextRequest) {
       changes: JSON.stringify({
         email: createdUser.email,
         roles: createdUser.roles,
-        department: createdUser.department,
-        unit: createdUser.unit,
+        departmentId: createdUser.departmentId,
+        unitId: createdUser.unitId,
         position: createdUser.position,
         employeeId: createdUser.employeeId,
         isActive: createdUser.isActive,
