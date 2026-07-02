@@ -1,16 +1,13 @@
 'use client';
 
-import { fadeIn } from '@/lib/theme';
 import { Microsoft as MicrosoftIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
   Button,
-  Chip,
+  CircularProgress,
   Container,
   Divider,
-  Grid,
-  Link,
   Paper,
   Stack,
   TextField,
@@ -21,7 +18,15 @@ import {
 import { motion } from 'framer-motion';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import {
+  GuidedOnboardingCard,
+  type DepartmentOption,
+  type OnboardingEditableState,
+  type OnboardingFormState,
+} from './_components/GuidedOnboardingCard';
+import { PasswordSignInCard } from './_components/PasswordSignInCard';
 
 type LoginStep = 'staff_id' | 'password' | 'onboarding';
 
@@ -34,20 +39,27 @@ interface LookupResponse {
     firstName: string;
     lastName: string;
     department: string;
+    departmentId: number | null;
     unit: string;
+    unitId: number | null;
     position: string;
     email: string;
     emailVerified: boolean;
   };
-  editable: {
-    firstName: boolean;
-    lastName: boolean;
-    department: boolean;
-    unit: boolean;
-    position: boolean;
-    email: boolean;
+  editable: OnboardingEditableState;
+  options: {
+    departments: DepartmentOption[];
   };
 }
+
+const EMPTY_ONBOARDING_FORM: OnboardingFormState = {
+  firstName: '',
+  lastName: '',
+  departmentId: '',
+  unitId: '',
+  position: '',
+  email: '',
+};
 
 function sanitizeCallbackUrl(rawUrl: string | null): string {
   const candidate = rawUrl || '/dashboard';
@@ -60,6 +72,7 @@ function sanitizeCallbackUrl(rawUrl: string | null): string {
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   const [step, setStep] = useState<LoginStep>('staff_id');
   const [lookupResult, setLookupResult] = useState<LookupResponse | null>(null);
   const [staffId, setStaffId] = useState('');
@@ -72,79 +85,61 @@ export default function LoginPage() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    department: '',
-    unit: '',
-    position: '',
-    email: '',
-  });
+  const [onboardingForm, setOnboardingForm] = useState<OnboardingFormState>(EMPTY_ONBOARDING_FORM);
+
+  const staffIdInputRef = useRef<HTMLInputElement>(null);
 
   const [error, setError] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
-
     const params = new URLSearchParams(window.location.search);
     const errorParam = params.get('error');
-
-    if (errorParam === 'AccessDenied') {
-      return 'Access denied. Please contact an administrator if your account was deactivated.';
-    }
-
-    if (errorParam === 'Configuration') {
-      return 'Authentication configuration error. Please contact support.';
-    }
-
-    if (errorParam) {
-      return 'An authentication error occurred. Please try again.';
-    }
-
+    if (errorParam === 'AccessDenied') return 'Access denied. Please contact an administrator if your account was deactivated.';
+    if (errorParam === 'Configuration') return 'Authentication configuration error. Please contact support.';
+    if (errorParam) return 'An authentication error occurred. Please try again.';
     return null;
   });
 
+  const callbackUrl =
+    typeof window === 'undefined'
+      ? '/dashboard'
+      : sanitizeCallbackUrl(new URLSearchParams(window.location.search).get('callbackUrl'));
+
   useEffect(() => {
-    // Redirect if already authenticated
-    if (session) {
-      if (typeof window === 'undefined') return;
-      const callbackUrl = sanitizeCallbackUrl(new URLSearchParams(window.location.search).get('callbackUrl'));
-      router.replace(callbackUrl);
-    }
-  }, [session, router]);
+    if (session) router.replace(callbackUrl);
+  }, [session, router, callbackUrl]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
 
   const handleStaffIdLookup = async () => {
     if (!staffId.trim()) {
       setError('Please enter your Staff ID.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       const response = await fetch('/api/auth/staff-id/lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId: staffId.trim() }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         setError(data?.error || 'Unable to find this Staff ID.');
         return;
       }
-
-      setLookupResult(data);
-      setForm({
-        firstName: data.profile.firstName || '',
-        lastName: data.profile.lastName || '',
-        department: data.profile.department || '',
-        unit: data.profile.unit || '',
-        position: data.profile.position || '',
-        email: data.profile.email || '',
+      const lookupData = data as LookupResponse;
+      setLookupResult(lookupData);
+      setOnboardingForm({
+        firstName: lookupData.profile.firstName || '',
+        lastName: lookupData.profile.lastName || '',
+        departmentId: lookupData.profile.departmentId ?? '',
+        unitId: lookupData.profile.unitId ?? '',
+        position: lookupData.profile.position || '',
+        email: lookupData.profile.email || '',
       });
-      setOtpVerified(Boolean(data.profile.emailVerified));
-      setStep(data.hasPassword ? 'password' : 'onboarding');
+      setOtpVerified(Boolean(lookupData.profile.emailVerified));
+      setStep(lookupData.hasPassword ? 'password' : 'onboarding');
     } catch {
       setError('Failed to check Staff ID. Please try again.');
     } finally {
@@ -157,27 +152,19 @@ export default function LoginPage() {
       setError('Password is required.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
-      const callbackUrl = typeof window === 'undefined'
-        ? '/dashboard'
-        : sanitizeCallbackUrl(new URLSearchParams(window.location.search).get('callbackUrl'));
-
       const result = await signIn('credentials', {
         employeeId: lookupResult.employeeId,
         password,
         redirect: false,
         callbackUrl,
       });
-
       if (result?.error) {
         setError('Invalid Staff ID or password.');
         return;
       }
-
       router.replace(result?.url || callbackUrl);
     } catch {
       setError('Failed to sign in. Please try again.');
@@ -187,94 +174,77 @@ export default function LoginPage() {
   };
 
   const handleSendOtp = async () => {
-    if (!lookupResult?.employeeId || !form.email.trim()) {
-      setError('Please enter your email.');
+    if (!lookupResult?.employeeId || !onboardingForm.email.trim()) {
+      setError('Please enter your email address.');
       return;
     }
-
     setOtpSending(true);
     setError(null);
-
     try {
       const response = await fetch('/api/auth/staff-id/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: lookupResult.employeeId, email: form.email.trim() }),
+        body: JSON.stringify({ employeeId: lookupResult.employeeId, email: onboardingForm.email.trim() }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        setError(data?.error || 'Failed to send OTP.');
+        setError(data?.error || 'Failed to send verification code.');
         return;
       }
-
       setOtpVerified(false);
     } catch {
-      setError('Failed to send OTP. Please try again.');
+      setError('Failed to send verification code. Please try again.');
     } finally {
       setOtpSending(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    if (!lookupResult?.employeeId || !form.email.trim() || otpCode.trim().length !== 6) {
-      setError('Enter the 6-digit OTP code.');
+    if (!lookupResult?.employeeId || !onboardingForm.email.trim() || otpCode.trim().length !== 6) {
+      setError('Enter the 6-digit verification code.');
       return;
     }
-
     setOtpVerifying(true);
     setError(null);
-
     try {
       const response = await fetch('/api/auth/staff-id/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           employeeId: lookupResult.employeeId,
-          email: form.email.trim(),
+          email: onboardingForm.email.trim(),
           code: otpCode.trim(),
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        setError(data?.error || 'OTP verification failed.');
+        setError(data?.error || 'Verification failed. Please try again.');
         return;
       }
-
       setOtpVerified(true);
     } catch {
-      setError('Failed to verify OTP. Please try again.');
+      setError('Failed to verify code. Please try again.');
     } finally {
       setOtpVerifying(false);
     }
   };
 
   const handleCompleteOnboarding = async () => {
-    if (!lookupResult?.employeeId) {
-      return;
-    }
-
+    if (!lookupResult?.employeeId) return;
     if (!otpVerified) {
-      setError('Verify your email OTP before continuing.');
+      setError('Verify your email before continuing.');
       return;
     }
-
     if (!onboardingPassword || onboardingPassword.length < 8) {
       setError('Password must be at least 8 characters.');
       return;
     }
-
     if (onboardingPassword !== confirmPassword) {
-      setError('Password confirmation does not match.');
+      setError('Passwords do not match.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       const response = await fetch('/api/auth/staff-id/onboarding', {
         method: 'POST',
@@ -282,41 +252,32 @@ export default function LoginPage() {
         body: JSON.stringify({
           employeeId: lookupResult.employeeId,
           password: onboardingPassword,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          department: form.department,
-          unit: form.unit,
-          position: form.position,
+          firstName: onboardingForm.firstName,
+          lastName: onboardingForm.lastName,
+          departmentId: onboardingForm.departmentId || null,
+          unitId: onboardingForm.unitId || null,
+          position: onboardingForm.position,
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        setError(data?.error || 'Unable to complete onboarding.');
+        setError(data?.error || 'Unable to complete setup.');
         return;
       }
-
-      const callbackUrl = typeof window === 'undefined'
-        ? '/dashboard'
-        : sanitizeCallbackUrl(new URLSearchParams(window.location.search).get('callbackUrl'));
-
       const signInResult = await signIn('credentials', {
         employeeId: lookupResult.employeeId,
         password: onboardingPassword,
         redirect: false,
         callbackUrl,
       });
-
       if (signInResult?.error) {
-        setError('Onboarding completed, but sign in failed. Please try logging in again.');
+        setError('Setup complete! Please sign in with your new password.');
         setStep('password');
         return;
       }
-
       router.replace(signInResult?.url || callbackUrl);
     } catch {
-      setError('Failed to complete onboarding. Please try again.');
+      setError('Failed to complete setup. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -330,58 +291,26 @@ export default function LoginPage() {
     setConfirmPassword('');
     setOtpCode('');
     setOtpVerified(false);
+    setOtpSending(false);
+    setOtpVerifying(false);
+    setOnboardingForm(EMPTY_ONBOARDING_FORM);
     setError(null);
+    setTimeout(() => staffIdInputRef.current?.focus(), 50);
   };
 
-  // Loading state while checking session
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
+  const isOnboarding = step === 'onboarding';
+
   if (status === 'loading') {
     return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 4, sm: 6 },
-            textAlign: 'center',
-            backdropFilter: 'blur(20px)',
-            background: (theme) => alpha(theme.palette.background.paper, 0.8),
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              color: "text.secondary",
-              mb: 2
-            }}>
-            Checking authentication...
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Stack spacing={2} sx={{ alignItems: 'center' }}>
+          <CircularProgress size={32} thickness={4} />
+          <Typography variant="body2" color="text.secondary">
+            Checking authentication…
           </Typography>
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              border: (theme) => `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-              borderTop: (theme) => `3px solid ${theme.palette.primary.main}`,
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              '@keyframes spin': {
-                to: { transform: 'rotate(360deg)' },
-              },
-            }}
-          />
-        </Paper>
+        </Stack>
       </Box>
     );
   }
@@ -391,53 +320,58 @@ export default function LoginPage() {
       sx={{
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isOnboarding ? 'flex-start' : 'center',
         justifyContent: 'center',
+        pt: isOnboarding ? { xs: 4, md: 8 } : 0,
+        pb: isOnboarding ? 8 : 0,
         background: (theme) =>
-          `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(
-            '#00E599',
-            0.03
-          )} 100%)`,
+          `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha('#00E599', 0.025)} 100%)`,
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
           content: '""',
           position: 'absolute',
-          top: '-50%',
-          right: '-50%',
-          width: '100%',
-          height: '100%',
-          background: `radial-gradient(circle, ${alpha('#00E599', 0.08)} 0%, transparent 70%)`,
-          animation: 'pulse 8s ease-in-out infinite',
+          top: '-40%',
+          right: '-30%',
+          width: '80%',
+          height: '80%',
+          background: `radial-gradient(circle, ${alpha('#00E599', 0.07)} 0%, transparent 70%)`,
+          animation: 'subtlePulse 10s ease-in-out infinite',
+          pointerEvents: 'none',
         },
-        '@keyframes pulse': {
-          '0%, 100%': { opacity: 0.3 },
-          '50%': { opacity: 0.6 },
+        '@keyframes subtlePulse': {
+          '0%, 100%': { opacity: 0.4 },
+          '50%': { opacity: 0.8 },
         },
       }}
     >
-      <Container maxWidth="sm">
-        <motion.div {...{ ...fadeIn, transition: { ...fadeIn.transition, ease: ['easeInOut'] } }}>
+      <Container maxWidth={isOnboarding ? 'md' : 'xs'}>
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
+        >
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 4, sm: 6 },
-              textAlign: 'center',
+              p: { xs: 3, sm: 5 },
               position: 'relative',
               zIndex: 1,
-              backdropFilter: 'blur(20px)',
-              background: (theme) => alpha(theme.palette.background.paper, 0.8),
+              backdropFilter: 'blur(24px)',
+              background: (theme) => alpha(theme.palette.background.paper, 0.88),
               border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: 4,
             }}
           >
             <Stack spacing={4}>
-              {/* Logo/Brand */}
-              <Box>
+              {/* ── Brand header ── */}
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography
-                  variant="h3"
+                  variant={isOnboarding ? 'h5' : 'h4'}
                   gutterBottom
                   sx={{
-                    fontWeight: 700,
+                    fontWeight: 800,
                     background: (theme) =>
                       `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
                     backgroundClip: 'text',
@@ -447,283 +381,126 @@ export default function LoginPage() {
                 >
                   OVR System
                 </Typography>
-                <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
-                  Gama Hospital
-                </Typography>
-                <Typography variant="body2" sx={{
-                  color: "text.secondary"
-                }}>
-                  Occurrence Variance Reporting System
-                </Typography>
+                {!isOnboarding && (
+                  <>
+                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Gama Hospital
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Occurrence Variance Reporting
+                    </Typography>
+                  </>
+                )}
               </Box>
 
-              {/* Error Alert */}
+              {/* ── Error banner ── */}
               {error && (
-                <Alert
-                  severity="error"
-                  onClose={() => setError(null)}
-                  sx={{ textAlign: 'left' }}
-                >
+                <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 2 }}>
                   {error}
                 </Alert>
               )}
 
-              <Stack spacing={2}>
-                <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                  Sign in with your Staff ID
-                </Typography>
-
-                {step === 'staff_id' && (
-                  <>
-                    <TextField
-                      label="Staff ID"
-                      value={staffId}
-                      onChange={(e) => setStaffId(e.target.value)}
-                      fullWidth
-                      autoFocus
-                    />
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={handleStaffIdLookup}
-                      disabled={submitting}
-                      sx={{ py: 1.3, fontWeight: 700 }}
-                    >
-                      {submitting ? 'Checking...' : 'Continue'}
-                    </Button>
-                  </>
-                )}
-
-                {step === 'password' && (
-                  <>
-                    <Alert severity="info">Staff ID: <strong>{lookupResult?.employeeId}</strong></Alert>
-                    <TextField
-                      label="Password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      fullWidth
-                      autoFocus
-                    />
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Button fullWidth variant="outlined" onClick={handleReset}>
-                          Back
-                        </Button>
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Button fullWidth variant="contained" onClick={handlePasswordSignIn} disabled={submitting}>
-                          {submitting ? 'Signing in...' : 'Sign in'}
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </>
-                )}
-
-                {step === 'onboarding' && lookupResult && (
-                  <Stack spacing={2}>
-                    <Alert severity="info">
-                      Complete quick onboarding for Staff ID <strong>{lookupResult.employeeId}</strong>.
-                    </Alert>
-
-                    <Grid container spacing={1.5}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          label="First Name"
-                          value={form.firstName}
-                          onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                          fullWidth
-                          disabled={!lookupResult.editable.firstName}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          label="Last Name"
-                          value={form.lastName}
-                          onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                          fullWidth
-                          disabled={!lookupResult.editable.lastName}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          label="Department"
-                          value={form.department}
-                          onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
-                          fullWidth
-                          disabled={!lookupResult.editable.department}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          label="Unit"
-                          value={form.unit}
-                          onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))}
-                          fullWidth
-                          disabled={!lookupResult.editable.unit}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField
-                          label="Position"
-                          value={form.position}
-                          onChange={(e) => setForm((prev) => ({ ...prev, position: e.target.value }))}
-                          fullWidth
-                          disabled={!lookupResult.editable.position}
-                        />
-                      </Grid>
-                    </Grid>
-
-                    <Divider />
-
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography variant="subtitle2">Email verification</Typography>
-                      {otpVerified ? <Chip label="Verified" color="success" size="small" /> : <Chip label="Pending" color="warning" size="small" />}
-                    </Stack>
-
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 12, md: 8 }}>
-                        <TextField
-                          label="Email"
-                          value={form.email}
-                          onChange={(e) => {
-                            const nextEmail = e.target.value;
-                            setForm((prev) => ({ ...prev, email: nextEmail }));
-                            if (lookupResult.editable.email) {
-                              setOtpVerified(false);
-                            }
-                          }}
-                          fullWidth
-                          disabled={!lookupResult.editable.email || submitting}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 4 }}>
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          onClick={handleSendOtp}
-                          disabled={otpSending || submitting || !lookupResult.editable.email}
-                          sx={{ height: '100%' }}
-                        >
-                          {otpSending ? 'Sending...' : 'Send OTP'}
-                        </Button>
-                      </Grid>
-                    </Grid>
-
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 12, md: 8 }}>
-                        <TextField
-                          label="OTP Code"
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value)}
-                          fullWidth
-                          disabled={otpVerified || submitting}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 4 }}>
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          onClick={handleVerifyOtp}
-                          disabled={otpVerifying || otpVerified || submitting}
-                          sx={{ height: '100%' }}
-                        >
-                          {otpVerifying ? 'Verifying...' : 'Verify OTP'}
-                        </Button>
-                      </Grid>
-                    </Grid>
-
-                    <TextField
-                      label="Create Password"
-                      type="password"
-                      value={onboardingPassword}
-                      onChange={(e) => setOnboardingPassword(e.target.value)}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Confirm Password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      fullWidth
-                    />
-
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Button fullWidth variant="outlined" onClick={handleReset} disabled={submitting}>
-                          Back
-                        </Button>
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Button fullWidth variant="contained" onClick={handleCompleteOnboarding} disabled={submitting || !otpVerified}>
-                          {submitting ? 'Finishing...' : 'Finish & Sign in'}
-                        </Button>
-                      </Grid>
-                    </Grid>
+              {/* ── Step: Staff ID entry ── */}
+              {step === 'staff_id' && (
+                <Stack spacing={2.5}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Sign in with your Staff ID
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Enter the ID assigned by the Quality Department.
+                    </Typography>
                   </Stack>
-                )}
-              </Stack>
 
-              <Divider />
+                  <TextField
+                    label="Staff ID"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleStaffIdLookup()}
+                    fullWidth
+                    autoFocus
+                    inputRef={staffIdInputRef}
+                    disabled={submitting}
+                    placeholder="e.g. EMP-001"
+                  />
 
-              <Box>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                  Microsoft login
-                </Typography>
-                <Tooltip title="Microsoft sign-in is currently disabled. Use Staff ID.">
-                  <span>
-                    <Button
-                      fullWidth
-                      size="large"
-                      variant="contained"
-                      startIcon={<MicrosoftIcon />}
-                      disabled
-                      sx={{ py: 1.5, fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      Sign in with Microsoft
-                    </Button>
-                  </span>
-                </Tooltip>
-              </Box>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    onClick={handleStaffIdLookup}
+                    disabled={submitting || !staffId.trim()}
+                    sx={{ py: 1.5, fontWeight: 700, borderRadius: 2 }}
+                  >
+                    {submitting ? 'Looking up…' : 'Continue'}
+                  </Button>
 
-              {/* Footer Note */}
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "text.secondary",
-                  pt: 2
-                }}>
-                Need help with Staff ID access? Contact Quality Department.
-              </Typography>
-              {step !== 'staff_id' && (
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  <Link component="button" type="button" underline="hover" onClick={handleReset}>
-                    Use a different Staff ID
-                  </Link>
-                </Typography>
+                  <Divider>
+                    <Typography variant="caption" color="text.disabled">
+                      OR
+                    </Typography>
+                  </Divider>
+
+                  <Tooltip title="Microsoft sign-in is currently disabled. Use your Staff ID above." placement="top">
+                    <span>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<MicrosoftIcon />}
+                        disabled
+                        sx={{ py: 1.25, borderColor: 'divider', borderRadius: 2, color: 'text.disabled' }}
+                      >
+                        Continue with Microsoft
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  <Typography variant="caption" color="text.disabled" sx={{ textAlign: 'center' }}>
+                    Don't have a Staff ID? Contact the Quality Department.
+                  </Typography>
+                </Stack>
+              )}
+
+              {/* ── Step: Password ── */}
+              {step === 'password' && lookupResult && (
+                <PasswordSignInCard
+                  employeeId={lookupResult.employeeId || staffId}
+                  displayName={lookupResult.profile.name}
+                  submitting={submitting}
+                  password={password}
+                  onPasswordChange={setPassword}
+                  onSignIn={handlePasswordSignIn}
+                  onBack={handleReset}
+                />
+              )}
+
+              {/* ── Step: Onboarding ── */}
+              {step === 'onboarding' && lookupResult && (
+                <GuidedOnboardingCard
+                  employeeId={lookupResult.employeeId || staffId}
+                  form={onboardingForm}
+                  editable={lookupResult.editable}
+                  departments={lookupResult.options.departments}
+                  otpCode={otpCode}
+                  otpVerified={otpVerified}
+                  otpSending={otpSending}
+                  otpVerifying={otpVerifying}
+                  submitting={submitting}
+                  password={onboardingPassword}
+                  confirmPassword={confirmPassword}
+                  onFormChange={setOnboardingForm}
+                  onOtpCodeChange={setOtpCode}
+                  onPasswordChange={setOnboardingPassword}
+                  onConfirmPasswordChange={setConfirmPassword}
+                  onSendOtp={handleSendOtp}
+                  onVerifyOtp={handleVerifyOtp}
+                  onBack={handleReset}
+                  onComplete={handleCompleteOnboarding}
+                />
               )}
             </Stack>
           </Paper>
         </motion.div>
-
-        {/* Decorative elements */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: '10%',
-            left: '10%',
-            width: 100,
-            height: 100,
-            borderRadius: '50%',
-            background: (theme) => alpha(theme.palette.primary.main, 0.1),
-            filter: 'blur(40px)',
-            animation: 'float 6s ease-in-out infinite',
-            '@keyframes float': {
-              '0%, 100%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(-20px)' },
-            },
-          }}
-        />
       </Container>
     </Box>
   );

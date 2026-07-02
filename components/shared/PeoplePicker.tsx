@@ -102,7 +102,7 @@ function getFullName(user: UserSearchResult): string {
 }
 
 function getUserSubtitle(user: UserSearchResult): string {
-    return [user.position, user.department].filter(Boolean).join(' • ');
+    return [user.position].filter(Boolean).join(' • ');
 }
 
 /**
@@ -418,11 +418,11 @@ function UserCard({
                 }}>
                     {fullName}
                 </Typography>
-                {user.department && (
+                {user.position && (
                     <Typography variant="caption" noWrap sx={{
                         color: "text.secondary"
                     }}>
-                        {user.department}
+                        {user.position}
                     </Typography>
                 )}
             </Box>
@@ -674,100 +674,100 @@ export function PeoplePicker({
                 </Box>
             ) : (
                 <Autocomplete
-                multiple={multiple}
-                value={value}
-                onChange={handleChange}
-                inputValue={inputValue}
-                onInputChange={handleInputChange}
-                options={filteredOptions}
-                loading={isLoading}
-                disabled={disabled}
-                fullWidth={fullWidth}
-                size={size}
-                autoHighlight
-                clearOnBlur={!multiple}
-                handleHomeEndKeys
-                isOptionEqualToValue={isOptionEqualToValue}
-                getOptionLabel={getOptionLabel}
-                noOptionsText={noOptionsText}
-                loadingText={<LoadingSkeleton />}
-                filterOptions={(x) => x} // Disable client-side filtering (server handles it)
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        label={label}
-                        placeholder={
-                            multiple && Array.isArray(value) && value.length > 0 ? '' : placeholder
-                        }
-                        required={required}
-                        error={error}
-                        helperText={helperText}
-                        autoFocus={autoFocus}
-                        slotProps={{
-                            ...params.slotProps,
-
-                            input: {
-                                ...params.slotProps.input,
-                                startAdornment: (
-                                    <>
-                                        {!multiple && !value && (
-                                            <InputAdornment position="start">
-                                                <SearchIcon color="action" fontSize="small" />
-                                            </InputAdornment>
-                                        )}
-                                        {params.slotProps.input.startAdornment}
-                                    </>
-                                ),
-                                endAdornment: (
-                                    <>
-                                        {isLoading ? (
-                                            <CircularProgress color="inherit" size={20} sx={{ mr: 1 }} />
-                                        ) : null}
-                                        {params.slotProps.input.endAdornment}
-                                    </>
-                                ),
+                    multiple={multiple}
+                    value={value}
+                    onChange={handleChange}
+                    inputValue={inputValue}
+                    onInputChange={handleInputChange}
+                    options={filteredOptions}
+                    loading={isLoading}
+                    disabled={disabled}
+                    fullWidth={fullWidth}
+                    size={size}
+                    autoHighlight
+                    clearOnBlur={!multiple}
+                    handleHomeEndKeys
+                    isOptionEqualToValue={isOptionEqualToValue}
+                    getOptionLabel={getOptionLabel}
+                    noOptionsText={noOptionsText}
+                    loadingText={<LoadingSkeleton />}
+                    filterOptions={(x) => x} // Disable client-side filtering (server handles it)
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label={label}
+                            placeholder={
+                                multiple && Array.isArray(value) && value.length > 0 ? '' : placeholder
                             }
-                        }}
-                    />
-                )}
-                renderOption={(props, option) => (
-                    <OptionComponent key={option.id} user={option} props={props} />
-                )}
-                renderValue={(tagValue, _) => {
-                    const tagArray = Array.isArray(tagValue) ? tagValue : tagValue ? [tagValue] : [];
-                    return tagArray.map((option, index) => {
-                        return (
-                            <TagComponent
-                                key={option.id}
-                                user={option}
-                                onDelete={() => {
-                                    const newValue = Array.isArray(value)
-                                        ? value.filter((v) => v.id !== option.id)
-                                        : null;
-                                    onChange(newValue);
-                                }}
-                                disabled={disabled}
-                            />
-                        );
-                    });
-                }}
-                sx={{
-                    '& .MuiAutocomplete-inputRoot': {
-                        flexWrap: 'wrap',
-                        gap: 0.5,
-                    },
-                }}
-                slotProps={{
-                    listbox: {
-                        sx: {
-                            maxHeight: 300,
-                            '& .MuiAutocomplete-option': {
-                                padding: 0,
-                            },
+                            required={required}
+                            error={error}
+                            helperText={helperText}
+                            autoFocus={autoFocus}
+                            slotProps={{
+                                ...params.slotProps,
+
+                                input: {
+                                    ...params.slotProps.input,
+                                    startAdornment: (
+                                        <>
+                                            {!multiple && !value && (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon color="action" fontSize="small" />
+                                                </InputAdornment>
+                                            )}
+                                            {params.slotProps.input.startAdornment}
+                                        </>
+                                    ),
+                                    endAdornment: (
+                                        <>
+                                            {isLoading ? (
+                                                <CircularProgress color="inherit" size={20} sx={{ mr: 1 }} />
+                                            ) : null}
+                                            {params.slotProps.input.endAdornment}
+                                        </>
+                                    ),
+                                }
+                            }}
+                        />
+                    )}
+                    renderOption={(props, option) => (
+                        <OptionComponent key={option.id} user={option} props={props} />
+                    )}
+                    renderValue={(tagValue, _) => {
+                        const tagArray = Array.isArray(tagValue) ? tagValue : tagValue ? [tagValue] : [];
+                        return tagArray.map((option, index) => {
+                            return (
+                                <TagComponent
+                                    key={option.id}
+                                    user={option}
+                                    onDelete={() => {
+                                        const newValue = Array.isArray(value)
+                                            ? value.filter((v) => v.id !== option.id)
+                                            : null;
+                                        onChange(newValue);
+                                    }}
+                                    disabled={disabled}
+                                />
+                            );
+                        });
+                    }}
+                    sx={{
+                        '& .MuiAutocomplete-inputRoot': {
+                            flexWrap: 'wrap',
+                            gap: 0.5,
                         },
-                    }
-                }}
-            />
+                    }}
+                    slotProps={{
+                        listbox: {
+                            sx: {
+                                maxHeight: 300,
+                                '& .MuiAutocomplete-option': {
+                                    padding: 0,
+                                },
+                            },
+                        }
+                    }}
+                />
             )}
             {/* Manual entry toggle */}
             {showManualToggle && !singleSelectedUser && (

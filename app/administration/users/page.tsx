@@ -216,7 +216,7 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
     firstName: '',
     lastName: '',
     roles: [APP_ROLES.EMPLOYEE],
-    department: '',
+    departmentId: null,
     position: '',
     employeeId: '',
     isActive: true,
@@ -234,7 +234,7 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
       firstName: '',
       lastName: '',
       roles: [APP_ROLES.EMPLOYEE],
-      department: '',
+      departmentId: null,
       position: '',
       employeeId: '',
       isActive: true,
@@ -396,15 +396,15 @@ function CreateUserDialog({ open, onClose, onCreate, departments }: CreateUserDi
               <FormControl fullWidth>
                 <InputLabel>Department</InputLabel>
                 <Select
-                  value={formData.department || ''}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  value={formData.departmentId ?? ''}
+                  onChange={(e) => setFormData({ ...formData, departmentId: e.target.value ? Number(e.target.value) : null })}
                   label="Department"
                 >
                   <MenuItem value="">
                     <em>No Department</em>
                   </MenuItem>
                   {departments.map((dept) => (
-                    <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>
+                    <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -521,7 +521,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
     if (user) {
       setFormData({
         employeeId: user.employeeId || '',
-        department: user.department || '',
+        departmentId: user.departmentId ?? null,
         position: user.position || '',
         roles: user.roles || [APP_ROLES.EMPLOYEE],
         isActive: user.isActive ?? true,
@@ -872,8 +872,8 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
               <FormControl fullWidth>
                 <InputLabel>Department</InputLabel>
                 <Select
-                  value={formData.department || ''}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  value={formData.departmentId ?? ''}
+                  onChange={(e) => setFormData({ ...formData, departmentId: e.target.value ? Number(e.target.value) : null })}
                   label="Department"
                   disabled={departmentsLoading}
                 >
@@ -881,7 +881,7 @@ function EnhancedEditUserDialog({ open, user, onClose, onSave }: EnhancedEditDia
                     <em>No Department</em>
                   </MenuItem>
                   {departments.map((dept) => (
-                    <MenuItem key={dept.id} value={dept.name}>
+                    <MenuItem key={dept.id} value={dept.id}>
                       {dept.name}
                     </MenuItem>
                   ))}
@@ -1382,6 +1382,10 @@ export default function UsersManagementPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { departments } = useDepartments();
+  const departmentNameById = useMemo(
+    () => new Map(departments.map((department) => [department.id, department.name])),
+    [departments]
+  );
 
   // Filters and pagination state
   const [page, setPage] = useState(1);
@@ -1740,7 +1744,7 @@ export default function UsersManagementPage() {
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2">
-                                {user.department || 'N/A'}
+                                {user.departmentId ? departmentNameById.get(user.departmentId) || 'N/A' : 'N/A'}
                               </Typography>
                             </TableCell>
                             <TableCell>

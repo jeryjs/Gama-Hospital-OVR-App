@@ -12,7 +12,7 @@ export async function getDepartmentUnitLabels(
   unitId: number | null | undefined
 ): Promise<DepartmentUnitLabels> {
   const ids = [departmentId, unitId].filter(
-    (id): id is number => Number.isInteger(id) && id > 0
+    (id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0
   );
 
   if (ids.length === 0) {
@@ -37,7 +37,7 @@ export async function getDepartmentUnitLabelMap(userRows: Array<{
   unitId?: number | null;
 }>): Promise<Map<number, string>> {
   const ids = userRows.flatMap((row) => [row.departmentId, row.unitId]).filter(
-    (id): id is number => Number.isInteger(id) && id > 0
+    (id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0
   );
 
   if (ids.length === 0) {

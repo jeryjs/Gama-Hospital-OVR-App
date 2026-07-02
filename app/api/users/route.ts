@@ -179,8 +179,8 @@ export async function GET(request: NextRequest) {
         updatedAt: users.updatedAt,
       })
       .from(users)
-      .leftJoin(departmentAlias, eq(users.departmentId, departmentAlias.id))
-      .leftJoin(unitAlias, eq(users.unitId, unitAlias.id))
+      .leftJoin(departmentAlias as any, eq(users.departmentId, departmentAlias.id))
+      .leftJoin(unitAlias as any, eq(users.unitId, unitAlias.id))
       .where(whereClause)
       .orderBy(orderByClause)
       .limit(pageSize)

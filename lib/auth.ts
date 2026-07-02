@@ -463,6 +463,10 @@ export const authOptions: NextAuthOptions = {
 
       const refreshedProfileToken = await refreshTokenProfile(token);
 
+      if (refreshedProfileToken.tokenError === 'UserNotApproved') {
+        return refreshedProfileToken;
+      }
+
       if (refreshedProfileToken.authProvider !== AUTH_PROVIDER_AZURE) {
         return refreshedProfileToken;
       }

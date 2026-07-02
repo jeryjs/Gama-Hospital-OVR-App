@@ -256,7 +256,7 @@ export function SharedAccessManager({
     `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
 
   const getUserDescriptor = (user: UserSearchResult) =>
-    [user.position, user.department].filter(Boolean).join(' • ');
+    [user.position].filter(Boolean).join(' • ');
 
   const handleInvite = async () => {
     if (!selectedUser?.email) {

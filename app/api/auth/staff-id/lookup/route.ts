@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
                 departments: departmentOptions.map((department) => ({
                     id: department.id,
                     name: department.name,
-                    units: department.units || [],
+                    units: (department as any).units || [],
                 })),
             },
         });

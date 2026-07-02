@@ -203,7 +203,7 @@ export function generatePrintableHTML(incident: OVRReportWithRelations): string 
     </div>
     <div class="field">
       <div class="label">Department</div>
-      <div class="value">${incident.reporter?.department || 'Not specified'}</div>
+      <div class="value">${incident.reporter?.departmentId ? `Department #${incident.reporter.departmentId}` : 'Not specified'}</div>
     </div>
   </div>
 
