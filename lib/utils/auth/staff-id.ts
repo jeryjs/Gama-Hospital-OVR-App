@@ -51,7 +51,7 @@ export function generateOtpCode(): string {
 }
 
 export async function hashOtpCode(code: string): Promise<string> {
-    return bcrypt.hash(code, 10);
+    return bcrypt.hash(code, 6);
 }
 
 export async function compareOtpCode(code: string, hash: string): Promise<boolean> {

@@ -80,6 +80,7 @@ export default function LoginPage() {
   const [onboardingPassword, setOnboardingPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -191,6 +192,8 @@ export default function LoginPage() {
         setError(data?.error || 'Failed to send verification code.');
         return;
       }
+      setOtpSent(true);
+      setOtpCode('');
       setOtpVerified(false);
     } catch {
       setError('Failed to send verification code. Please try again.');
@@ -290,6 +293,7 @@ export default function LoginPage() {
     setOnboardingPassword('');
     setConfirmPassword('');
     setOtpCode('');
+    setOtpSent(false);
     setOtpVerified(false);
     setOtpSending(false);
     setOtpVerifying(false);
@@ -482,6 +486,7 @@ export default function LoginPage() {
                   editable={lookupResult.editable}
                   departments={lookupResult.options.departments}
                   otpCode={otpCode}
+                  otpSent={otpSent}
                   otpVerified={otpVerified}
                   otpSending={otpSending}
                   otpVerifying={otpVerifying}

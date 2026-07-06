@@ -64,6 +64,7 @@ interface GuidedOnboardingCardProps {
   editable: OnboardingEditableState;
   departments: DepartmentOption[];
   otpCode: string;
+  otpSent: boolean;
   otpVerified: boolean;
   otpSending: boolean;
   otpVerifying: boolean;
@@ -208,6 +209,7 @@ export function GuidedOnboardingCard({
   editable,
   departments,
   otpCode,
+  otpSent,
   otpVerified,
   otpSending,
   otpVerifying,
@@ -468,7 +470,7 @@ export function GuidedOnboardingCard({
                     <Button
                       fullWidth
                       variant="outlined"
-                      startIcon={otpCode ? <RefreshIcon /> : <SendIcon />}
+                      startIcon={otpSent ? <RefreshIcon /> : <SendIcon />}
                       onClick={onSendOtp}
                       disabled={otpSending || submitting || !form.email.trim()}
                       sx={{ height: 56, borderRadius: 2, fontWeight: 600 }}
@@ -479,7 +481,7 @@ export function GuidedOnboardingCard({
                 </Grid>
 
                 {/* OTP digit input — only shown after first send */}
-                {(otpCode || otpSending) && (
+                {(otpSent || otpSending) && (
                   <Stack spacing={2} sx={{ alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
                       Enter the 6-digit code sent to your email
