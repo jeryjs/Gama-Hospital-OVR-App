@@ -413,7 +413,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             slotProps={{
               paper: {
-                sx: { minWidth: 200, p: 1, borderRadius: 2 },
+                sx: {
+                  minWidth: 200,
+                  p: 1,
+                  borderRadius: 2,
+                  background: (theme) =>
+                    `linear-gradient(135deg, ${theme.palette.background.paper} 80%, ${theme.palette.primary.light} 100%)`,
+                },
               },
             }}
           >
@@ -459,6 +465,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   maxWidth: 420,
                   borderRadius: 3,
                   p: 1,
+                  background: (theme) =>
+                    `linear-gradient(135deg, ${theme.palette.background.paper} 80%, ${theme.palette.primary.light} 100%)`,
                 },
               },
             }}
