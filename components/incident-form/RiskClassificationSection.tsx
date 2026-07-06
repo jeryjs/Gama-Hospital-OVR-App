@@ -8,10 +8,9 @@ import {
     getRiskLevel,
 } from '@/lib/constants';
 import { Assessment } from '@mui/icons-material';
-import { alpha, Box, Paper, Stack, TextField, Typography } from '@mui/material';
+import { alpha, Box, Paper, Stack, TextField, Typography, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { OVRReport } from '../../app/incidents/_shared/types';
-import { theme } from '@/lib/theme';
 import { Section, SectionEditControls } from '@/components/shared';
 import { useErrorDialog } from '@/components/ErrorDialog';
 import { apiCall } from '@/lib/client/error-handler';
@@ -22,6 +21,7 @@ interface Props {
 }
 
 export function RiskClassificationSection({ incident, onUpdate }: Props) {
+    const theme = useTheme();
     const canEditSection = incident.status !== 'closed' && Boolean(onUpdate);
     const { showError, ErrorDialogComponent } = useErrorDialog();
 

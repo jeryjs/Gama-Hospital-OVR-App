@@ -4,17 +4,21 @@ import { ACCESS_CONTROL } from '@/lib/access-control';
 import { AppRole } from '@/lib/constants';
 import { useDashboardStats, useNotifications } from '@/lib/hooks';
 import { getUserDrafts } from '@/lib/utils/draft-storage';
+import { useThemeMode } from './ThemeRegistry';
 import {
   AccountCircle,
   Add,
   Analytics,
+  Brightness4,
+  Brightness7,
+  BrightnessAuto,
   Dashboard,
   Description,
   ExpandLess,
   ExpandMore,
   Logout,
   Notifications,
-  Menu as MenuIcon
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import {
   AppBar,
@@ -100,6 +104,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [session?.user?.id, pathname]);
 
   // Handle proper logout with Azure AD session cleanup
+  const { mode, resolvedMode, setMode } = useThemeMode();
+
+  const [themeAnchorEl, setThemeAnchorEl] = useState<null | HTMLElement>(null);
+
+  const themeOptions = [
+    { value: 'light' as const, label: 'Light', icon: <Brightness7 /> },
+    { value: 'dark' as const, label: 'Dark', icon: <Brightness4 /> },
+    { value: 'system' as const, label: 'System', icon: <BrightnessAuto /> },
+  ] as const;
+
   const handleLogout = async () => {
     // Sign out from NextAuth (clears local session)
     await signOut({ callbackUrl: '/login' });
@@ -379,6 +393,48 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </IconButton>
 
           <Box sx={{ flex: 1 }} />
+
+          <Tooltip title="Theme">
+            <IconButton
+              color="inherit"
+              onClick={(e) => setThemeAnchorEl(e.currentTarget)}
+              sx={{ mr: 1 }}
+              aria-label="Theme settings"
+            >
+              {mode === 'light' ? <Brightness7 /> : mode === 'dark' ? <Brightness4 /> : <BrightnessAuto />}
+            </IconButton>
+          </Tooltip>
+
+          <Menu
+            anchorEl={themeAnchorEl}
+            open={Boolean(themeAnchorEl)}
+            onClose={() => setThemeAnchorEl(null)}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            slotProps={{
+              paper: {
+                sx: { minWidth: 200, p: 1, borderRadius: 2 },
+              },
+            }}
+          >
+            {themeOptions.map((option) => (
+              <MenuItem
+                key={option.value}
+                onClick={() => { setMode(option.value); setThemeAnchorEl(null); }}
+                selected={mode === option.value}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: mode === option.value ? 'primary.main' : 'inherit' }}>
+                  {option.icon}
+                </ListItemIcon>
+                <ListItemText primary={option.label} />
+                {mode === option.value && (
+                  <Box sx={{ position: 'absolute', right: 8, color: 'primary.main' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>✓</Typography>
+                  </Box>
+                )}
+              </MenuItem>
+            ))}
+          </Menu>
 
           <IconButton
             color="inherit"
