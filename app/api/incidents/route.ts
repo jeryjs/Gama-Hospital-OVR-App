@@ -15,7 +15,7 @@ import {
   incidentRelations,
 } from '@/lib/api/schemas';
 import { buildIncidentVisibilityFilter } from '@/lib/utils';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getQIUserIds } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { generateOVRId } from '@/lib/generate-ovr-id';
 import { ACCESS_CONTROL } from '@/lib/access-control';
@@ -240,15 +240,17 @@ export async function POST(request: NextRequest) {
       incidentId: newIncident[0].id,
     });
 
-    await createWorkflowNotification(
-      'incident_submitted',
-      { incidentId: newIncident[0].id },
-      [],
-      {
-        userId: Number(session.user.id),
-        email: session.user.email,
-      }
-    );
+    const actor = { userId: Number(session.user.id), email: session.user.email };
+    getQIUserIds(actor.userId)
+      .then((qiUserIds) =>
+        createWorkflowNotification(
+          'incident_submitted',
+          { incidentId: newIncident[0].id },
+          qiUserIds,
+          actor
+        )
+      )
+      .catch((err) => console.error('[notifications] incident_submitted dispatch failed:', err));
 
     return NextResponse.json(newIncident[0], { status: 201 });
   } catch (error) {

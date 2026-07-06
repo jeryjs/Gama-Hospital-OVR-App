@@ -1,7 +1,94 @@
 import { db } from '@/db';
-import { userNotifications, userPushSubscriptions, users } from '@/db/schema';
+import { ovrCorrectiveActions, ovrInvestigations, ovrReports, userNotifications, userPushSubscriptions, users } from '@/db/schema';
+import { APP_ROLES, type AppRole } from '@/lib/constants';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import webpush from 'web-push';
+
+const QI_NOTIFICATION_ROLES: AppRole[] = [
+    APP_ROLES.SUPER_ADMIN,
+    APP_ROLES.QUALITY_MANAGER,
+    APP_ROLES.QUALITY_ANALYST,
+    APP_ROLES.DEVELOPER,
+];
+
+export async function getQIUserIds(excludeUserId?: number): Promise<number[]> {
+    const rows = await db
+        .select({ id: users.id, roles: users.roles, isActive: users.isActive })
+        .from(users);
+
+    return rows
+        .filter(
+            (u) =>
+                u.isActive &&
+                u.id !== excludeUserId &&
+                u.roles?.some((r) => QI_NOTIFICATION_ROLES.includes(r as AppRole))
+        )
+        .map((u) => u.id);
+}
+
+/** Resolves the reporter's user ID for an incident. */
+export async function getReporterUserId(incidentId: string): Promise<number | null> {
+    const [row] = await db
+        .select({ reporterId: ovrReports.reporterId })
+        .from(ovrReports)
+        .where(eq(ovrReports.id, incidentId))
+        .limit(1);
+    return row?.reporterId ?? null;
+}
+
+/** Resolves a user ID from an email address (active users only). */
+export async function getUserIdByEmail(email: string): Promise<number | null> {
+    const normalized = email.trim().toLowerCase();
+    const all = await db
+        .select({ id: users.id, email: users.email, isActive: users.isActive })
+        .from(users);
+    const match = all.find((u) => u.isActive && u.email?.trim().toLowerCase() === normalized);
+    return match?.id ?? null;
+}
+
+/**
+ * Returns all participant user IDs for an incident:
+ * QI staff + reporter + all investigators + all corrective-action assignees.
+ * Excludes the actor (excludeUserId) from the result.
+ */
+export async function getIncidentParticipantUserIds(incidentId: string, excludeUserId?: number): Promise<number[]> {
+    const [reportRow, investigations, actions, qiIds] = await Promise.all([
+        db
+            .select({ reporterId: ovrReports.reporterId })
+            .from(ovrReports)
+            .where(eq(ovrReports.id, incidentId))
+            .limit(1)
+            .then((rows) => rows[0]),
+        db
+            .select({ investigators: ovrInvestigations.investigators })
+            .from(ovrInvestigations)
+            .where(eq(ovrInvestigations.ovrReportId, incidentId)),
+        db
+            .select({ assignees: ovrCorrectiveActions.assignedTo })
+            .from(ovrCorrectiveActions)
+            .where(eq(ovrCorrectiveActions.ovrReportId, incidentId)),
+        getQIUserIds(excludeUserId),
+    ]);
+
+    const ids = new Set<number>(qiIds);
+
+    if (reportRow?.reporterId) ids.add(reportRow.reporterId);
+
+    for (const inv of investigations) {
+        for (const id of inv.investigators ?? []) {
+            if (Number.isInteger(id) && id > 0) ids.add(id);
+        }
+    }
+
+    for (const action of actions) {
+        for (const id of action.assignees ?? []) {
+            if (Number.isInteger(id) && id > 0) ids.add(id);
+        }
+    }
+
+    if (excludeUserId) ids.delete(excludeUserId);
+    return [...ids];
+}
 
 const WEB_PUSH_PUBLIC_KEY = (process.env.WEB_PUSH_PUBLIC_KEY || '').trim();
 const WEB_PUSH_PRIVATE_KEY = (process.env.WEB_PUSH_PRIVATE_KEY || '').trim();

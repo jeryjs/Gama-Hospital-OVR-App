@@ -23,7 +23,7 @@ import {
     bulkCreateSharedAccessSchema,
 } from '@/lib/api/schemas';
 import { buildSharedAccessUrl, generateSharedAccessToken } from '@/lib/utils';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getUserIdByEmail } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -148,22 +148,24 @@ export async function POST(request: NextRequest) {
             accessUrl,
         });
 
-        void createWorkflowNotification(
-            'shared_access_invited',
-            {
-                incidentId: body.ovrReportId,
-                resourceType: body.resourceType,
-                resourceId: body.resourceId,
-                inviteeEmail: normalizedEmail,
-                role: body.role,
-                accessUrl,
-            },
-            [],
-            {
-                userId: Number(session.user.id),
-                email: session.user.email,
-            }
-        );
+        const inviteActor = { userId: Number(session.user.id), email: session.user.email };
+        getUserIdByEmail(normalizedEmail)
+            .then((inviteeUserId) =>
+                createWorkflowNotification(
+                    'shared_access_invited',
+                    {
+                        incidentId: body.ovrReportId,
+                        resourceType: body.resourceType,
+                        resourceId: body.resourceId,
+                        inviteeEmail: normalizedEmail,
+                        role: body.role,
+                        accessUrl,
+                    },
+                    inviteeUserId ? [inviteeUserId] : [],
+                    inviteActor
+                )
+            )
+            .catch((err) => console.error('[notifications] shared_access_invited dispatch failed:', err));
 
         return NextResponse.json(
             {
@@ -213,22 +215,24 @@ export async function PUT(request: NextRequest) {
                 accessUrl,
             });
 
-            void createWorkflowNotification(
-                'shared_access_invited',
-                {
-                    incidentId: body.ovrReportId,
-                    resourceType: body.resourceType,
-                    resourceId: body.resourceId,
-                    inviteeEmail: normalizedEmail,
-                    role: invite.role,
-                    accessUrl,
-                },
-                [],
-                {
-                    userId: Number(session.user.id),
-                    email: session.user.email,
-                }
-            );
+            const bulkActor = { userId: Number(session.user.id), email: session.user.email };
+            getUserIdByEmail(normalizedEmail)
+                .then((inviteeUserId) =>
+                    createWorkflowNotification(
+                        'shared_access_invited',
+                        {
+                            incidentId: body.ovrReportId,
+                            resourceType: body.resourceType,
+                            resourceId: body.resourceId,
+                            inviteeEmail: normalizedEmail,
+                            role: invite.role,
+                            accessUrl,
+                        },
+                        inviteeUserId ? [inviteeUserId] : [],
+                        bulkActor
+                    )
+                )
+                .catch((err) => console.error('[notifications] shared_access_invited (bulk) dispatch failed:', err));
 
             invitations.push({
                 ...invitation,

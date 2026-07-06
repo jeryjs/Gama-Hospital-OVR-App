@@ -18,7 +18,7 @@ import {
 } from '@/lib/api/middleware';
 import { updateCorrectiveActionSchema } from '@/lib/api/schemas';
 import { canAccessCorrectiveAction, getCorrectiveActionSharedAccessGrant } from '@/lib/utils/data-access';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getQIUserIds, getReporterUserId } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -267,19 +267,22 @@ export async function POST(
             title: updated.title,
         });
 
-        void createWorkflowNotification(
-            'corrective_action_closed',
-            {
-                incidentId: updated.ovrReportId,
-                actionId,
-                title: updated.title,
-            },
-            [],
-            {
-                userId: Number(session.user.id),
-                email: session.user.email,
-            }
-        );
+        const closeActor = { userId: Number(session.user.id), email: session.user.email };
+        Promise.all([
+            getQIUserIds(closeActor.userId),
+            getReporterUserId(updated.ovrReportId),
+        ])
+            .then(([qiIds, reporterUserId]) => {
+                const recipientIds = [...new Set([...qiIds, ...(reporterUserId ? [reporterUserId] : [])])]
+                    .filter((id) => id !== closeActor.userId);
+                return createWorkflowNotification(
+                    'corrective_action_closed',
+                    { incidentId: updated.ovrReportId, actionId, title: updated.title },
+                    recipientIds,
+                    closeActor
+                );
+            })
+            .catch((err) => console.error('[notifications] corrective_action_closed dispatch failed:', err));
 
         return NextResponse.json({
             success: true,

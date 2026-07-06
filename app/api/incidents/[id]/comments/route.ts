@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { ovrComments } from '@/db/schema';
 import { handleApiError, requireAuth, validateCsrfAndIdempotency, validateBody } from '@/lib/api/middleware';
 import { createCommentSchema } from '@/lib/api/schemas';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getIncidentParticipantUserIds } from '@/lib/utils/notifications';
 import { getIncidentSecure } from '@/lib/utils';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { desc, eq } from 'drizzle-orm';
@@ -74,18 +74,17 @@ export async function POST(
       commentPreview: body.comment.trim(),
     });
 
-    await createWorkflowNotification(
-      'incident_commented',
-      {
-        incidentId: id,
-        commentPreview: body.comment.trim(),
-      },
-      [],
-      {
-        userId: Number(session.user.id),
-        email: session.user.email,
-      }
-    );
+    const commentActor = { userId: Number(session.user.id), email: session.user.email };
+    getIncidentParticipantUserIds(id, commentActor.userId)
+      .then((participantIds) =>
+        createWorkflowNotification(
+          'incident_commented',
+          { incidentId: id, commentPreview: body.comment.trim() },
+          participantIds,
+          commentActor
+        )
+      )
+      .catch((err) => console.error('[notifications] incident_commented dispatch failed:', err));
 
     // Fetch the comment with user details
     const commentWithUser = await db.query.ovrComments.findFirst({

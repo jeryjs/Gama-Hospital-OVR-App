@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/middleware';
 import { submitInvestigationSchema } from '@/lib/api/schemas';
 import { canAccessInvestigation, getInvestigationSharedAccessGrant } from '@/lib/utils/data-access';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getQIUserIds, getReporterUserId } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { APP_ROLES } from '@/lib/constants';
 import { hasAnyRole } from '@/lib/auth-helpers';
@@ -173,18 +173,22 @@ export async function POST(
                 investigationId,
             });
 
-            void createWorkflowNotification(
-                'investigation_submitted',
-                {
-                    incidentId: workflowResult.incidentId,
-                    investigationId,
-                },
-                [],
-                {
-                    userId: parseInt(session.user.id),
-                    email: session.user.email,
-                }
-            );
+            const submitActor = { userId: parseInt(session.user.id), email: session.user.email };
+            Promise.all([
+                getQIUserIds(submitActor.userId),
+                getReporterUserId(workflowResult.incidentId),
+            ])
+                .then(([qiIds, reporterUserId]) => {
+                    const recipientIds = [...new Set([...qiIds, ...(reporterUserId ? [reporterUserId] : [])])]
+                        .filter((id) => id !== submitActor.userId);
+                    return createWorkflowNotification(
+                        'investigation_submitted',
+                        { incidentId: workflowResult.incidentId, investigationId },
+                        recipientIds,
+                        submitActor
+                    );
+                })
+                .catch((err) => console.error('[notifications] investigation_submitted dispatch failed:', err));
         }
 
         return NextResponse.json({

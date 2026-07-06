@@ -18,7 +18,7 @@ import {
 } from '@/lib/api/middleware';
 import { closeIncidentSchema } from '@/lib/api/schemas';
 import { getIncidentSecure } from '@/lib/utils';
-import { createWorkflowNotification } from '@/lib/utils/notifications';
+import { createWorkflowNotification, getReporterUserId } from '@/lib/utils/notifications';
 import { sendWorkflowMailSafely } from '@/lib/utils/mail';
 import { and, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -105,15 +105,17 @@ export async function POST(
             incidentId: id,
         });
 
-        await createWorkflowNotification(
-            'incident_closed',
-            { incidentId: id },
-            [],
-            {
-                userId: Number(session.user.id),
-                email: session.user.email,
-            }
-        );
+        const actor = { userId: Number(session.user.id), email: session.user.email };
+        getReporterUserId(id)
+            .then((reporterUserId) =>
+                createWorkflowNotification(
+                    'incident_closed',
+                    { incidentId: id },
+                    reporterUserId ? [reporterUserId] : [],
+                    actor
+                )
+            )
+            .catch((err) => console.error('[notifications] incident_closed dispatch failed:', err));
 
         return NextResponse.json({
             success: true,
