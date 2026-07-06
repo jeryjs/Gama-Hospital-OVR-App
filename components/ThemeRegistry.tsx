@@ -29,22 +29,27 @@ function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function ThemeRegistryProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = React.useState<ThemeMode>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme-mode') as ThemeMode) || 'system';
-    }
-    return 'system';
-  });
+function resolveMode(mode: ThemeMode): 'light' | 'dark' {
+  if (mode === 'system') return getSystemTheme();
+  return mode;
+}
 
-  const [resolvedMode, setResolvedMode] = React.useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    const stored = localStorage.getItem('theme-mode') as ThemeMode | null;
-    if (stored === 'system' || stored === null) {
-      return getSystemTheme();
-    }
-    return stored;
-  });
+function setThemeCookie(mode: ThemeMode) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `theme-mode=${mode}; path=/; max-age=31536000; SameSite=Lax`;
+}
+
+interface ThemeRegistryProviderProps {
+  children: React.ReactNode;
+  initialMode?: ThemeMode;
+  initialResolvedMode?: 'light' | 'dark';
+}
+
+function ThemeRegistryProvider({ children, initialMode, initialResolvedMode }: ThemeRegistryProviderProps) {
+  const [mode, setMode] = React.useState<ThemeMode>(() => initialMode ?? 'system');
+  const [resolvedMode, setResolvedMode] = React.useState<'light' | 'dark'>(() =>
+    initialResolvedMode ?? (typeof window !== 'undefined' ? resolveMode(mode) : 'dark')
+  );
 
   // Listen for system theme changes
   React.useEffect(() => {
@@ -65,14 +70,19 @@ function ThemeRegistryProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const effectiveMode = mode === 'system' ? resolvedMode : mode;
     localStorage.setItem('theme-mode', mode);
+    setThemeCookie(mode);
     document.documentElement.setAttribute('data-theme', effectiveMode);
     setResolvedMode(effectiveMode);
   }, [mode, resolvedMode]);
 
   const theme = React.useMemo(() => getTheme(resolvedMode), [resolvedMode]);
 
+  const setModeWithPersistence = React.useCallback((newMode: ThemeMode) => {
+    setMode(newMode);
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ mode, resolvedMode, setMode }}>
+    <ThemeContext.Provider value={{ mode, resolvedMode, setMode: setModeWithPersistence }}>
       <AppRouterCacheProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
@@ -83,6 +93,14 @@ function ThemeRegistryProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ThemeRegistry({ children }: { children: React.ReactNode }) {
-  return <ThemeRegistryProvider>{children}</ThemeRegistryProvider>;
+export function ThemeRegistry({
+  children,
+  initialMode,
+  initialResolvedMode
+}: {
+  children: React.ReactNode;
+  initialMode?: ThemeMode;
+  initialResolvedMode?: 'light' | 'dark';
+}) {
+  return <ThemeRegistryProvider initialMode={initialMode} initialResolvedMode={initialResolvedMode}>{children}</ThemeRegistryProvider>;
 }
