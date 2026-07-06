@@ -63,8 +63,10 @@ function LockedField({ label, value, helperText }: { label: string; value: strin
 
 // ─── Notification preferences table ──────────────────────────────────────────
 
+type NotificationCategory = (typeof ACCESS_CONTROL.notifications.categories)[number];
+
 interface PreferencesTableProps {
-    categories: typeof ACCESS_CONTROL.notifications.categories;
+    categories: NotificationCategory[];
     preferences: NotificationPreference[];
     onToggle: (event: WorkflowNotificationEvent, channel: 'inApp') => void;
 }
@@ -77,7 +79,7 @@ function PreferencesTable({ categories, preferences, onToggle }: PreferencesTabl
     return (
         <Box>
             {/* Header row */}
-            <Grid container sx={{ px: 1.5, pb: 1 }} alignItems="center">
+            <Grid container sx={{ px: 1.5, pb: 1, alignItems: 'center' }}>
                 <Grid size={{ xs: 12, sm: 7 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Notification Category
@@ -106,7 +108,7 @@ function PreferencesTable({ categories, preferences, onToggle }: PreferencesTabl
                 {categories.map((cat) => {
                     const inApp = getInApp(cat.event);
                     return (
-                        <Grid key={cat.event} container sx={{ px: 1.5, py: 1.25 }} alignItems="center">
+                        <Grid key={cat.event} container sx={{ px: 1.5, py: 1.25, alignItems: 'center' }}>
                             <Grid size={{ xs: 12, sm: 7 }}>
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                     {cat.label}
@@ -206,7 +208,7 @@ export default function ProfilePage() {
                         border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                     }}
                 >
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
                         <Avatar
                             src={`/api/me/avatar`}
                             alt={displayName}
@@ -220,7 +222,7 @@ export default function ProfilePage() {
                                 {user.email}
                                 {user.employeeId && <> &mdash; Staff ID: <strong>{user.employeeId}</strong></>}
                             </Typography>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1, gap: 0.75 }}>
+                            <Stack direction="row" spacing={1} sx={{ mt: 1, gap: 0.75, flexWrap: 'wrap' }}>
                                 {roles.map((role) => {
                                     const meta = ROLE_METADATA[role];
                                     return (
@@ -244,7 +246,7 @@ export default function ProfilePage() {
                 <Card variant="outlined" sx={{ borderRadius: 3 }}>
                     <CardContent>
                         <Stack spacing={2.5}>
-                            <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                                 <PersonOutlined color="primary" />
                                 <Box>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Personal Details</Typography>
@@ -295,7 +297,7 @@ export default function ProfilePage() {
                             </Grid>
 
                             {/* Security note */}
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.07), border: (theme) => `1px solid ${alpha(theme.palette.warning.main, 0.2)}` }}>
+                            <Stack direction="row" spacing={1} sx={{ p: 1.5, borderRadius: 2, alignItems: 'center', bgcolor: (theme) => alpha(theme.palette.warning.main, 0.07), border: (theme) => `1px solid ${alpha(theme.palette.warning.main, 0.2)}` }}>
                                 <LockOutlined sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }} />
                                 <Typography variant="caption" color="text.secondary">
                                     To change your password, sign out and use the Staff ID login flow, or contact an administrator.
@@ -309,7 +311,7 @@ export default function ProfilePage() {
                 <Card variant="outlined" sx={{ borderRadius: 3 }}>
                     <CardContent sx={{ pb: '16px !important' }}>
                         <Stack spacing={2.5}>
-                            <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                                 <NotificationsOutlined color="primary" />
                                 <Box>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Notification Preferences</Typography>

@@ -379,6 +379,7 @@ export const ACCESS_CONTROL = {
                 event: 'incident_submitted' as const,
                 label: 'New Incident Submitted',
                 description: 'When a new incident report is submitted and awaiting QI review',
+                allUsers: false,
                 eligibleRoles: [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
@@ -404,13 +405,13 @@ export const ACCESS_CONTROL = {
                 event: 'investigation_submitted' as const,
                 label: 'Investigation Submitted',
                 description: 'When an investigation is submitted for QI review',
+                allUsers: true, // reporter also receives this
                 eligibleRoles: [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.QUALITY_ANALYST,
                     APP_ROLES.DEVELOPER,
                 ] as AppRole[],
-                allUsers: true, // reporter also receives this
             },
             {
                 event: 'corrective_action_created' as const,
@@ -423,13 +424,13 @@ export const ACCESS_CONTROL = {
                 event: 'corrective_action_closed' as const,
                 label: 'Corrective Action Closed',
                 description: 'When a corrective action tied to your incident is closed',
+                allUsers: true, // reporter also receives this
                 eligibleRoles: [
                     APP_ROLES.SUPER_ADMIN,
                     APP_ROLES.QUALITY_MANAGER,
                     APP_ROLES.QUALITY_ANALYST,
                     APP_ROLES.DEVELOPER,
                 ] as AppRole[],
-                allUsers: true, // reporter also receives this
             },
             {
                 event: 'incident_closed' as const,
@@ -457,7 +458,7 @@ export const ACCESS_CONTROL = {
         /** Returns only the categories visible/relevant to the given roles. */
         visibleCategories(roles: AppRole[]) {
             return ACCESS_CONTROL.notifications.categories.filter(
-                (c) => c.allUsers || hasAnyRole(roles, c.eligibleRoles)
+                (c) => c.allUsers === true || hasAnyRole(roles, c.eligibleRoles)
             );
         },
     },
