@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { boolean, date, index, integer, pgEnum, pgTable, serial, text, time, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, pgEnum, pgTable, serial, text, time, timestamp, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
 
 // ============================================
 // ENUMS - Based on actual OVR form
@@ -367,6 +367,22 @@ export const ovrMailOutbox = pgTable('ovr_mail_outbox', {
 ]);
 
 // ============================================
+// NOTIFICATION PREFERENCES — per-user opt-in/out per event
+// ============================================
+export const userNotificationPreferences = pgTable('user_notification_preferences', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  event: varchar('event', { length: 64 }).notNull(),
+  inApp: boolean('in_app').notNull().default(true),
+  mail: boolean('mail').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('notif_prefs_user_event_unique_idx').on(table.userId, table.event),
+  index('notif_prefs_user_idx').on(table.userId),
+]);
+
+// ============================================
 // NOTIFICATION HISTORY & PUSH SUBSCRIPTIONS
 // ============================================
 export const userNotifications = pgTable('user_notifications', {
@@ -454,6 +470,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   qiReceivedIncidents: many(ovrReports, { relationName: 'qi_receiver' }),
   notifications: many(userNotifications, { relationName: 'notification_user' }),
   notificationActors: many(userNotifications, { relationName: 'notification_actor' }),
+  notificationPreferences: many(userNotificationPreferences),
   pushSubscriptions: many(userPushSubscriptions),
   investigations: many(ovrInvestigations),
   correctiveActions: many(ovrCorrectiveActions, { relationName: 'action_creator' }),
@@ -477,6 +494,13 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   headedDepartment: one(departments, {
     fields: [users.id],
     references: [departments.headOfDepartment],
+  }),
+}));
+
+export const userNotificationPreferencesRelations = relations(userNotificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotificationPreferences.userId],
+    references: [users.id],
   }),
 }));
 

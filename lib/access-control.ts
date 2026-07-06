@@ -362,6 +362,105 @@ export const ACCESS_CONTROL = {
                 hasAnyRole(roles, [APP_ROLES.SUPER_ADMIN, APP_ROLES.TECH_ADMIN]),
         },
     },
+
+    /**
+     * Notification category definitions — single source of truth.
+     *
+     * `allUsers: true`  → shown to every authenticated user (they receive this as reporter/assignee/invitee).
+     * `eligibleRoles`   → additional role-based gate; shown even if user is not directly involved.
+     *
+     * Used by:
+     *  - /profile page  → visibleCategories(roles) determines which rows to render
+     *  - notifications.ts createHistoryEntries → filters recipients by inApp preference
+     */
+    notifications: {
+        categories: [
+            {
+                event: 'incident_submitted' as const,
+                label: 'New Incident Submitted',
+                description: 'When a new incident report is submitted and awaiting QI review',
+                eligibleRoles: [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ] as AppRole[],
+            },
+            {
+                event: 'incident_reviewed' as const,
+                label: 'Incident Reviewed',
+                description: 'When QI approves or returns your submitted incident',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+            {
+                event: 'investigation_created' as const,
+                label: 'Investigation Assigned',
+                description: 'When you are assigned to carry out an investigation',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+            {
+                event: 'investigation_submitted' as const,
+                label: 'Investigation Submitted',
+                description: 'When an investigation is submitted for QI review',
+                eligibleRoles: [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ] as AppRole[],
+                allUsers: true, // reporter also receives this
+            },
+            {
+                event: 'corrective_action_created' as const,
+                label: 'Corrective Action Assigned',
+                description: 'When a corrective action is assigned to you',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+            {
+                event: 'corrective_action_closed' as const,
+                label: 'Corrective Action Closed',
+                description: 'When a corrective action tied to your incident is closed',
+                eligibleRoles: [
+                    APP_ROLES.SUPER_ADMIN,
+                    APP_ROLES.QUALITY_MANAGER,
+                    APP_ROLES.QUALITY_ANALYST,
+                    APP_ROLES.DEVELOPER,
+                ] as AppRole[],
+                allUsers: true, // reporter also receives this
+            },
+            {
+                event: 'incident_closed' as const,
+                label: 'Incident Closed',
+                description: 'When your incident is fully closed by QI',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+            {
+                event: 'incident_commented' as const,
+                label: 'New Comment on Incident',
+                description: 'When someone comments on an incident you are involved in',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+            {
+                event: 'shared_access_invited' as const,
+                label: 'Shared Access Invitation',
+                description: 'When you are invited as investigator, action handler, or viewer',
+                allUsers: true,
+                eligibleRoles: [] as AppRole[],
+            },
+        ],
+
+        /** Returns only the categories visible/relevant to the given roles. */
+        visibleCategories(roles: AppRole[]) {
+            return ACCESS_CONTROL.notifications.categories.filter(
+                (c) => c.allUsers || hasAnyRole(roles, c.eligibleRoles)
+            );
+        },
+    },
 } as const;
 
 /**

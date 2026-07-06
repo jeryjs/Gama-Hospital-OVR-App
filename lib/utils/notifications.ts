@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { ovrCorrectiveActions, ovrInvestigations, ovrReports, userNotifications, userPushSubscriptions, users } from '@/db/schema';
+import { ovrCorrectiveActions, ovrInvestigations, ovrReports, userNotificationPreferences, userNotifications, userPushSubscriptions, users } from '@/db/schema';
 import { APP_ROLES, type AppRole } from '@/lib/constants';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import webpush from 'web-push';
@@ -264,8 +264,28 @@ async function createHistoryEntries(input: CreateNotificationsInput): Promise<vo
     const recipientUserIds = toUniqueUserIds(input.recipientUserIds);
     if (!recipientUserIds.length) return;
 
+    // Filter by per-user inApp preference. Rows missing = default opted-in (true).
+    const optedOut = new Set(
+        recipientUserIds.length > 0
+            ? await db
+                .select({ userId: userNotificationPreferences.userId })
+                .from(userNotificationPreferences)
+                .where(
+                    and(
+                        inArray(userNotificationPreferences.userId, recipientUserIds),
+                        eq(userNotificationPreferences.event, input.event),
+                        eq(userNotificationPreferences.inApp, false)
+                    )
+                )
+                .then((rows) => rows.map((r) => r.userId))
+            : []
+    );
+
+    const filtered = recipientUserIds.filter((id) => !optedOut.has(id));
+    if (!filtered.length) return;
+
     await db.insert(userNotifications).values(
-        recipientUserIds.map((userId) => ({
+        filtered.map((userId) => ({
             userId,
             event: input.event,
             title: input.title,

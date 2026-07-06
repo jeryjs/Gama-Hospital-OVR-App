@@ -20,6 +20,8 @@ export { useUserManagement } from './useUserManagement';
 export { useReportData, useIncidentTrends, useLocationComparison } from './useReportData';
 export { usePeopleSearch } from './usePeopleSearch';
 export { useNotifications } from './useNotifications';
+export { useProfile } from './useProfile';
+export type { UseProfileReturn, ProfileUser, NotificationPreference } from './useProfile';
 
 // Re-export types for convenience
 export type { UseIncidentsOptions, UseIncidentsReturn } from './useIncidents';
