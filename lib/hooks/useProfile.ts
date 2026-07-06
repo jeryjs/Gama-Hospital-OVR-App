@@ -52,7 +52,7 @@ export function useProfile(): UseProfileReturn {
     });
 
     const updatePreferences = async (preferences: NotificationPreference[]) => {
-        // Optimistic update
+        // Optimistic update — revalidate: false prevents immediate re-fetch
         if (data) {
             const merged = [...data.notificationPreferences];
             for (const pref of preferences) {
@@ -60,7 +60,7 @@ export function useProfile(): UseProfileReturn {
                 if (idx >= 0) merged[idx] = pref;
                 else merged.push(pref);
             }
-            await mutate({ ...data, notificationPreferences: merged }, false);
+            await mutate({ ...data, notificationPreferences: merged }, { revalidate: false });
         }
 
         const response = await secureFetch('/api/me', {

@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS user_notification_preferences (
   mail BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, event)
+  CONSTRAINT notif_prefs_user_event_unique_idx UNIQUE (user_id, event)
 );
 
 CREATE INDEX IF NOT EXISTS notif_prefs_user_idx ON user_notification_preferences(user_id);
-CREATE INDEX IF NOT EXISTS notif_prefs_user_event_idx ON user_notification_preferences(user_id, event);

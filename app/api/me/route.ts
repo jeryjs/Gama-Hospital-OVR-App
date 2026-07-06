@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { userNotificationPreferences, users } from '@/db/schema';
-import { handleApiError, requireAuth, validateBody } from '@/lib/api/middleware';
+import { handleApiError, requireAuth, validateBody, validateCsrfAndIdempotency } from '@/lib/api/middleware';
 import { ACCESS_CONTROL } from '@/lib/access-control';
 import { type WorkflowNotificationEvent } from '@/lib/utils/notifications';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 /** PATCH /api/me — upsert notification preferences */
 export async function PATCH(request: NextRequest) {
     try {
-        const session = await requireAuth(request);
+        const session = await validateCsrfAndIdempotency(request);
         const userId = Number(session.user.id);
         const body = await validateBody(request, updatePreferencesSchema);
 

@@ -12,7 +12,6 @@ import {
     LockOutlined,
     NotificationsOutlined,
     PersonOutlined,
-    WorkOutlined,
 } from '@mui/icons-material';
 import {
     Alert,
@@ -23,30 +22,17 @@ import {
     CardContent,
     Checkbox,
     Chip,
-    CircularProgress,
     Divider,
     Grid,
     Skeleton,
+    Snackbar,
     Stack,
     TextField,
     Tooltip,
     Typography,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
-import { useCallback, useRef } from 'react';
-
-// ─── Debounce helper ──────────────────────────────────────────────────────────
-
-function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
-    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    return useCallback(
-        ((...args: Parameters<T>) => {
-            if (timer.current) clearTimeout(timer.current);
-            timer.current = setTimeout(() => fn(...args), delay);
-        }) as T,
-        [fn, delay]
-    );
-}
+import { useCallback, useRef, useState } from 'react';
 
 // ─── Profile skeleton ─────────────────────────────────────────────────────────
 
@@ -159,31 +145,38 @@ function PreferencesTable({ categories, preferences, onToggle }: PreferencesTabl
 export default function ProfilePage() {
     const { data: session } = useSession();
     const { user, notificationPreferences, isLoading, error, updatePreferences } = useProfile();
+    const [saveError, setSaveError] = useState(false);
 
     const roles = session?.user?.roles ?? [];
     const visibleCategories = ACCESS_CONTROL.notifications.visibleCategories(roles);
 
-    const debouncedSave = useDebounce(
-        useCallback(
-            (prefs: NotificationPreference[]) => {
-                updatePreferences(prefs).catch(() => { /* optimistic revert handled in hook */ });
-            },
-            [updatePreferences]
-        ),
-        300
-    );
+    // Stable debounce: timer lives in a ref so it never causes re-renders or
+    // stale-closure issues from useCallback dependency churn.
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingPrefs = useRef<NotificationPreference[]>([]);
 
     const handleToggle = useCallback(
-        (event: WorkflowNotificationEvent, channel: 'inApp') => {
+        (event: WorkflowNotificationEvent, _channel: 'inApp') => {
             const current = notificationPreferences.find((p) => p.event === event);
             const updated: NotificationPreference = {
                 event,
-                inApp: channel === 'inApp' ? !(current?.inApp ?? true) : (current?.inApp ?? true),
+                inApp: !(current?.inApp ?? true),
                 mail: current?.mail ?? false,
             };
-            debouncedSave([updated]);
+
+            // Merge into pending batch so rapid toggles accumulate
+            const idx = pendingPrefs.current.findIndex((p) => p.event === event);
+            if (idx >= 0) pendingPrefs.current[idx] = updated;
+            else pendingPrefs.current.push(updated);
+
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            debounceTimer.current = setTimeout(() => {
+                const toSave = [...pendingPrefs.current];
+                pendingPrefs.current = [];
+                updatePreferences(toSave).catch(() => setSaveError(true));
+            }, 300);
         },
-        [notificationPreferences, debouncedSave]
+        [notificationPreferences, updatePreferences]
     );
 
     if (isLoading) return <AppLayout><ProfileSkeleton /></AppLayout>;
@@ -342,6 +335,18 @@ export default function ProfilePage() {
                 </Card>
 
             </Stack>
+
+            <Snackbar
+                open={saveError}
+                autoHideDuration={4000}
+                onClose={() => setSaveError(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity="error" onClose={() => setSaveError(false)} sx={{ width: '100%' }}>
+                    Failed to save preference. Your change has been reverted.
+                </Alert>
+            </Snackbar>
+
         </AppLayout>
     );
 }
