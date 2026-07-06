@@ -335,7 +335,8 @@ export function GuidedOnboardingCard({
                   onChange={(e) => updateForm({ firstName: e.target.value })}
                   fullWidth
                   disabled={!editable.firstName || submitting}
-                  helperText={!editable.firstName ? 'Set by Quality Dept' : ' '}
+                  error={editable.firstName && !form.firstName.trim()}
+                  helperText={!editable.firstName ? 'Set by Quality Dept' : !form.firstName.trim() ? 'First name is required' : ' '}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -345,7 +346,8 @@ export function GuidedOnboardingCard({
                   onChange={(e) => updateForm({ lastName: e.target.value })}
                   fullWidth
                   disabled={!editable.lastName || submitting}
-                  helperText={!editable.lastName ? 'Set by Quality Dept' : ' '}
+                  error={editable.lastName && !form.lastName.trim()}
+                  helperText={!editable.lastName ? 'Set by Quality Dept' : !form.lastName.trim() ? 'Last name is required' : ' '}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -356,7 +358,8 @@ export function GuidedOnboardingCard({
                   onChange={(e) => updateForm({ departmentId: Number(e.target.value), unitId: '' })}
                   fullWidth
                   disabled={!editable.department || submitting}
-                  helperText={!editable.department ? 'Already assigned' : 'Select your department'}
+                  error={editable.department && !form.departmentId}
+                  helperText={!editable.department ? 'Already assigned' : !form.departmentId ? 'Department selection is required' : 'Select your department'}
                 >
                   {departments.map((dept) => (
                     <MenuItem key={dept.id} value={dept.id}>
@@ -373,12 +376,15 @@ export function GuidedOnboardingCard({
                   onChange={(e) => updateForm({ unitId: Number(e.target.value) })}
                   fullWidth
                   disabled={!editable.unit || submitting || !form.departmentId}
+                  error={editable.unit && Boolean(form.departmentId) && !form.unitId}
                   helperText={
                     !editable.unit
                       ? 'Already assigned'
-                      : form.departmentId
-                        ? 'Select your unit'
-                        : 'Select department first'
+                      : !form.departmentId
+                        ? 'Select department first'
+                        : !form.unitId
+                          ? 'Unit selection is required'
+                          : 'Select your unit'
                   }
                 >
                   {availableUnits.map((unit) => (
@@ -395,7 +401,8 @@ export function GuidedOnboardingCard({
                   onChange={(e) => updateForm({ position: e.target.value })}
                   fullWidth
                   disabled={!editable.position || submitting}
-                  helperText={!editable.position ? 'Set by Quality Dept' : 'Your current job title'}
+                  error={editable.position && !form.position.trim()}
+                  helperText={!editable.position ? 'Set by Quality Dept' : !form.position.trim() ? 'Position is required' : 'Your current job title'}
                 />
               </Grid>
             </Grid>
