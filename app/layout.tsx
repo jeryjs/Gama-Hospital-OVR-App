@@ -6,10 +6,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OVR System - Gama Hospital",
+  title: "OVR System",
   description: "Occurrence Variance Reporting System for Healthcare",
   icons: {
-    icon: '/favicon.ico',
+    icon: '/gama_icon.png',
   },
 };
 

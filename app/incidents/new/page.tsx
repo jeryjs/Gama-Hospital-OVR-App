@@ -41,6 +41,7 @@ import { useConfirmDialog } from '@/components/ConfirmDialog';
 import { secureFetch } from '@/lib/client/csrf';
 import { ArrowBack, Save, Send, Person } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import {
   Alert,
   alpha,
@@ -1376,16 +1377,30 @@ function OVRHeaderSection() {
     <>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, md: 3 }}>
-          <Typography variant="h6" sx={{
-            fontWeight: 700
-          }}>
-            Gama Hospital
-          </Typography>
-          <Typography variant="caption" sx={{
-            color: "text.secondary"
-          }}>
-            مستشفى جاما
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: { xs: 48, md: 72 },
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+              borderRadius: 1,
+              overflow: 'hidden',
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              '& img': {
+                filter: (theme) => theme.palette.mode === 'dark' ? 'brightness(0) invert(1)' : 'none',
+              },
+            }}
+          >
+            <Image
+              src="/gama_banner.png"
+              alt="Gama Hospital"
+              width={220}
+              height={82}
+              priority
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </Box>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: 'center' }}>
           <Typography variant="h5" sx={{

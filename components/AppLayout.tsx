@@ -42,6 +42,7 @@ import {
   Typography
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
+import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -103,7 +104,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, [session?.user?.id, pathname]);
 
-  // Handle proper logout with Azure AD session cleanup
   const { mode, resolvedMode, setMode } = useThemeMode();
 
   const [themeAnchorEl, setThemeAnchorEl] = useState<null | HTMLElement>(null);
@@ -114,6 +114,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { value: 'system' as const, label: 'System', icon: <BrightnessAuto /> },
   ] as const;
 
+  // Handle proper logout with Azure AD session cleanup
   const handleLogout = async () => {
     // Sign out from NextAuth (clears local session)
     await signOut({ callbackUrl: '/login' });
@@ -227,7 +228,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Typography
+        <Box
+          sx={{
+            mt: 0.5,
+            ml: -2,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Image
+            src="/gama_banner.png"
+            alt="Gama Hospital"
+            width={250}
+            height={28}
+            priority
+            sizes="250px"
+            style={{
+              objectFit: 'contain',
+              objectPosition: 'left center',
+              filter: resolvedMode === 'dark' ? 'brightness(0) invert(1)' : 'none',
+            }}
+          />
+        </Box>
+        {/* <Typography
           variant="h5"
           sx={{
             fontWeight: 700,
@@ -238,12 +262,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         >
           OVR System
-        </Typography>
-        <Typography variant="caption" sx={{
-          color: "text.secondary"
-        }}>
-          Gama Hospital
-        </Typography>
+        </Typography> */}
       </Box>
 
       {/* Navigation */}

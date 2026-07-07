@@ -27,6 +27,7 @@ import {
   type OnboardingFormState,
 } from './_components/GuidedOnboardingCard';
 import { PasswordSignInCard } from './_components/PasswordSignInCard';
+import { useThemeMode } from '@/components/ThemeRegistry';
 
 type LoginStep = 'staff_id' | 'password' | 'onboarding';
 
@@ -72,6 +73,7 @@ function sanitizeCallbackUrl(rawUrl: string | null): string {
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const themeMode = useThemeMode().resolvedMode;
 
   const [step, setStep] = useState<LoginStep>('staff_id');
   const [lookupResult, setLookupResult] = useState<LookupResponse | null>(null);
@@ -371,7 +373,7 @@ export default function LoginPage() {
             <Stack spacing={4}>
               {/* ── Brand header ── */}
               <Box sx={{ textAlign: 'center' }}>
-                <Typography
+                {/* <Typography
                   variant={isOnboarding ? 'h5' : 'h4'}
                   gutterBottom
                   sx={{
@@ -384,13 +386,48 @@ export default function LoginPage() {
                   }}
                 >
                   OVR System
-                </Typography>
+                </Typography> */}
                 {!isOnboarding && (
                   <>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      Gama Hospital
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: 72,
+                        mt: 0.5,
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Box
+                        aria-label="Gama Hospital"
+                        role="img"
+                        sx={(theme) => ({
+                          width: 256,
+                          height: 94,
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          WebkitMaskImage: 'url(/gama_banner.png)',
+                          maskImage: 'url(/gama_banner.png)',
+                          WebkitMaskRepeat: 'no-repeat',
+                          maskRepeat: 'no-repeat',
+                          WebkitMaskPosition: 'center',
+                          maskPosition: 'center',
+                          WebkitMaskSize: 'contain',
+                          maskSize: 'contain',
+                        })}
+                      />
+                    </Box>
+                    <Typography
+                      variant={'body2'}
+                      gutterBottom
+                      sx={{
+                        // fontWeight: 800,
+                        background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      }}
+                    >
                       Occurrence Variance Reporting
                     </Typography>
                   </>
