@@ -351,6 +351,20 @@ export default function LoginPage() {
         },
       }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'Login | Gama Hospital OVR',
+            description: 'Occurrence Variance Reporting System — Healthcare incident reporting and corrective action tracking.',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web',
+            url: 'https://gama-ovr.jeryjs.dev/login',
+          }),
+        }}
+      />
       <Container maxWidth={isOnboarding ? 'md' : 'xs'}>
         <motion.div
           key={step}
